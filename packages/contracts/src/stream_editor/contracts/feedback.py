@@ -1,7 +1,9 @@
 ﻿from enum import Enum
+from typing import Any
 from uuid import UUID
-from typing import Any, Optional
+
 from pydantic import BaseModel
+
 
 class FeedbackType(str, Enum):
     keep_override = "keep_override"
@@ -19,5 +21,5 @@ class FeedbackEvent(BaseModel):
     original_value: dict[str, Any]
     modified_value: dict[str, Any]
     surrounding_context: dict[str, Any]
-    reason: Optional[str]
+    reason: str | None
     editorial_style_version: str

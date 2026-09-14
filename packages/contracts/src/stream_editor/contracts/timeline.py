@@ -1,7 +1,9 @@
 ﻿from enum import Enum
+from typing import Any
 from uuid import UUID
-from typing import Any, List
+
 from pydantic import BaseModel, Field
+
 
 class TimelineEventType(str, Enum):
     speech = "speech"
@@ -47,7 +49,7 @@ class TranscriptSegment(BaseModel):
     text: str
     speaker: str
     confidence: float = Field(ge=0.0, le=1.0)
-    word_timestamps: List[WordTimestamp]
+    word_timestamps: list[WordTimestamp]
 
 class Scene(BaseModel):
     id: UUID

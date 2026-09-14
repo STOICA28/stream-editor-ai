@@ -1,6 +1,9 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from stream_editor.media.probe import validate_video_path
+
 
 def test_validate_video_path_not_exists():
     with pytest.raises(FileNotFoundError):

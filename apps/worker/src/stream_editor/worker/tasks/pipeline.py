@@ -1,27 +1,38 @@
-from ..celery_app import app
-import structlog
 import asyncio
-from pathlib import Path
+from collections.abc import Coroutine
 from datetime import datetime
-from typing import Any, Coroutine
-from celery import group
+from pathlib import Path
+from typing import Any
 
-from stream_editor.api.database import SessionLocal
-from stream_editor.api.models.project import (
-    Project, MediaAsset, ProcessingJob, JobStep, TranscriptRun,
-    TranscriptSegment as DBTranscriptSegment, TranscriptWord as DBTranscriptWord,
-    Scene as DBScene, AudioEvent as DBAudioEvent, TimelineEvent
+import structlog
+
+from stream_editor.analysis.providers import (
+    MockAudioAnalysisProvider,
+    MockSceneDetectionProvider,
+    MockTranscriptionProvider,
 )
+from stream_editor.api.database import SessionLocal
+from stream_editor.api.models.project import AudioEvent as DBAudioEvent
+from stream_editor.api.models.project import (
+    JobStep,
+    MediaAsset,
+    ProcessingJob,
+    TimelineEvent,
+    TranscriptRun,
+)
+from stream_editor.api.models.project import Scene as DBScene
+from stream_editor.api.models.project import TranscriptSegment as DBTranscriptSegment
+from stream_editor.api.models.project import TranscriptWord as DBTranscriptWord
+from stream_editor.contracts.analysis import AudioEventConfig, SceneConfig, TranscriptionConfig
+from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
+from stream_editor.media.ffmpeg import extract_audio, generate_proxy
+from stream_editor.media.ffprobe import get_media_info
+from stream_editor.media.fingerprint import generate_fingerprint
+from stream_editor.media.validation import validate_audio, validate_proxy
 from stream_editor.storage.local import LocalStorageProvider
 from stream_editor.storage.paths import StorageCategory
-from stream_editor.media.ffprobe import get_media_info
-from stream_editor.media.ffmpeg import generate_proxy, extract_audio
-from stream_editor.media.fingerprint import generate_fingerprint
 
-from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
-from stream_editor.contracts.analysis import TranscriptionConfig, SceneConfig, AudioEventConfig
-from stream_editor.media.validation import validate_proxy, validate_audio
-from stream_editor.analysis.providers import MockTranscriptionProvider, MockSceneDetectionProvider, MockAudioAnalysisProvider, WhisperXTranscriptionProvider, ScenedetectProvider, FFmpegAudioAnalysisProvider
+from ..celery_app import app
 
 logger = structlog.get_logger()
 
@@ -172,8 +183,8 @@ def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint:
 def transcribe_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_transcribe() -> None:
         async with SessionLocal() as db:
-            from sqlalchemy.future import select
             from sqlalchemy import delete
+            from sqlalchemy.future import select
             asset = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             storage = LocalStorageProvider()
             config = TranscriptionConfig()
@@ -215,8 +226,8 @@ def transcribe_task(project_id: str, asset_id: str, fingerprint: str) -> dict[st
 def detect_scenes_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_scenes() -> None:
         async with SessionLocal() as db:
-            from sqlalchemy.future import select
             from sqlalchemy import delete
+            from sqlalchemy.future import select
             storage = LocalStorageProvider()
             config = SceneConfig()
             proxy_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "proxy"))).scalars().first()
@@ -243,8 +254,8 @@ def detect_scenes_task(project_id: str, asset_id: str, fingerprint: str) -> dict
 def analyze_audio_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_audio_analysis() -> None:
         async with SessionLocal() as db:
-            from sqlalchemy.future import select
             from sqlalchemy import delete
+            from sqlalchemy.future import select
             storage = LocalStorageProvider()
             config = AudioEventConfig()
             audio_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "audio"))).scalars().first()
@@ -271,8 +282,8 @@ def analyze_audio_task(project_id: str, asset_id: str, fingerprint: str) -> dict
 def normalize_timeline_task(project_id: str, asset_id: str) -> dict[str, str]:
     async def _do_normalize() -> None:
         async with SessionLocal() as db:
-            from sqlalchemy.future import select
             from sqlalchemy import delete
+            from sqlalchemy.future import select
             
             await db.execute(delete(TimelineEvent).where(TimelineEvent.source_asset_id == asset_id))
             
@@ -296,6 +307,60 @@ def normalize_timeline_task(project_id: str, asset_id: str) -> dict[str, str]:
     return {"status": "success"}
 
 @app.task
-def generate_candidates_task(project_id: str) -> dict[str, str]: return {"status": "success"}
+def generate_candidates_task(
+    project_id: str,
+    asset_id: str,
+    provider_name: str = "mock",
+    ranking_profile: str = "balanced",
+) -> dict[str, str]:
+    """
+    Generate editorial candidates for a source asset.
+
+    Idempotent: if a completed CandidateRun with the same signature exists, returns it.
+    Uses MockEditorialProvider by default. Set provider_name="gemini" for real analysis.
+    """
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session as SyncSession
+
+    database_url = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
+    # Use sync engine for Celery tasks
+    sync_url = database_url.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+
+    from stream_editor.contracts.editorial import CandidateWindowConfig
+    from stream_editor.editorial.generator import CandidateGenerator
+    from stream_editor.editorial.providers.mock import MockEditorialProvider
+
+    config = CandidateWindowConfig()
+
+    if provider_name == "gemini":
+        try:
+            from stream_editor.editorial.providers.gemini import GeminiEditorialProvider
+            provider = GeminiEditorialProvider()
+        except RuntimeError:
+            logger.warning("gemini_provider_unavailable_falling_back_to_mock")
+            provider = MockEditorialProvider()
+    else:
+        provider = MockEditorialProvider()
+
+    with SyncSession(sync_engine) as db:
+        generator = CandidateGenerator()
+        run_id = generator.generate(
+            project_id=project_id,
+            source_asset_id=asset_id,
+            db=db,
+            provider=provider,
+            config=config,
+            provider_name=provider_name,
+            ranking_profile_name=ranking_profile,
+        )
+
+    logger.info("candidates_generated", run_id=run_id, project_id=project_id, asset_id=asset_id)
+    return {"status": "success", "run_id": run_id}
+
+
 @app.task
-def generate_edit_plan_task(project_id: str) -> dict[str, str]: return {"status": "success"}
+def generate_edit_plan_task(project_id: str) -> dict[str, str]:
+    return {"status": "success"}

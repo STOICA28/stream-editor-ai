@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-from typing import List
+
 from .provider import StorageProvider
+
 
 class LocalStorageProvider(StorageProvider):
     def __init__(self, base_path: Path | None = None):
@@ -34,7 +35,7 @@ class LocalStorageProvider(StorageProvider):
         if full_path.exists():
             full_path.unlink()
 
-    async def list_category(self, project_id: str, category: str) -> List[str]:
+    async def list_category(self, project_id: str, category: str) -> list[str]:
         dir_path = self.base_path / "projects" / project_id / category
         if not dir_path.exists() or not dir_path.is_dir():
             return []

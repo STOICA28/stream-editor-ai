@@ -1,102 +1,67 @@
-from typing import Optional
-from stream_editor.contracts.editorial import EditorialAnalysisProvider, CandidateAnalysisResult, ScoreComponents, LocalFeatures
+﻿from stream_editor.contracts.editorial import (
+    CandidateAnalysisResult,
+    EditorialAnalysisProvider,
+    LocalFeatures,
+    ScoreComponents,
+)
 
-class MockEditorialProvider:
+
+class MockEditorialProvider(EditorialAnalysisProvider):
+    flash_model_name = "mock-flash"
+    pro_model_name = "mock-pro"
+
     def analyze_candidate(
         self,
-        *,
         candidate_id: str,
         transcript_excerpt: str,
         local_features: LocalFeatures,
-        nearby_events: list[dict[str, object]],
-        local_summary: Optional[str],
-        chapter_summary: Optional[str],
-        prompt_version: str,
+        nearby_events: list[dict],
+        local_summary: str | None,
+        chapter_summary: str | None,
+        prompt_version: str
     ) -> CandidateAnalysisResult:
+        text = transcript_excerpt.lower()
         
-        text = transcript_excerpt.lower() if transcript_excerpt else ""
-        
-        if not text or len(text.strip()) < 5:
-            signals = ScoreComponents(
-                humor=0.1, reaction=0.1, importance=0.1, visual_interest=0.1,
-                chat_relevance=0.1, novelty=0.1, emotional_intensity=0.1,
-                story_value=0.1, repetition=0.1
-            )
+        if "funny" in text or "haha" in text:
             return CandidateAnalysisResult(
-                summary="Low signal segment.",
-                signals=signals,
+                summary="Funny moment detected.",
+                signals=ScoreComponents(humor=0.8, reaction=0.7, chat_relevance=0.6, visual_interest=0.5, importance=0.4, novelty=0.5, emotional_intensity=0.6, story_value=0.5, repetition=0.0),
                 confidence=0.9,
-                reasoning_summary=["Too short to analyze."],
-                cache_hit=False
+                reasoning_summary=["Contains laughter keywords."]
             )
             
-        # check repetition logic by looking for same word repeated
-        words = text.split()
-        if len(words) >= 4 and len(set(words)) == 1:
-            signals = ScoreComponents(
-                humor=0.1, reaction=0.1, importance=0.1, visual_interest=0.1,
-                chat_relevance=0.1, novelty=0.1, emotional_intensity=0.1,
-                story_value=0.1, repetition=0.9
-            )
-            return CandidateAnalysisResult(
-                summary="Highly repetitive segment.",
-                signals=signals,
-                confidence=0.8,
-                reasoning_summary=["Words are repeated."],
-                cache_hit=False
-            )
-            
-        if "lol" in text or "haha" in text or "jaja" in text:
-            signals = ScoreComponents(
-                humor=0.9, reaction=0.8, importance=0.3, visual_interest=0.5,
-                chat_relevance=0.5, novelty=0.5, emotional_intensity=0.7,
-                story_value=0.3, repetition=0.1
-            )
-            return CandidateAnalysisResult(
-                summary="Funny moment.",
-                signals=signals,
-                confidence=0.8,
-                reasoning_summary=["Detected laughter keywords."],
-                cache_hit=False
-            )
-            
-        if "important" in text or "importante" in text:
-            signals = ScoreComponents(
-                humor=0.1, reaction=0.3, importance=0.9, visual_interest=0.5,
-                chat_relevance=0.5, novelty=0.6, emotional_intensity=0.5,
-                story_value=0.9, repetition=0.1
-            )
+        if "important" in text or "crucial" in text:
             return CandidateAnalysisResult(
                 summary="Important story beat.",
-                signals=signals,
+                signals=ScoreComponents(importance=0.9, story_value=0.8, humor=0.1, reaction=0.2, visual_interest=0.5, chat_relevance=0.3, novelty=0.6, emotional_intensity=0.5, repetition=0.0),
                 confidence=0.85,
-                reasoning_summary=["Detected importance keywords."],
-                cache_hit=False
+                reasoning_summary=["Contains importance keywords."]
             )
-            
-        signals = ScoreComponents(
-            humor=0.5, reaction=0.5, importance=0.5, visual_interest=0.5,
-            chat_relevance=0.5, novelty=0.5, emotional_intensity=0.5,
-            story_value=0.5, repetition=0.5
-        )
+
+        if len(text) < 10:
+            return CandidateAnalysisResult(
+                summary="Low signal segment.",
+                signals=ScoreComponents(humor=0.1, reaction=0.1, importance=0.1, visual_interest=0.1, chat_relevance=0.1, novelty=0.1, emotional_intensity=0.1, story_value=0.1, repetition=0.1),
+                confidence=0.2,
+                reasoning_summary=["Too short to analyze."]
+            )
+
         return CandidateAnalysisResult(
             summary="Ambiguous segment.",
-            signals=signals,
-            confidence=0.3,
-            reasoning_summary=["No clear keywords found."],
-            cache_hit=False
+            signals=ScoreComponents(humor=0.5, reaction=0.5, importance=0.5, visual_interest=0.5, chat_relevance=None, novelty=0.5, emotional_intensity=0.5, story_value=0.5, repetition=0.5),
+            confidence=0.5,
+            reasoning_summary=["No clear keywords found."]
         )
 
     def summarize_window(
         self,
-        *,
         transcript: str,
         start_time: float,
         end_time: float,
         level: str,
-        prompt_version: str,
-    ) -> dict[str, object]:
+        prompt_version: str
+    ) -> dict:
         return {
-            "summary": "Deterministic window summary.",
-            "key_topics": ["topic_a", "topic_b"]
+            "summary": "Mock summary",
+            "key_topics": ["topic 1"]
         }

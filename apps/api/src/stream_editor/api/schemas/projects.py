@@ -1,19 +1,20 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 
 class ProjectCreate(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 class ProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     status: str
-    source_video_path: Optional[str]
+    source_video_path: str | None
     created_at: datetime
     updated_at: datetime
 

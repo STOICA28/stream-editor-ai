@@ -1,7 +1,8 @@
-import subprocess
 import json
+import subprocess
 from pathlib import Path
-from stream_editor.contracts.media import ProbeResult, MediaInfo
+
+from stream_editor.contracts.media import MediaInfo, ProbeResult
 
 _SUPPORTED_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".ts", ".flv"}
 

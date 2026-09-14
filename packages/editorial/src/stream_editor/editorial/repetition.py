@@ -2,6 +2,7 @@ import math
 import re
 from collections import Counter
 
+
 class RepetitionDetector:
     @staticmethod
     def score(candidate_text: str, other_texts: list[str]) -> float:

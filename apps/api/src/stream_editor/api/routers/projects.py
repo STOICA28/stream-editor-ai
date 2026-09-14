@@ -1,11 +1,12 @@
-from typing import Any, List
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from stream_editor.api.database import get_db
-from stream_editor.api.models.project import Project, MediaAsset, ProcessingJob, JobStep
-from stream_editor.api.schemas.projects import ProjectCreate, ProjectResponse, MediaImportRequest
+from stream_editor.api.models.project import ProcessingJob, Project
+from stream_editor.api.schemas.projects import MediaImportRequest, ProjectCreate, ProjectResponse
 from stream_editor.worker.tasks.pipeline import ingest_media_task
 
 router = APIRouter()
@@ -18,7 +19,7 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
     await db.refresh(db_project)
     return db_project
 
-@router.get("", response_model=List[ProjectResponse])
+@router.get("", response_model=list[ProjectResponse])
 async def list_projects(db: AsyncSession = Depends(get_db)) -> Any:
     result = await db.execute(select(Project))
     return result.scalars().all()

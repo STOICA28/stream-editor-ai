@@ -1,6 +1,8 @@
+
 import pytest
-import os
+
 from stream_editor.storage.local import LocalStorageProvider
+
 
 @pytest.mark.asyncio
 async def test_storage_provider(tmp_storage):

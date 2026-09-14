@@ -1,9 +1,15 @@
+import json
 import os
 import time
-import json
-from typing import Optional
-from stream_editor.contracts.editorial import EditorialAnalysisProvider, CandidateAnalysisResult, ScoreComponents, LocalFeatures
-from stream_editor.editorial.prompts.v1_candidate_analysis import build_prompt as build_candidate_prompt
+
+from stream_editor.contracts.editorial import (
+    CandidateAnalysisResult,
+    LocalFeatures,
+    ScoreComponents,
+)
+from stream_editor.editorial.prompts.v1_candidate_analysis import (
+    build_prompt as build_candidate_prompt,
+)
 from stream_editor.editorial.prompts.v1_chapter_summary import build_prompt as build_chapter_prompt
 
 try:
@@ -74,8 +80,8 @@ class GeminiEditorialProvider:
         transcript_excerpt: str,
         local_features: LocalFeatures,
         nearby_events: list[dict[str, object]],
-        local_summary: Optional[str],
-        chapter_summary: Optional[str],
+        local_summary: str | None,
+        chapter_summary: str | None,
         prompt_version: str,
     ) -> CandidateAnalysisResult:
         

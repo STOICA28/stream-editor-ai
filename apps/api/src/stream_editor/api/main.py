@@ -1,7 +1,10 @@
-from typing import Any
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from .routers import projects, jobs, health, analysis
+from typing import Any
+
+from fastapi import FastAPI
+
+from .routers import analysis, candidates, health, jobs, projects
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
@@ -12,3 +15,4 @@ app.include_router(projects.router, prefix="/api/v1/projects")
 app.include_router(jobs.router, prefix="/api/v1/jobs")
 app.include_router(health.router, prefix="/api/v1/health")
 app.include_router(analysis.router, prefix="/api/v1")
+app.include_router(candidates.router, prefix="/api/v1")

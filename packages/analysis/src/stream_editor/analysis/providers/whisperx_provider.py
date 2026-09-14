@@ -1,14 +1,16 @@
+
 import torch
-from typing import List
+
 from stream_editor.contracts.analysis import (
-    TranscriptionProvider,
     TranscriptionConfig,
+    TranscriptionProvider,
     TranscriptSegment,
-    TranscriptWord
+    TranscriptWord,
 )
 
+
 class WhisperXTranscriptionProvider(TranscriptionProvider):
-    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> List[TranscriptSegment]:
+    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
         import whisperx
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -44,7 +46,7 @@ class WhisperXTranscriptionProvider(TranscriptionProvider):
             diarize_model = whisperx.DiarizationPipeline(use_auth_token=True, device=device)
             diarize_segments = diarize_model(audio)
             result = whisperx.assign_word_speakers(diarize_segments, result)
-        except Exception as e:
+        except Exception:
             # Diarization can fail if auth token is not set, we can just skip it or log it.
             pass
         

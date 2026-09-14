@@ -1,24 +1,26 @@
 import json
 import subprocess
-from typing import Any, Dict
+from typing import Any
+
 from stream_editor.contracts.media import MediaInfo
 
-def run_ffprobe(path: str) -> Dict[str, Any]:
+
+def run_ffprobe(path: str) -> dict[str, Any]:
     result = subprocess.run(
         ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", path],
         capture_output=True,
         check=True,
         text=True
     )
-    parsed: Dict[str, Any] = json.loads(result.stdout)
+    parsed: dict[str, Any] = json.loads(result.stdout)
     return parsed
 
 def get_media_info(path: str) -> MediaInfo:
     data = run_ffprobe(path)
     
-    video_stream: Dict[str, Any] = next((s for s in data.get('streams', []) if s.get('codec_type') == 'video'), {})
-    audio_stream: Dict[str, Any] = next((s for s in data.get('streams', []) if s.get('codec_type') == 'audio'), {})
-    fmt: Dict[str, Any] = data.get('format', {})
+    video_stream: dict[str, Any] = next((s for s in data.get('streams', []) if s.get('codec_type') == 'video'), {})
+    audio_stream: dict[str, Any] = next((s for s in data.get('streams', []) if s.get('codec_type') == 'audio'), {})
+    fmt: dict[str, Any] = data.get('format', {})
     
     fps_str = video_stream.get('r_frame_rate', '0/1')
     fps = 0.0

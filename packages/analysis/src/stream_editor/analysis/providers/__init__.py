@@ -1,7 +1,7 @@
-from .mock import MockTranscriptionProvider, MockSceneDetectionProvider, MockAudioAnalysisProvider
-from .whisperx_provider import WhisperXTranscriptionProvider
-from .scenedetect_provider import ScenedetectProvider
 from .audio_provider import FFmpegAudioAnalysisProvider
+from .mock import MockAudioAnalysisProvider, MockSceneDetectionProvider, MockTranscriptionProvider
+from .scenedetect_provider import ScenedetectProvider
+from .whisperx_provider import WhisperXTranscriptionProvider
 
 __all__ = [
     "MockTranscriptionProvider",

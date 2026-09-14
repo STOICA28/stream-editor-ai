@@ -1,4 +1,5 @@
-from stream_editor.contracts.editorial import ScoreComponents, RankingProfile
+from stream_editor.contracts.editorial import RankingProfile, ScoreComponents
+
 
 class ExperimentalRanker:
     """

@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 
+
 def create_analysis_proxy(source: Path, output: Path, width: int = 1280) -> Path:
     """Create a lower-resolution proxy for analysis. Never uses shell=True."""
     cmd = [

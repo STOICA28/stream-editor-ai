@@ -1,8 +1,10 @@
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, DateTime, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
 import uuid
 from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String
+
 from ..database import Base
+
 
 class Project(Base):
     __tablename__ = "projects"
@@ -126,10 +128,155 @@ class TimelineEvent(Base):
     confidence = Column(Float, nullable=True)
     data = Column(JSON, nullable=True)
 
+class CandidateRun(Base):
+    """Versioned run of the candidate generation pipeline."""
+    __tablename__ = "candidate_runs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    # M2 analysis version references (JSON dict of {transcript_run_id, scene_config_sig, audio_config_sig})
+    analysis_versions = Column(JSON)
+    # Provider & model config
+    provider = Column(String)             # mock | gemini
+    model = Column(String, nullable=True) # e.g. gemini-2.0-flash
+    generator_version = Column(String)    # semver of CandidateGenerator
+    candidate_config = Column(JSON)       # CandidateWindowConfig serialized
+    prompt_version = Column(String)       # e.g. v1
+    # Idempotency
+    derivation_signature = Column(String, unique=True)
+    # Lifecycle
+    status = Column(String, default="running")  # running | completed | failed
+    candidate_count = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(String, nullable=True)
+
+
 class CandidateSegment(Base):
+    """A candidate segment representing a portion of the livestream with explainable scores."""
     __tablename__ = "candidate_segments"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    scores = Column(JSON)
+    run_id = Column(String, ForeignKey("candidate_runs.id"))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+
+    # Temporal boundaries
+    # core_start/core_end: the detected interesting event
+    # start/end: expanded context window (setup + reaction)
+    core_start = Column(Float)
+    core_end = Column(Float)
+    start_time = Column(Float)            # = core_start - preroll
+    end_time = Column(Float)              # = core_end + postroll
+
+    # Source triggers that caused this candidate to be generated (list of strings)
+    source_signals = Column(JSON)         # e.g. ["high_energy", "laughter", "scene_change"]
+
+    # Transcript summary of core content
+    transcript_excerpt = Column(String, nullable=True)
+    summary = Column(String, nullable=True)
+
+    # Cheap local features (computed without model)
+    local_features = Column(JSON, nullable=True)  # LocalFeatures serialized
+
+    # Multi-dimensional score components (all Optional[float] — null = unknown)
+    score_humor = Column(Float, nullable=True)
+    score_reaction = Column(Float, nullable=True)
+    score_importance = Column(Float, nullable=True)
+    score_visual_interest = Column(Float, nullable=True)
+    score_chat_relevance = Column(Float, nullable=True)
+    score_novelty = Column(Float, nullable=True)
+    score_emotional_intensity = Column(Float, nullable=True)
+    score_story_value = Column(Float, nullable=True)
+    score_repetition = Column(Float, nullable=True)
+
+    # Model confidence (separate from editorial value)
+    confidence = Column(Float, nullable=True)
+
+    # Reasoning/evidence (concise, no hidden chain-of-thought)
+    reasoning_summary = Column(JSON, nullable=True)  # List[str]
+
+    # Experimental ranking score (clearly labelled, NOT canonical)
+    experimental_rank = Column(Float, nullable=True)
+    ranking_profile = Column(String, nullable=True)   # e.g. "balanced"
+
+    # Semantic analysis provenance
+    analysis_provider = Column(String, nullable=True)
+    analysis_model = Column(String, nullable=True)
+    prompt_version = Column(String, nullable=True)
+    semantic_cache_hit = Column(String, nullable=True)  # "hit" | "miss" | null
+
+    # Token/cost metadata
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    analysis_latency_ms = Column(Integer, nullable=True)
+
+    # Escalation tracking
+    escalated = Column(String, nullable=True)   # null | "eligible" | "sent"
+
+    # Debug label (NOT final editorial decision)
+    debug_label = Column(String, nullable=True)  # interesting | uncertain | low-signal
+
+    # Idempotency
+    derivation_signature = Column(String)
+
+    # Lifecycle
+    status = Column(String, default="pending")  # pending | analyzed | failed
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CandidateEvidenceLink(Base):
+    """Links a CandidateSegment to the M2 evidence that supports it."""
+    __tablename__ = "candidate_evidence_links"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    candidate_id = Column(String, ForeignKey("candidate_segments.id"))
+    evidence_type = Column(String)   # timeline_event | transcript_segment | scene | audio_event
+    evidence_id = Column(String)     # FK to the relevant table (stored as string for polymorphism)
+    relevance = Column(String, nullable=True)  # why this evidence is linked
+
+
+class TranscriptWindow(Base):
+    """Hierarchical transcript summary for efficient context supply to models."""
+    __tablename__ = "transcript_windows"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    transcript_run_id = Column(String, ForeignKey("transcript_runs.id"))
+    # Window boundaries
+    start_time = Column(Float)
+    end_time = Column(Float)
+    # Level: local | chapter | topic
+    level = Column(String)
+    # Parent chapter/topic ID for hierarchical lookup
+    parent_window_id = Column(String, ForeignKey("transcript_windows.id"), nullable=True)
+    # Content
+    summary = Column(String, nullable=True)
+    key_topics = Column(JSON, nullable=True)   # List[str]
+    # Provenance
+    provider = Column(String)
+    model = Column(String, nullable=True)
+    prompt_version = Column(String)
+    derivation_signature = Column(String, unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ModelResultCache(Base):
+    """Caches AI model responses for candidate analysis by deterministic signature."""
+    __tablename__ = "model_result_cache"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    # Cache key: hash of (provider + model + prompt_version + input_content_hash + editorial_rules_version)
+    cache_key = Column(String, unique=True)
+    provider = Column(String)
+    model = Column(String)
+    prompt_version = Column(String)
+    editorial_rules_version = Column(String, nullable=True)
+    # Cached output
+    result = Column(JSON)
+    # Cost metadata
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class EditPlan(Base):
     __tablename__ = "edit_plans"

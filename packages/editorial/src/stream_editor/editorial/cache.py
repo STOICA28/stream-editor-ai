@@ -1,6 +1,9 @@
 import hashlib
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
+
 from stream_editor.api.models.project import ModelResultCache as DBModelResultCache
+
 
 class ModelResultCache:
     @staticmethod

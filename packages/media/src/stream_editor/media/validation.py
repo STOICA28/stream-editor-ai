@@ -1,7 +1,8 @@
-import os
 from pathlib import Path
-from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
-from stream_editor.media.probe import probe_media, validate_video_path
+
+from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
+from stream_editor.media.probe import probe_media
+
 
 def validate_proxy(path: str, source_info: MediaInfo, config: ProxyConfig) -> None:
     p = Path(path)
@@ -32,7 +33,8 @@ def validate_audio(path: str, source_info: MediaInfo, config: AudioConfig) -> No
 
     # We need a probe_media variant that accepts audio formats, because probe_media strictly checks video extensions.
     # We'll just run ffprobe directly here.
-    import subprocess, json
+    import json
+    import subprocess
     
     cmd = [
         "ffprobe", "-v", "quiet", "-print_format", "json",

@@ -1,6 +1,8 @@
 ﻿from enum import Enum
-from typing import Dict, Any, Union
-from pydantic import BaseModel, Field, model_validator
+from typing import Any
+
+from pydantic import BaseModel, Field
+
 
 class EffectType(str, Enum):
     cut = "cut"

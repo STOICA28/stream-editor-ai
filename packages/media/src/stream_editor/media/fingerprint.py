@@ -9,7 +9,7 @@ def generate_fingerprint(path: str) -> str:
     file_size = stat_result.st_size
     
     sha256 = hashlib.sha256()
-    sha256.update(f"v={FINGERPRINT_VERSION};size={file_size}".encode("utf-8"))
+    sha256.update(f"v={FINGERPRINT_VERSION};size={file_size}".encode())
     
     if file_size <= SAMPLE_SIZE * 3:
         with open(path, 'rb') as f:

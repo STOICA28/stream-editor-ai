@@ -1,9 +1,10 @@
-import pytest
 import shutil
-import os
-from pathlib import Path
-from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
+
+import pytest
+
+from stream_editor.contracts.media import MediaInfo, ProxyConfig
 from stream_editor.media.validation import validate_proxy
+
 
 @pytest.fixture
 def temp_dir(tmp_path):

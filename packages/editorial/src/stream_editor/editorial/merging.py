@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+
 from stream_editor.editorial.context import ExpandedWindow
+
 
 @dataclass
 class MergedWindow:

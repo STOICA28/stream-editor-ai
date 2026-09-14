@@ -1,5 +1,7 @@
-﻿import structlog
-import logging
+﻿import logging
+
+import structlog
+
 
 def configure_logging(level: str = "INFO") -> None:
     logging.basicConfig(level=level, format="%(message)s")
@@ -21,6 +23,8 @@ def configure_logging(level: str = "INFO") -> None:
     )
 
 from typing import Any
+
+
 def get_logger(name: str) -> Any:
     return structlog.get_logger(name)
 

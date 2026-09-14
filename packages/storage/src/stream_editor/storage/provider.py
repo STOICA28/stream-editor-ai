@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+
 
 class StorageProvider(ABC):
     @abstractmethod
@@ -14,7 +14,7 @@ class StorageProvider(ABC):
     @abstractmethod
     async def delete(self, path: str) -> None: ...
     @abstractmethod
-    async def list_category(self, project_id: str, category: str) -> List[str]: ...
+    async def list_category(self, project_id: str, category: str) -> list[str]: ...
     @abstractmethod
     async def copy_in(self, source_file_path: str, project_id: str, category: str, filename: str) -> str: ...
 

@@ -1,9 +1,18 @@
-from celery import chain
-from .tasks.pipeline import (
-    ingest_media_task, probe_media_task, create_proxy_task, extract_audio_task,
-    transcribe_task, detect_scenes_task, generate_candidates_task, generate_edit_plan_task
-)
 from typing import Any
+
+from celery import chain
+
+from .tasks.pipeline import (
+    create_proxy_task,
+    detect_scenes_task,
+    extract_audio_task,
+    generate_candidates_task,
+    generate_edit_plan_task,
+    ingest_media_task,
+    probe_media_task,
+    transcribe_task,
+)
+
 
 def run_pipeline(job_id: str, project_id: str, file_path: str) -> Any:
     pipeline = chain(

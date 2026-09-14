@@ -1,13 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
 from ..database import get_db
-from ..models.project import TimelineEvent, TranscriptSegment, TranscriptWord, Scene, TranscriptRun, Project
-from ..schemas.analysis import TimelineEventResponse, TranscriptSegmentResponse, SceneResponse, TranscriptWordResponse
+from ..models.project import (
+    Project,
+    Scene,
+    TimelineEvent,
+    TranscriptRun,
+    TranscriptSegment,
+    TranscriptWord,
+)
+from ..schemas.analysis import SceneResponse, TimelineEventResponse, TranscriptSegmentResponse
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["analysis"])
 
-@router.get("/timeline", response_model=List[TimelineEventResponse])
+@router.get("/timeline", response_model=list[TimelineEventResponse])
 def get_timeline(project_id: str, db: Session = Depends(get_db)):
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -22,7 +30,7 @@ def get_timeline(project_id: str, db: Session = Depends(get_db)):
     )
     return events
 
-@router.get("/transcripts", response_model=List[TranscriptSegmentResponse])
+@router.get("/transcripts", response_model=list[TranscriptSegmentResponse])
 def get_transcripts(project_id: str, db: Session = Depends(get_db)):
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -79,7 +87,7 @@ def get_transcripts(project_id: str, db: Session = Depends(get_db)):
 
     return response
 
-@router.get("/scenes", response_model=List[SceneResponse])
+@router.get("/scenes", response_model=list[SceneResponse])
 def get_scenes(project_id: str, db: Session = Depends(get_db)):
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()

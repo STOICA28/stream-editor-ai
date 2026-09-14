@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 
+
 def extract_audio(source: Path, output: Path) -> Path:
     """Extract mono 16kHz WAV for analysis."""
     cmd = [

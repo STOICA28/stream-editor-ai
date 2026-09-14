@@ -1,10 +1,11 @@
-import subprocess
 import re
-from typing import List
-from stream_editor.contracts.analysis import AudioAnalysisProvider, AudioEventConfig, AudioEvent
+import subprocess
+
+from stream_editor.contracts.analysis import AudioAnalysisProvider, AudioEvent, AudioEventConfig
+
 
 class FFmpegAudioAnalysisProvider(AudioAnalysisProvider):
-    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> List[AudioEvent]:
+    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> list[AudioEvent]:
         # Build silencedetect filter
         # e.g., silencedetect=noise=-30dB:d=0.5
         filter_str = f"silencedetect=noise={config.silence_thresh}dB:d={config.silence_duration}"

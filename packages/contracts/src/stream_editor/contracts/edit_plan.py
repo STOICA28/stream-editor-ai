@@ -1,10 +1,13 @@
-﻿from enum import Enum
+﻿from datetime import datetime
+from enum import Enum
+from typing import Any
 from uuid import UUID
-from datetime import datetime
-from typing import List, Dict, Any
+
 from pydantic import BaseModel, model_validator
-from .effects import Effect, validate_effect
+
 from .editorial import NarrativeEdge
+from .effects import Effect, validate_effect
+
 
 class TransitionType(str, Enum):
     cut = "cut"
@@ -17,8 +20,8 @@ class EditClip(BaseModel):
     source_start_seconds: float
     source_end_seconds: float
     output_position_seconds: float
-    effects: List[Effect]
-    narrative_node_ids: List[UUID]
+    effects: list[Effect]
+    narrative_node_ids: list[UUID]
     editorial_reason: str
 
 class EditPlanVersion(BaseModel):
@@ -33,12 +36,12 @@ class EditPlan(BaseModel):
     id: UUID
     project_id: str
     version: int
-    clips: List[EditClip]
-    transitions: List[dict[str, Any]]
-    audio_operations: List[dict[str, Any]]
+    clips: list[EditClip]
+    transitions: list[dict[str, Any]]
+    audio_operations: list[dict[str, Any]]
     provenance: EditPlanVersion
     status: str
-    narrative_dependencies: List[NarrativeEdge]
+    narrative_dependencies: list[NarrativeEdge]
 
     @model_validator(mode='after')
     def validate_plan(self) -> "EditPlan":

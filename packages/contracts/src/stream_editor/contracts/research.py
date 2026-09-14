@@ -1,7 +1,9 @@
 ﻿from enum import Enum
+from typing import Any
 from uuid import UUID
-from typing import Any, List
+
 from pydantic import BaseModel
+
 
 class FindingType(str, Enum):
     observation = "observation"
@@ -19,7 +21,7 @@ class ResearchFinding(BaseModel):
     finding_type: FindingType
     title: str
     description: str
-    supporting_evidence: List[dict[str, Any]]
+    supporting_evidence: list[dict[str, Any]]
     provenance: dict[str, Any]
 
 class StylePattern(BaseModel):

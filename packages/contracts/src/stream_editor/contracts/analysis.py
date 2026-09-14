@@ -1,11 +1,13 @@
-from typing import Protocol, List, Optional
-from pydantic import BaseModel
 import hashlib
 import json
+from typing import Protocol
+
+from pydantic import BaseModel
+
 
 class TranscriptionConfig(BaseModel):
     model: str = "large-v3"
-    language: Optional[str] = None
+    language: str | None = None
     compute_type: str = "float16"
     batch_size: int = 16
     generator_version: str = "1.0.0"
@@ -45,14 +47,14 @@ class TranscriptWord(BaseModel):
     word: str
     start: float
     end: float
-    score: Optional[float] = None
+    score: float | None = None
 
 class TranscriptSegment(BaseModel):
     text: str
     start: float
     end: float
-    words: List[TranscriptWord] = []
-    speaker: Optional[str] = None
+    words: list[TranscriptWord] = []
+    speaker: str | None = None
 
 class Scene(BaseModel):
     start_time: float
@@ -64,13 +66,13 @@ class AudioEvent(BaseModel):
     end_time: float
 
 class TranscriptionProvider(Protocol):
-    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> List[TranscriptSegment]:
+    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
         ...
 
 class SceneDetectionProvider(Protocol):
-    def detect_scenes(self, video_path: str, config: SceneConfig) -> List[Scene]:
+    def detect_scenes(self, video_path: str, config: SceneConfig) -> list[Scene]:
         ...
 
 class AudioAnalysisProvider(Protocol):
-    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> List[AudioEvent]:
+    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> list[AudioEvent]:
         ...

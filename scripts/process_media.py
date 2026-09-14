@@ -1,9 +1,7 @@
 import asyncio
-import os
+import json
 import sys
 from pathlib import Path
-from datetime import datetime
-import json
 
 # Adjust sys.path to discover apps
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "apps" / "api" / "src"))
@@ -13,13 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "packages" / "me
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "packages" / "contracts" / "src"))
 
 from stream_editor.api.database import SessionLocal, engine
-from stream_editor.api.models.project import Project, MediaAsset, ProcessingJob, JobStep, Base
-
+from stream_editor.api.models.project import Base, MediaAsset, ProcessingJob, Project
 from stream_editor.worker.celery_app import app as celery_app
+
 celery_app.conf.task_always_eager = True
 celery_app.conf.task_eager_propagates = True
 
 from stream_editor.worker.tasks.pipeline import ingest_media_task
+
 
 async def create_schema():
     async with engine.begin() as conn:
@@ -43,7 +42,7 @@ def main():
         sys.exit(1)
         
     for file_path in files:
-        print(f"\n======================================")
+        print("\n======================================")
         print(f"Importing: {file_path}")
         print("\n--- FIRST RUN ---")
         ingest_media_task(project_id, file_path)

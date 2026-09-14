@@ -1,6 +1,7 @@
-from pydantic_settings import BaseSettings
 from pathlib import Path
-from typing import List
+
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"  # Changed for testing without real postgres
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = 'INFO'
     API_HOST: str = '0.0.0.0'
     API_PORT: int = 8000
-    CORS_ORIGINS: List[str] = []
+    CORS_ORIGINS: list[str] = []
 
     class Config:
         env_file = ".env"

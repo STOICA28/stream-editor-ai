@@ -1,19 +1,20 @@
-from typing import List
+
 from stream_editor.contracts.analysis import (
-    TranscriptionProvider,
+    AudioAnalysisProvider,
+    AudioEvent,
+    AudioEventConfig,
+    Scene,
+    SceneConfig,
+    SceneDetectionProvider,
     TranscriptionConfig,
+    TranscriptionProvider,
     TranscriptSegment,
     TranscriptWord,
-    SceneDetectionProvider,
-    SceneConfig,
-    Scene,
-    AudioAnalysisProvider,
-    AudioEventConfig,
-    AudioEvent
 )
 
+
 class MockTranscriptionProvider(TranscriptionProvider):
-    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> List[TranscriptSegment]:
+    def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
         return [
             TranscriptSegment(
                 text="Hello world, this is a mock transcription.",
@@ -47,14 +48,14 @@ class MockTranscriptionProvider(TranscriptionProvider):
         ]
 
 class MockSceneDetectionProvider(SceneDetectionProvider):
-    def detect_scenes(self, video_path: str, config: SceneConfig) -> List[Scene]:
+    def detect_scenes(self, video_path: str, config: SceneConfig) -> list[Scene]:
         return [
             Scene(start_time=0.0, end_time=10.0),
             Scene(start_time=10.0, end_time=25.0)
         ]
 
 class MockAudioAnalysisProvider(AudioAnalysisProvider):
-    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> List[AudioEvent]:
+    def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> list[AudioEvent]:
         return [
             AudioEvent(event_type="silence", start_time=0.0, end_time=1.5),
             AudioEvent(event_type="high_energy", start_time=3.0, end_time=5.0)

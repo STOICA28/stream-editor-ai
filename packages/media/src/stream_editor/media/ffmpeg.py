@@ -1,6 +1,8 @@
 import os
 import subprocess
-from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
+
+from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
+
 
 def generate_proxy(input_path: str, output_path: str, config: ProxyConfig, source_info: MediaInfo) -> None:
     partial_path = output_path + ".partial"

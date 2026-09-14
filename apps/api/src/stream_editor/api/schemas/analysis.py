@@ -1,19 +1,21 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List, Dict, Any
+
 
 class TimelineEventResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     project_id: str
-    source_asset_id: Optional[str]
+    source_asset_id: str | None
     event_type: str
     start_time: float
     end_time: float
     producer: str
     producer_version: str
-    confidence: Optional[float]
-    data: Optional[Dict[str, Any]]
+    confidence: float | None
+    data: dict[str, Any] | None
 
 class TranscriptWordResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -22,7 +24,7 @@ class TranscriptWordResponse(BaseModel):
     start_time: float
     end_time: float
     text: str
-    confidence: Optional[float]
+    confidence: float | None
 
 class TranscriptSegmentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -31,20 +33,20 @@ class TranscriptSegmentResponse(BaseModel):
     start_time: float
     end_time: float
     text: str
-    speaker: Optional[str]
-    confidence: Optional[float]
+    speaker: str | None
+    confidence: float | None
     sequence: int
-    words: List[TranscriptWordResponse] = []
+    words: list[TranscriptWordResponse] = []
 
 class SceneResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     project_id: str
-    source_asset_id: Optional[str]
+    source_asset_id: str | None
     start_time: float
     end_time: float
     duration: float
     detector: str
-    detector_config: Optional[Dict[str, Any]]
-    confidence: Optional[float]
+    detector_config: dict[str, Any] | None
+    confidence: float | None

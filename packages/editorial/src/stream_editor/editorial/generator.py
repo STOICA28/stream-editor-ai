@@ -1,191 +1,358 @@
+﻿"""
+CandidateGenerator: orchestrates the full M3 candidate generation pipeline.
+
+Pipeline:
+  M2 Evidence
+    -> EventClusterer
+    -> CandidateWindowBuilder
+    -> ContextExpander
+    -> CandidateMerger
+    -> (for each merged window)
+       -> LocalFeatureExtractor
+       -> ModelResultCache lookup
+       -> EditorialAnalysisProvider.analyze_candidate
+       -> RepetitionDetector
+       -> ExperimentalRanker
+       -> CandidateSegment + CandidateEvidenceLink persist
+  -> CandidateRun.status = completed
+
+All operations are idempotent: if a CandidateRun with the same
+derivation_signature already exists and is completed, return it immediately.
+"""
+from __future__ import annotations
+
 import hashlib
 import json
 import uuid
-from typing import Any
 from datetime import datetime
 
 from stream_editor.contracts.editorial import (
+    RANKING_PROFILES,
     CandidateWindowConfig,
     EditorialAnalysisProvider,
-    RANKING_PROFILES,
-    CandidateAnalysisResult
+    LocalFeatures,
+    ScoreComponents,
 )
-from stream_editor.editorial.windowing import EventClusterer, CandidateWindowBuilder
-from stream_editor.editorial.context import ContextExpander
+from stream_editor.editorial.cache import ModelResultCache
+from stream_editor.editorial.context import ContextExpander, SceneData, TranscriptSegmentData
 from stream_editor.editorial.features import LocalFeatureExtractor
 from stream_editor.editorial.merging import CandidateMerger
-from stream_editor.editorial.cache import ModelResultCache
-from stream_editor.editorial.repetition import RepetitionDetector
 from stream_editor.editorial.ranking import ExperimentalRanker
+from stream_editor.editorial.repetition import RepetitionDetector
+from stream_editor.editorial.windowing import CandidateWindowBuilder, EventClusterer
 
-# Use relative imports or try to import from the app models
-try:
-    from stream_editor.api.models.project import (
-        CandidateRun, CandidateSegment, CandidateEvidenceLink,
-        TranscriptSegment, TimelineEvent, Scene, AudioEvent
-    )
-except ImportError:
-    pass  # We assume this works in the full environment
+GENERATOR_VERSION = "1.0.0"
+EDITORIAL_RULES_VERSION = "1.2"   # matches KEEP_VS_CUT.md version
+FLASH_CONFIDENCE_THRESHOLD = 0.55  # below this -> mark as eligible for escalation
+
+
+def _candidate_sig(
+    project_id: str,
+    source_asset_id: str,
+    start_time: float,
+    end_time: float,
+    core_start: float,
+    core_end: float,
+    generator_version: str,
+) -> str:
+    data = {
+        "project_id": project_id,
+        "source_asset_id": source_asset_id,
+        "start_time": round(start_time, 3),
+        "end_time": round(end_time, 3),
+        "core_start": round(core_start, 3),
+        "core_end": round(core_end, 3),
+        "generator_version": generator_version,
+    }
+    return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+
+
+def _run_sig(
+    project_id: str,
+    source_asset_id: str,
+    config: CandidateWindowConfig,
+    provider_name: str,
+    prompt_version: str,
+    ranking_profile_name: str,
+) -> str:
+    data = {
+        "project_id": project_id,
+        "source_asset_id": source_asset_id,
+        "config": config.model_dump(),
+        "provider": provider_name,
+        "prompt_version": prompt_version,
+        "ranking_profile": ranking_profile_name,
+        "generator_version": GENERATOR_VERSION,
+    }
+    return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+
 
 class CandidateGenerator:
-    @staticmethod
+    """Full M3 candidate generation pipeline."""
+
     def generate(
+        self,
         project_id: str,
         source_asset_id: str,
-        db_session: Any,
+        db: object,   # synchronous SQLAlchemy Session
         provider: EditorialAnalysisProvider,
-        config: CandidateWindowConfig,
-        prompt_version: str,
-        ranking_profile_name: str = "balanced"
+        config: CandidateWindowConfig | None = None,
+        prompt_version: str = "v1",
+        ranking_profile_name: str = "balanced",
+        provider_name: str = "mock",
     ) -> str:
-        
-        # Create Run
-        run = CandidateRun(
-            id=str(uuid.uuid4()),
-            project_id=project_id,
-            source_asset_id=source_asset_id,
-            provider=provider.__class__.__name__,
-            model=getattr(provider, "flash_model_name", "mock"),
-            generator_version=config.generator_version,
-            candidate_config=config.model_dump(),
-            prompt_version=prompt_version,
-            status="running"
+        """
+        Run the full candidate generation pipeline.
+
+        Returns:
+            run_id: The CandidateRun ID.
+        """
+        from stream_editor.api.models.project import (
+            CandidateEvidenceLink,
+            CandidateRun,
         )
-        db_session.add(run)
-        db_session.commit()
-        
+        from stream_editor.api.models.project import (
+            CandidateSegment as DBCandidate,
+        )
+
+        if config is None:
+            config = CandidateWindowConfig()
+
+        ranking_profile = RANKING_PROFILES.get(ranking_profile_name, RANKING_PROFILES["balanced"])
+        run_sig = _run_sig(project_id, source_asset_id, config, provider_name, prompt_version, ranking_profile_name)
+
+        # Idempotency check
+        existing_run = (
+            db.query(CandidateRun)  # type: ignore[attr-defined]
+            .filter(CandidateRun.derivation_signature == run_sig)
+            .first()
+        )
+        if existing_run and existing_run.status == "completed":
+            return str(existing_run.id)
+
+        # Create or reuse run record
+        if not existing_run:
+            run = CandidateRun(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                source_asset_id=source_asset_id,
+                analysis_versions={},
+                provider=provider_name,
+                generator_version=GENERATOR_VERSION,
+                candidate_config=config.model_dump(),
+                prompt_version=prompt_version,
+                derivation_signature=run_sig,
+                status="running",
+                created_at=datetime.utcnow(),
+            )
+            db.add(run)  # type: ignore[attr-defined]
+            db.commit()  # type: ignore[attr-defined]
+        else:
+            run = existing_run
+            run.status = "running"
+            db.commit()  # type: ignore[attr-defined]
+
         try:
-            # 1. Load data
-            def to_dict(obj):
-                # Basic dict conversion assuming SQLAlchemy models
-                return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
-                
-            db_segments = db_session.query(TranscriptSegment).filter_by(source_asset_id=source_asset_id).all()
-            segments = [to_dict(s) for s in db_segments]
-            
-            db_events = db_session.query(TimelineEvent).filter_by(source_asset_id=source_asset_id).all()
-            events = [to_dict(e) for e in db_events]
-            
-            db_scenes = db_session.query(Scene).filter_by(source_asset_id=source_asset_id).all()
-            scenes = [to_dict(s) for s in db_scenes]
-            
-            db_audio = db_session.query(AudioEvent).filter_by(source_asset_id=source_asset_id).all()
-            audio_events = [to_dict(a) for a in db_audio]
-            
-            # combine all events
-            all_events = events + audio_events
-            
-            # 2. Cluster
-            clusters = EventClusterer.cluster(all_events, merge_gap=config.merge_gap)
-            
-            # 3. Build Windows
-            candidates = CandidateWindowBuilder.build(clusters, config)
-            
-            # 4. Expand Context
-            expanded_windows = [ContextExpander.expand(c, segments, scenes, config) for c in candidates]
-            
-            # 5. Merge
-            merged_windows = CandidateMerger.merge(expanded_windows, config.overlap_threshold)
-            
-            generated_texts = []
-            candidate_count = 0
-            profile = RANKING_PROFILES.get(ranking_profile_name, RANKING_PROFILES["balanced"])
-            
-            for mw in merged_windows:
-                # a. Extract transcript excerpt
-                window_segs = [s for s in segments if s.get('start_time', 0) < mw.end_time and s.get('end_time', 0) > mw.start_time]
-                excerpt = " ".join(s.get('text', '') for s in window_segs)
-                
-                # b. Compute local features
-                local_features = LocalFeatureExtractor.extract(segments, all_events, scenes, mw.start_time, mw.end_time)
-                
-                # c. Derivation signature
-                sig_data = f"{project_id}_{source_asset_id}_{mw.start_time}_{mw.end_time}_{config.generator_version}"
-                derivation_signature = hashlib.sha256(sig_data.encode('utf-8')).hexdigest()
-                
-                # d. Check idempotency (skip if already generated with same signature)
-                existing = db_session.query(CandidateSegment).filter_by(
-                    # assume derivation_signature might be in CandidateSegment, if not we check start/end loosely
-                    # Or we just don't strictly filter if we don't have derivation_signature on segment, 
-                    # wait, DB model CandidateSegment doesn't have derivation_signature in the grep output.
-                    # Actually let's just see if we can check it. We can add it or just ignore. 
-                    # The prompt says: "Check if CandidateSegment with this signature already exists (idempotency)" 
-                    # It likely means derivation_signature is a field. I'll filter by it.
-                ).filter(CandidateSegment.core_start == mw.core_start, CandidateSegment.core_end == mw.core_end).first()
-                # wait, let me just check core_start and core_end and project_id for idempotency since derivation_signature might not be in segment
-                # Actually, I'll assume derivation_signature is in CandidateSegment as instructed
-                existing_by_sig = db_session.query(CandidateSegment).filter(
-                    CandidateSegment.project_id == project_id,
-                    CandidateSegment.source_asset_id == source_asset_id,
-                    CandidateSegment.core_start == mw.core_start,
-                    CandidateSegment.core_end == mw.core_end
-                ).first()
-                if existing_by_sig:
-                    if existing_by_sig.transcript_excerpt:
-                        generated_texts.append(existing_by_sig.transcript_excerpt)
-                    continue
-                    
-                # e. Call provider (via Cache)
-                provider_name = provider.__class__.__name__
-                model_name = getattr(provider, "flash_model_name", "mock")
-                input_hash = hashlib.sha256(excerpt.encode('utf-8')).hexdigest()
-                
-                cache_key = ModelResultCache.generate_key(
-                    provider_name, model_name, prompt_version, input_hash, None
+            run_id = str(run.id)
+
+            # Load M2 evidence from DB
+            from stream_editor.api.models.project import (
+                Scene as DBScene,
+            )
+            from stream_editor.api.models.project import (
+                TimelineEvent as DBTimelineEvent,
+            )
+            from stream_editor.api.models.project import (
+                TranscriptRun,
+            )
+            from stream_editor.api.models.project import (
+                TranscriptSegment as DBTranscriptSeg,
+            )
+
+            timeline_events_db = (
+                db.query(DBTimelineEvent)  # type: ignore[attr-defined]
+                .filter(DBTimelineEvent.source_asset_id == source_asset_id)
+                .all()
+            )
+            timeline_events = [
+                {
+                    "id": str(e.id),
+                    "event_type": e.event_type,
+                    "start_time": e.start_time,
+                    "end_time": e.end_time,
+                    "data": e.data or {},
+                }
+                for e in timeline_events_db
+            ]
+
+            transcript_run = (
+                db.query(TranscriptRun)  # type: ignore[attr-defined]
+                .filter(TranscriptRun.source_asset_id == source_asset_id)
+                .order_by(TranscriptRun.created_at.desc())
+                .first()
+            )
+            transcript_segments: list[TranscriptSegmentData] = []
+            if transcript_run:
+                segs_db = (
+                    db.query(DBTranscriptSeg)  # type: ignore[attr-defined]
+                    .filter(DBTranscriptSeg.transcript_run_id == transcript_run.id)
+                    .order_by(DBTranscriptSeg.start_time)
+                    .all()
                 )
-                
-                def compute():
-                    res = provider.analyze_candidate(
-                        candidate_id="temp",
-                        transcript_excerpt=excerpt,
-                        local_features=local_features,
-                        nearby_events=all_events, # just passing all for now, in real we filter
+                transcript_segments = [
+                    TranscriptSegmentData(
+                        id=str(s.id),
+                        start_time=s.start_time,
+                        end_time=s.end_time,
+                        text=s.text,
+                        speaker=s.speaker,
+                    )
+                    for s in segs_db
+                ]
+
+            scenes_db = (
+                db.query(DBScene)  # type: ignore[attr-defined]
+                .filter(DBScene.source_asset_id == source_asset_id)
+                .all()
+            )
+            scenes = [SceneData(id=str(s.id), start_time=s.start_time, end_time=s.end_time) for s in scenes_db]
+
+            # Pipeline: cluster -> window -> expand -> merge
+            clusterer = EventClusterer()
+            builder = CandidateWindowBuilder()
+            expander = ContextExpander()
+            merger = CandidateMerger()
+            feat_extractor = LocalFeatureExtractor()
+            rep_detector = RepetitionDetector()
+            ranker = ExperimentalRanker()
+            cache = ModelResultCache()
+
+            clusters = clusterer.cluster(timeline_events, config.merge_gap)
+            raw_windows = builder.build(clusters, config)
+            expanded = [expander.expand(w, transcript_segments, scenes, config) for w in raw_windows]
+            merged_windows = merger.merge(expanded, config.overlap_threshold)
+
+            all_texts: list[str] = []  # for repetition scoring
+            candidate_count = 0
+
+            for mw in merged_windows:
+                deriv_sig = _candidate_sig(
+                    project_id, source_asset_id,
+                    mw.start_time, mw.end_time,
+                    mw.core_start, mw.core_end,
+                    GENERATOR_VERSION,
+                )
+
+                # Idempotency: skip if already exists
+                existing = (
+                    db.query(DBCandidate)  # type: ignore[attr-defined]
+                    .filter(DBCandidate.derivation_signature == deriv_sig)
+                    .first()
+                )
+                if existing and existing.status in ("analyzed", "pending"):
+                    candidate_count += 1
+                    continue
+
+                # Transcript excerpt for this window
+                window_segs = [
+                    s for s in transcript_segments
+                    if s.end_time > mw.core_start and s.start_time < mw.core_end
+                ]
+                transcript_excerpt = " ".join(s.text for s in window_segs)
+
+                # Local features
+                surrounding_texts = all_texts[-3:] if all_texts else []
+                features = feat_extractor.extract(
+                    segments=transcript_segments,
+                    events=timeline_events,
+                    scenes=scenes,
+                    start_time=mw.start_time,
+                    end_time=mw.end_time,
+                    surrounding_texts=surrounding_texts,
+                )
+
+                # Nearby events for context
+                nearby_events = [
+                    e for e in timeline_events
+                    if float(str(e.get("end_time", 0))) > mw.start_time - 30
+                    and float(str(e.get("start_time", 0))) < mw.end_time + 30
+                ]
+
+                # Cache key input
+                cache_input = {
+                    "transcript_excerpt": transcript_excerpt[:2000],
+                    "features": features.model_dump(),
+                    "nearby_events": nearby_events[:10],
+                }
+                candidate_id = str(uuid.uuid4())
+
+                def _compute_analysis(
+                    _te: str = transcript_excerpt,
+                    _feats: LocalFeatures = features,
+                    _ne: list[dict[str, object]] = nearby_events,
+                    _cid: str = candidate_id,
+                ) -> dict[str, object]:
+                    result = provider.analyze_candidate(
+                        candidate_id=_cid,
+                        transcript_excerpt=_te,
+                        local_features=_feats,
+                        nearby_events=_ne,
                         local_summary=None,
                         chapter_summary=None,
-                        prompt_version=prompt_version
+                        prompt_version=prompt_version,
                     )
-                    return res.model_dump()
-                    
-                result_dict, cache_hit = ModelResultCache.get_or_set(
-                    db_session, cache_key, provider_name, model_name, prompt_version, None, compute
+                    return result.model_dump()
+
+                raw_result, hit = cache.get_or_set(
+                    db=db,
+                    provider=provider_name,
+                    model="mock" if provider_name == "mock" else "gemini-2.0-flash",
+                    prompt_version=prompt_version,
+                    editorial_rules_version=EDITORIAL_RULES_VERSION,
+                    input_payload=cache_input,
+                    compute_fn=_compute_analysis,
                 )
-                
-                analysis = CandidateAnalysisResult(**result_dict)
-                
-                # f. Repetition score
-                rep_score = RepetitionDetector.score(excerpt, generated_texts)
-                generated_texts.append(excerpt)
-                analysis.signals.repetition = rep_score
-                
-                # g. Visual interest from scene_change_rate
-                # Map rate to 0-1 (e.g. 10 changes per minute -> 1.0)
-                rate = local_features.scene_change_rate or 0.0
-                analysis.signals.visual_interest = min(1.0, rate / 10.0)
-                
-                # h. Experimental rank
-                rank = ExperimentalRanker.rank(analysis.signals, profile)
-                # Store rank where? Maybe just in local variables or we map it to confidence? 
-                # The model CandidateSegment doesn't have an explicit 'rank' field, but it has scores.
-                
-                # i. Debug label
-                # Wait, "Assign debug_label: interesting if confidence >= 0.7, uncertain if 0.4-0.7, low-signal if < 0.4."
-                # Does CandidateSegment have debug_label? Let's assume it has a summary or label, or just reasoning.
-                # I'll just append it to reasoning_summary or a label field.
-                if analysis.confidence >= 0.7:
+
+                # Unpack result
+                signals_raw = raw_result.get("signals", {})
+                if isinstance(signals_raw, dict):
+                    signals = ScoreComponents(**{
+                        k: v for k, v in signals_raw.items()
+                        if k in ScoreComponents.model_fields
+                    })
+                else:
+                    signals = ScoreComponents()
+
+                confidence = float(str(raw_result.get("confidence", 0.5)))
+
+                # Repetition score
+                repetition_score = rep_detector.score(transcript_excerpt, all_texts)
+                if signals.repetition is None:
+                    signals = signals.model_copy(update={"repetition": repetition_score})
+
+                # Visual interest from scene_change_rate
+                if signals.visual_interest is None and features.scene_change_rate is not None:
+                    # Normalize: >2 changes/min = high, 0 = none. Clamp to [0,1]
+                    vi = min(1.0, (features.scene_change_rate or 0.0) / 2.0)
+                    signals = signals.model_copy(update={"visual_interest": round(vi, 4)})
+
+                # Experimental rank
+                exp_rank = ranker.rank(signals, ranking_profile)
+
+                # Escalation: mark as eligible if confidence below threshold
+                escalated = "eligible" if confidence < FLASH_CONFIDENCE_THRESHOLD else None
+
+                # Debug label (NOT canonical)
+                if confidence >= 0.70:
                     debug_label = "interesting"
-                elif analysis.confidence >= 0.4:
+                elif confidence >= 0.40:
                     debug_label = "uncertain"
                 else:
                     debug_label = "low-signal"
-                    
-                reasoning = "\n".join(analysis.reasoning_summary)
-                reasoning += f"\n[Label: {debug_label}, Rank: {rank}]"
-                
-                # j. Persist
-                cand_id = str(uuid.uuid4())
-                seg = CandidateSegment(
-                    id=cand_id,
-                    run_id=run.id,
+
+                cand = DBCandidate(
+                    id=candidate_id,
+                    run_id=run_id,
                     project_id=project_id,
                     source_asset_id=source_asset_id,
                     core_start=mw.core_start,
@@ -193,41 +360,62 @@ class CandidateGenerator:
                     start_time=mw.start_time,
                     end_time=mw.end_time,
                     source_signals=mw.source_signals,
-                    transcript_excerpt=excerpt,
-                    summary=analysis.summary,
-                    local_features=local_features.model_dump(),
-                    score_humor=analysis.signals.humor,
-                    score_reaction=analysis.signals.reaction,
-                    score_importance=analysis.signals.importance,
-                    score_visual_interest=analysis.signals.visual_interest,
-                    score_chat_relevance=analysis.signals.chat_relevance,
-                    score_novelty=analysis.signals.novelty,
-                    score_emotional_intensity=analysis.signals.emotional_intensity,
-                    score_story_value=analysis.signals.story_value,
-                    score_repetition=analysis.signals.repetition,
-                    confidence=analysis.confidence
+                    transcript_excerpt=transcript_excerpt[:1000] or None,
+                    summary=str(raw_result.get("summary", ""))[:500] or None,
+                    local_features=features.model_dump(),
+                    score_humor=signals.humor,
+                    score_reaction=signals.reaction,
+                    score_importance=signals.importance,
+                    score_visual_interest=signals.visual_interest,
+                    score_chat_relevance=signals.chat_relevance,
+                    score_novelty=signals.novelty,
+                    score_emotional_intensity=signals.emotional_intensity,
+                    score_story_value=signals.story_value,
+                    score_repetition=signals.repetition,
+                    confidence=confidence,
+                    reasoning_summary=list(raw_result.get("reasoning_summary", [])),
+                    experimental_rank=exp_rank,
+                    ranking_profile=ranking_profile_name,
+                    analysis_provider=provider_name,
+                    analysis_model="mock" if provider_name == "mock" else "gemini-2.0-flash",
+                    prompt_version=prompt_version,
+                    semantic_cache_hit="hit" if hit else "miss",
+                    input_tokens=raw_result.get("input_tokens"),
+                    output_tokens=raw_result.get("output_tokens"),
+                    analysis_latency_ms=raw_result.get("latency_ms"),
+                    escalated=escalated,
+                    debug_label=debug_label,
+                    derivation_signature=deriv_sig,
+                    status="analyzed",
+                    created_at=datetime.utcnow(),
                 )
-                db_session.add(seg)
-                
-                for ev_id in mw.evidence_ids:
-                    db_session.add(CandidateEvidenceLink(
+                db.add(cand)  # type: ignore[attr-defined]
+                db.flush()  # type: ignore[attr-defined]
+
+                # Evidence links
+                for eid in mw.evidence_ids:
+                    link = CandidateEvidenceLink(
                         id=str(uuid.uuid4()),
-                        candidate_id=cand_id,
-                        evidence_type="event",
-                        evidence_id=ev_id
-                    ))
-                    
+                        candidate_id=candidate_id,
+                        evidence_type="timeline_event",
+                        evidence_id=eid,
+                    )
+                    db.add(link)  # type: ignore[attr-defined]
+
+                all_texts.append(transcript_excerpt)
                 candidate_count += 1
-                
+
+            db.commit()  # type: ignore[attr-defined]
+
             run.status = "completed"
-            run.completed_at = datetime.utcnow()
             run.candidate_count = candidate_count
-            db_session.commit()
-            
-            return run.id
-            
-        except Exception as e:
+            run.completed_at = datetime.utcnow()
+            db.commit()  # type: ignore[attr-defined]
+
+        except Exception as err:
             run.status = "failed"
-            run.error_message = str(e)
-            db_session.commit()
+            run.error_message = str(err)[:500]
+            db.commit()  # type: ignore[attr-defined]
             raise
+
+        return run_id

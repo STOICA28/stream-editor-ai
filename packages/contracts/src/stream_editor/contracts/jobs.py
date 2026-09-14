@@ -1,7 +1,8 @@
-﻿from enum import Enum
-from datetime import datetime
-from typing import Optional, List
+﻿from datetime import datetime
+from enum import Enum
+
 from pydantic import BaseModel
+
 
 class JobStatus(str, Enum):
     pending = "pending"
@@ -33,9 +34,9 @@ class JobStepResult(BaseModel):
     status: JobStatus
     started_at: datetime
     completed_at: datetime
-    input_hash: Optional[str]
-    output_hash: Optional[str]
+    input_hash: str | None
+    output_hash: str | None
     algorithm_version: str
-    error_message: Optional[str]
+    error_message: str | None
     retry_count: int
-    output_paths: List[str]
+    output_paths: list[str]

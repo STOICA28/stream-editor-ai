@@ -1,5 +1,7 @@
-from typing import Any, Dict
+from typing import Any
+
 from pydantic import BaseModel
+
 
 class MediaInfo(BaseModel):
     duration_seconds: float
@@ -20,7 +22,7 @@ class LayoutRegion(BaseModel):
 
 class StreamLayoutProfile(BaseModel):
     project_id: str
-    regions: Dict[str, LayoutRegion]
+    regions: dict[str, LayoutRegion]
 
 class ProbeResult(BaseModel):
     path: str
@@ -38,7 +40,8 @@ class ProxyConfig(BaseModel):
     generator_version: str = "1.0.0"
 
     def get_signature(self, source_fingerprint: str) -> str:
-        import hashlib, json
+        import hashlib
+        import json
         data = self.model_dump()
         data["source_fingerprint"] = source_fingerprint
         serialized = json.dumps(data, sort_keys=True)
@@ -52,7 +55,8 @@ class AudioConfig(BaseModel):
     generator_version: str = "1.0.0"
 
     def get_signature(self, source_fingerprint: str) -> str:
-        import hashlib, json
+        import hashlib
+        import json
         data = self.model_dump()
         data["source_fingerprint"] = source_fingerprint
         serialized = json.dumps(data, sort_keys=True)
