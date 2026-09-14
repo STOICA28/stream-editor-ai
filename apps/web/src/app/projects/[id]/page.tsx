@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -68,14 +69,22 @@ export default function ProjectDetailPage() {
           { label: project.name },
         ]}
         actions={
-          <Button
-            size="sm"
-            onClick={handleProcess}
-            loading={triggering}
-            disabled={!canProcess}
-          >
-            Run Pipeline
-          </Button>
+          <div className="flex gap-2">
+            <Link
+              href={`/projects/${id}/analysis`}
+              className="inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 bg-surface-overlay hover:bg-surface-border text-text-primary border border-surface-border h-7 px-3 text-xs rounded"
+            >
+              Analysis View
+            </Link>
+            <Button
+              size="sm"
+              onClick={handleProcess}
+              loading={triggering}
+              disabled={!canProcess}
+            >
+              Run Pipeline
+            </Button>
+          </div>
         }
       />
 
