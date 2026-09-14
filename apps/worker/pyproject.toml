@@ -1,0 +1,12 @@
+[project]
+name = "stream-editor-worker"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "celery[redis]>=5.3.0",
+    "structlog>=24.1.0",
+    "stream-editor-contracts"
+]
+
+[tool.uv.sources]
+stream-editor-contracts = { workspace = true }
