@@ -39,6 +39,9 @@ def _run_async(coro: Coroutine[Any, Any, Any]) -> Any:
     else:
         return loop.run_until_complete(coro)
 
+from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
+from stream_editor.media.validation import validate_proxy, validate_audio
+
 @app.task
 def ingest_media_task(project_id: str, file_path: str) -> dict[str, str]:
     logger.info("ingest_task", project_id=project_id, file_path=file_path)
@@ -108,19 +111,53 @@ def create_proxy_task(project_id: str, asset_id: str, job_id: str, fingerprint: 
         async with SessionLocal() as db:
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
+            source_info = MediaInfo(**asset.media_info)
+            
+            config = ProxyConfig()
+            sig = config.get_signature(fingerprint)
             
             storage = LocalStorageProvider()
             source_path = await storage.get_path(project_id, StorageCategory.source.value, str(asset.name))
-            proxy_filename = "proxy.mp4"
+            proxy_filename = f"{asset_id}/{sig}.mp4"
             proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_filename)
             
-            if not proxy_path.exists():
-                generate_proxy(str(source_path), str(proxy_path))
+            # Check for existing DB record
+            existing_proxy: Any = (await db.execute(select(MediaAsset).where(
+                MediaAsset.parent_asset_id == asset_id,
+                MediaAsset.media_type == "proxy",
+                MediaAsset.derivation_signature == sig
+            ))).scalars().first()
             
-            proxy_asset = MediaAsset(project_id=project_id, name=proxy_filename, path=f"{project_id}/proxies/{proxy_filename}", media_type="proxy", file_size_bytes=proxy_path.stat().st_size)
-            db.add(proxy_asset)
+            needs_generation = True
             
-            step = JobStep(job_id=job_id, stage="create_analysis_proxy", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version="1.0", output_paths=[str(proxy_path)])
+            if existing_proxy and proxy_path.exists():
+                try:
+                    validate_proxy(str(proxy_path), source_info, config)
+                    needs_generation = False
+                    logger.info("Cache hit for proxy", signature=sig)
+                except Exception as e:
+                    logger.warning("Corrupt proxy found, regenerating", error=str(e))
+                    proxy_path.unlink()
+            
+            if needs_generation:
+                generate_proxy(str(source_path), str(proxy_path), config, source_info)
+                validate_proxy(str(proxy_path), source_info, config)
+                
+                if not existing_proxy:
+                    proxy_asset = MediaAsset(
+                        project_id=project_id,
+                        name=f"{sig}.mp4",
+                        path=f"{project_id}/proxies/{proxy_filename}",
+                        media_type="proxy",
+                        file_size_bytes=proxy_path.stat().st_size,
+                        parent_asset_id=asset_id,
+                        derivation_signature=sig,
+                        producer="generate_proxy",
+                        producer_version=config.generator_version
+                    )
+                    db.add(proxy_asset)
+            
+            step = JobStep(job_id=job_id, stage="create_analysis_proxy", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version=config.generator_version, output_paths=[str(proxy_path)])
             db.add(step)
             
             job: Any = (await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))).scalars().first()
@@ -138,19 +175,53 @@ def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint:
         async with SessionLocal() as db:
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
+            source_info = MediaInfo(**asset.media_info)
+            
+            config = AudioConfig()
+            sig = config.get_signature(fingerprint)
             
             storage = LocalStorageProvider()
             source_path = await storage.get_path(project_id, StorageCategory.source.value, str(asset.name))
-            audio_filename = "analysis.wav"
+            audio_filename = f"{asset_id}/{sig}.wav"
             audio_path = await storage.get_path(project_id, StorageCategory.audio.value, audio_filename)
             
-            if not audio_path.exists():
-                extract_audio(str(source_path), str(audio_path))
+            # Check for existing DB record
+            existing_audio: Any = (await db.execute(select(MediaAsset).where(
+                MediaAsset.parent_asset_id == asset_id,
+                MediaAsset.media_type == "audio",
+                MediaAsset.derivation_signature == sig
+            ))).scalars().first()
             
-            audio_asset = MediaAsset(project_id=project_id, name=audio_filename, path=f"{project_id}/audio/{audio_filename}", media_type="audio", file_size_bytes=audio_path.stat().st_size)
-            db.add(audio_asset)
+            needs_generation = True
             
-            step = JobStep(job_id=job_id, stage="extract_audio", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version="1.0", output_paths=[str(audio_path)])
+            if existing_audio and audio_path.exists():
+                try:
+                    validate_audio(str(audio_path), source_info, config)
+                    needs_generation = False
+                    logger.info("Cache hit for audio", signature=sig)
+                except Exception as e:
+                    logger.warning("Corrupt audio found, regenerating", error=str(e))
+                    audio_path.unlink()
+            
+            if needs_generation:
+                extract_audio(str(source_path), str(audio_path), config)
+                validate_audio(str(audio_path), source_info, config)
+                
+                if not existing_audio:
+                    audio_asset = MediaAsset(
+                        project_id=project_id,
+                        name=f"{sig}.wav",
+                        path=f"{project_id}/audio/{audio_filename}",
+                        media_type="audio",
+                        file_size_bytes=audio_path.stat().st_size,
+                        parent_asset_id=asset_id,
+                        derivation_signature=sig,
+                        producer="extract_audio",
+                        producer_version=config.generator_version
+                    )
+                    db.add(audio_asset)
+            
+            step = JobStep(job_id=job_id, stage="extract_audio", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version=config.generator_version, output_paths=[str(audio_path)])
             db.add(step)
             
             job: Any = (await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))).scalars().first()

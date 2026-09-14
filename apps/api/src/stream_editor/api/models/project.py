@@ -23,6 +23,13 @@ class MediaAsset(Base):
     media_type = Column(String)
     file_size_bytes = Column(Integer)
     media_info = Column(JSON)
+    
+    # Provenance
+    parent_asset_id = Column(String, ForeignKey("media_assets.id"), nullable=True)
+    derivation_signature = Column(String, nullable=True)
+    producer = Column(String, nullable=True)
+    producer_version = Column(String, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class ProcessingJob(Base):

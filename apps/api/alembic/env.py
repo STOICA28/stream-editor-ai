@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -11,7 +11,7 @@ from stream_editor.api.config import settings
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    pass # fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 

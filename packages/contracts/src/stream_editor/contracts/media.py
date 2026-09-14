@@ -1,4 +1,4 @@
-﻿from typing import Any, Dict
+from typing import Any, Dict
 from pydantic import BaseModel
 
 class MediaInfo(BaseModel):
@@ -26,3 +26,34 @@ class ProbeResult(BaseModel):
     path: str
     media_info: MediaInfo
     raw_ffprobe: dict[str, Any]
+
+class ProxyConfig(BaseModel):
+    max_height: int = 720
+    video_codec: str = "libx264"
+    audio_codec: str = "aac"
+    container: str = "mp4"
+    crf: int = 23
+    fps_mode: str = "cap"  # "preserve" or "cap"
+    fps_max: float = 30.0
+    generator_version: str = "1.0.0"
+
+    def get_signature(self, source_fingerprint: str) -> str:
+        import hashlib, json
+        data = self.model_dump()
+        data["source_fingerprint"] = source_fingerprint
+        serialized = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+class AudioConfig(BaseModel):
+    channels: int = 1
+    sample_rate: int = 16000
+    codec: str = "pcm_s16le"
+    container: str = "wav"
+    generator_version: str = "1.0.0"
+
+    def get_signature(self, source_fingerprint: str) -> str:
+        import hashlib, json
+        data = self.model_dump()
+        data["source_fingerprint"] = source_fingerprint
+        serialized = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()

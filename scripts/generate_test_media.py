@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Generate synthetic test media files for testing without copyrighted content.
 
@@ -104,13 +104,22 @@ def main() -> None:
     # Standard test clips
     generate_test_video(FIXTURES_DIR / "test_30s.mp4", duration=30, color="blue")
     generate_test_video(FIXTURES_DIR / "test_5s.mp4", duration=5, color="red")
+    
     generate_test_video(
-        FIXTURES_DIR / "test_proxy_30s.mp4",
-        duration=30,
-        width=1280,
-        height=720,
+        FIXTURES_DIR / "test_1080p.mp4",
+        duration=5,
+        width=1920,
+        height=1080,
         color="green",
     )
+    generate_test_video(
+        FIXTURES_DIR / "test_360p.mp4",
+        duration=5,
+        width=640,
+        height=360,
+        color="yellow",
+    )
+    
     generate_test_audio(FIXTURES_DIR / "test_audio_10s.aac", duration=10)
 
     print("\nTest media generated successfully.")
