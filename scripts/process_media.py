@@ -57,6 +57,9 @@ def main():
             jobs = (await db.execute(select(ProcessingJob).where(ProcessingJob.project_id == project_id))).scalars().all()
             assets = (await db.execute(select(MediaAsset).where(MediaAsset.project_id == project_id))).scalars().all()
             
+            from stream_editor.api.models.project import TimelineEvent
+            events = (await db.execute(select(TimelineEvent).where(TimelineEvent.project_id == project_id))).scalars().all()
+            
             print("\n======================================")
             print("--- RESULTS ---")
             print(f"Jobs created: {len(jobs)}")
@@ -74,6 +77,10 @@ def main():
                             pass
                     if isinstance(info, dict):
                         print(f"    width: {info.get('width')}, height: {info.get('height')}, fps: {info.get('fps')}")
+
+            print(f"\nTimeline Events created: {len(events)}")
+            for e in events:
+                print(f"  - [{e.event_type}] {e.start_time:.2f}s - {e.end_time:.2f}s (producer={e.producer})")
                 
     asyncio.run(validate())
 

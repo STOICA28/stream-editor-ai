@@ -80,3 +80,51 @@ export const PIPELINE_STAGES = [
 ] as const;
 
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
+
+// ---------------------------------------------------------------------------
+// Analysis Types
+// ---------------------------------------------------------------------------
+
+export interface TimelineEvent {
+  id: string;
+  project_id: string;
+  source_asset_id?: string;
+  event_type: string;
+  start_time: number;
+  end_time: number;
+  producer: string;
+  producer_version: string;
+  confidence?: number;
+  data?: Record<string, any>;
+}
+
+export interface TranscriptWord {
+  id: string;
+  start_time: number;
+  end_time: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface TranscriptSegment {
+  id: string;
+  start_time: number;
+  end_time: number;
+  text: string;
+  speaker?: string;
+  confidence?: number;
+  sequence: number;
+  words: TranscriptWord[];
+}
+
+export interface Scene {
+  id: string;
+  project_id: string;
+  source_asset_id?: string;
+  start_time: number;
+  end_time: number;
+  duration: number;
+  detector: string;
+  detector_config?: Record<string, any>;
+  confidence?: number;
+}

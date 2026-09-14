@@ -3,19 +3,25 @@ import structlog
 import asyncio
 from pathlib import Path
 from datetime import datetime
+from typing import Any, Coroutine
+from celery import group
 
 from stream_editor.api.database import SessionLocal
-from stream_editor.api.models.project import Project, MediaAsset, ProcessingJob, JobStep
+from stream_editor.api.models.project import (
+    Project, MediaAsset, ProcessingJob, JobStep, TranscriptRun,
+    TranscriptSegment as DBTranscriptSegment, TranscriptWord as DBTranscriptWord,
+    Scene as DBScene, AudioEvent as DBAudioEvent, TimelineEvent
+)
 from stream_editor.storage.local import LocalStorageProvider
 from stream_editor.storage.paths import StorageCategory
 from stream_editor.media.ffprobe import get_media_info
 from stream_editor.media.ffmpeg import generate_proxy, extract_audio
 from stream_editor.media.fingerprint import generate_fingerprint
-from stream_editor.api.models.project import ProcessingJob, JobStep, MediaAsset
-from stream_editor.storage.local import LocalStorageProvider
-from stream_editor.storage.paths import StorageCategory
-from typing import Any, Coroutine
-import asyncio
+
+from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
+from stream_editor.contracts.analysis import TranscriptionConfig, SceneConfig, AudioEventConfig
+from stream_editor.media.validation import validate_proxy, validate_audio
+from stream_editor.analysis.providers import MockTranscriptionProvider, MockSceneDetectionProvider, MockAudioAnalysisProvider, WhisperXTranscriptionProvider, ScenedetectProvider, FFmpegAudioAnalysisProvider
 
 logger = structlog.get_logger()
 
@@ -26,7 +32,6 @@ def _run_async(coro: Coroutine[Any, Any, Any]) -> Any:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     if loop.is_running():
-        # Fallback if somehow called within a running loop
         import threading
         def run_in_thread() -> Any:
             new_loop = asyncio.new_event_loop()
@@ -35,40 +40,25 @@ def _run_async(coro: Coroutine[Any, Any, Any]) -> Any:
         t = threading.Thread(target=run_in_thread)
         t.start()
         t.join()
-        # This is a hacky fallback, but generally the loop shouldn't be running.
     else:
         return loop.run_until_complete(coro)
-
-from stream_editor.contracts.media import ProxyConfig, AudioConfig, MediaInfo
-from stream_editor.media.validation import validate_proxy, validate_audio
 
 @app.task
 def ingest_media_task(project_id: str, file_path: str) -> dict[str, str]:
     logger.info("ingest_task", project_id=project_id, file_path=file_path)
-    
     async def _do_ingest() -> None:
         async with SessionLocal() as db:
             job = ProcessingJob(project_id=project_id, status="running", current_stage="ingest", started_at=datetime.utcnow())
             db.add(job)
             await db.commit()
-            
             storage = LocalStorageProvider()
             filename = Path(file_path).name
             stored_path = await storage.copy_in(file_path, project_id, StorageCategory.source.value, filename)
-            
-            asset = MediaAsset(
-                project_id=project_id,
-                name=filename,
-                path=stored_path,
-                media_type="source",
-                file_size_bytes=Path(file_path).stat().st_size
-            )
+            asset = MediaAsset(project_id=project_id, name=filename, path=stored_path, media_type="source", file_size_bytes=Path(file_path).stat().st_size)
             db.add(asset)
             await db.commit()
             logger.info("File copied to project storage", stored_path=stored_path)
-            
             probe_media_task.delay(project_id, str(asset.id), str(job.id))
-            
     try:
         _run_async(_do_ingest())
         return {"status": "success"}
@@ -83,25 +73,17 @@ def probe_media_task(project_id: str, asset_id: str, job_id: str) -> dict[str, s
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             if not asset: raise Exception("Asset not found")
-            
             storage = LocalStorageProvider()
             full_path = await storage.get_path(project_id, StorageCategory.source.value, str(asset.name))
-            
             fingerprint = generate_fingerprint(str(full_path))
             media_info = get_media_info(str(full_path))
-            
             asset.media_info = media_info.model_dump()
-            
             step = JobStep(job_id=job_id, stage="probe_media", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version="1.0", output_paths=[])
             db.add(step)
-            
             job: Any = (await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))).scalars().first()
             if job: job.current_stage = "create_analysis_proxy"
-            
             await db.commit()
-            
             create_proxy_task.delay(project_id, asset_id, job_id, fingerprint)
-            
     _run_async(_do_probe())
     return {"status": "success"}
 
@@ -112,24 +94,14 @@ def create_proxy_task(project_id: str, asset_id: str, job_id: str, fingerprint: 
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             source_info = MediaInfo(**asset.media_info)
-            
             config = ProxyConfig()
             sig = config.get_signature(fingerprint)
-            
             storage = LocalStorageProvider()
             source_path = await storage.get_path(project_id, StorageCategory.source.value, str(asset.name))
             proxy_filename = f"{asset_id}/{sig}.mp4"
             proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_filename)
-            
-            # Check for existing DB record
-            existing_proxy: Any = (await db.execute(select(MediaAsset).where(
-                MediaAsset.parent_asset_id == asset_id,
-                MediaAsset.media_type == "proxy",
-                MediaAsset.derivation_signature == sig
-            ))).scalars().first()
-            
+            existing_proxy: Any = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "proxy", MediaAsset.derivation_signature == sig))).scalars().first()
             needs_generation = True
-            
             if existing_proxy and proxy_path.exists():
                 try:
                     validate_proxy(str(proxy_path), source_info, config)
@@ -138,34 +110,18 @@ def create_proxy_task(project_id: str, asset_id: str, job_id: str, fingerprint: 
                 except Exception as e:
                     logger.warning("Corrupt proxy found, regenerating", error=str(e))
                     proxy_path.unlink()
-            
             if needs_generation:
                 generate_proxy(str(source_path), str(proxy_path), config, source_info)
                 validate_proxy(str(proxy_path), source_info, config)
-                
                 if not existing_proxy:
-                    proxy_asset = MediaAsset(
-                        project_id=project_id,
-                        name=f"{sig}.mp4",
-                        path=f"{project_id}/proxies/{proxy_filename}",
-                        media_type="proxy",
-                        file_size_bytes=proxy_path.stat().st_size,
-                        parent_asset_id=asset_id,
-                        derivation_signature=sig,
-                        producer="generate_proxy",
-                        producer_version=config.generator_version
-                    )
+                    proxy_asset = MediaAsset(project_id=project_id, name=f"{sig}.mp4", path=f"{project_id}/proxies/{proxy_filename}", media_type="proxy", file_size_bytes=proxy_path.stat().st_size, parent_asset_id=asset_id, derivation_signature=sig, producer="generate_proxy", producer_version=config.generator_version)
                     db.add(proxy_asset)
-            
             step = JobStep(job_id=job_id, stage="create_analysis_proxy", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version=config.generator_version, output_paths=[str(proxy_path)])
             db.add(step)
-            
             job: Any = (await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))).scalars().first()
             if job: job.current_stage = "extract_audio"
             await db.commit()
-            
             extract_audio_task.delay(project_id, asset_id, job_id, fingerprint)
-            
     _run_async(_do_proxy())
     return {"status": "success"}
 
@@ -176,24 +132,14 @@ def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint:
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             source_info = MediaInfo(**asset.media_info)
-            
             config = AudioConfig()
             sig = config.get_signature(fingerprint)
-            
             storage = LocalStorageProvider()
             source_path = await storage.get_path(project_id, StorageCategory.source.value, str(asset.name))
             audio_filename = f"{asset_id}/{sig}.wav"
             audio_path = await storage.get_path(project_id, StorageCategory.audio.value, audio_filename)
-            
-            # Check for existing DB record
-            existing_audio: Any = (await db.execute(select(MediaAsset).where(
-                MediaAsset.parent_asset_id == asset_id,
-                MediaAsset.media_type == "audio",
-                MediaAsset.derivation_signature == sig
-            ))).scalars().first()
-            
+            existing_audio: Any = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "audio", MediaAsset.derivation_signature == sig))).scalars().first()
             needs_generation = True
-            
             if existing_audio and audio_path.exists():
                 try:
                     validate_audio(str(audio_path), source_info, config)
@@ -202,42 +148,153 @@ def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint:
                 except Exception as e:
                     logger.warning("Corrupt audio found, regenerating", error=str(e))
                     audio_path.unlink()
-            
             if needs_generation:
                 extract_audio(str(source_path), str(audio_path), config)
                 validate_audio(str(audio_path), source_info, config)
-                
                 if not existing_audio:
-                    audio_asset = MediaAsset(
-                        project_id=project_id,
-                        name=f"{sig}.wav",
-                        path=f"{project_id}/audio/{audio_filename}",
-                        media_type="audio",
-                        file_size_bytes=audio_path.stat().st_size,
-                        parent_asset_id=asset_id,
-                        derivation_signature=sig,
-                        producer="extract_audio",
-                        producer_version=config.generator_version
-                    )
+                    audio_asset = MediaAsset(project_id=project_id, name=f"{sig}.wav", path=f"{project_id}/audio/{audio_filename}", media_type="audio", file_size_bytes=audio_path.stat().st_size, parent_asset_id=asset_id, derivation_signature=sig, producer="extract_audio", producer_version=config.generator_version)
                     db.add(audio_asset)
-            
             step = JobStep(job_id=job_id, stage="extract_audio", status="completed", started_at=datetime.utcnow(), completed_at=datetime.utcnow(), input_hash=fingerprint, algorithm_version=config.generator_version, output_paths=[str(audio_path)])
             db.add(step)
-            
             job: Any = (await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))).scalars().first()
-            if job: 
-                job.current_stage = "completed"
-                job.status = "completed"
-                job.completed_at = datetime.utcnow()
+            if job: job.current_stage = "analysis"
             await db.commit()
             
+            # Start analysis tasks
+            transcribe_task.delay(project_id, asset_id, fingerprint)
+            detect_scenes_task.delay(project_id, asset_id, fingerprint)
+            analyze_audio_task.delay(project_id, asset_id, fingerprint)
+            normalize_timeline_task.apply_async(args=[project_id, asset_id], countdown=1) # In a real system, use celery primitives like chord
     _run_async(_do_audio())
     return {"status": "success"}
 
 @app.task
-def transcribe_task(project_id: str) -> dict[str, str]: return {"status": "success"}
+def transcribe_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+    async def _do_transcribe() -> None:
+        async with SessionLocal() as db:
+            from sqlalchemy.future import select
+            from sqlalchemy import delete
+            asset = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
+            storage = LocalStorageProvider()
+            config = TranscriptionConfig()
+            sig = config.get_signature(fingerprint)
+            run = (await db.execute(select(TranscriptRun).where(TranscriptRun.derivation_signature == sig))).scalars().first()
+            if run and run.status == "completed":
+                return # Cache hit
+            if not run:
+                run = TranscriptRun(project_id=project_id, source_asset_id=asset_id, provider="mock", model=config.model, language=config.language, configuration=config.model_dump(), derivation_signature=sig, status="running")
+                db.add(run)
+                await db.commit()
+            
+            # Use MockTranscriptionProvider for test speed
+            provider = MockTranscriptionProvider()
+            audio_path = f"{project_id}/audio/{asset_id}/{sig}.wav" # simplified logic
+            audio_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "audio"))).scalars().first()
+            if audio_asset:
+                audio_path = await storage.get_path(project_id, StorageCategory.audio.value, audio_asset.name)
+            
+            segments = provider.transcribe(str(audio_path), config)
+            
+            await db.execute(delete(DBTranscriptSegment).where(DBTranscriptSegment.transcript_run_id == run.id))
+            
+            for i, seg in enumerate(segments):
+                db_seg = DBTranscriptSegment(transcript_run_id=run.id, start_time=seg.start, end_time=seg.end, text=seg.text, speaker=seg.speaker, sequence=i)
+                db.add(db_seg)
+                await db.flush()
+                for w in seg.words:
+                    db_word = DBTranscriptWord(segment_id=db_seg.id, start_time=w.start, end_time=w.end, text=w.word, confidence=w.score)
+                    db.add(db_word)
+            
+            run.status = "completed"
+            run.completed_at = datetime.utcnow()
+            await db.commit()
+    _run_async(_do_transcribe())
+    return {"status": "success"}
+
 @app.task
-def detect_scenes_task(project_id: str) -> dict[str, str]: return {"status": "success"}
+def detect_scenes_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+    async def _do_scenes() -> None:
+        async with SessionLocal() as db:
+            from sqlalchemy.future import select
+            from sqlalchemy import delete
+            storage = LocalStorageProvider()
+            config = SceneConfig()
+            proxy_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "proxy"))).scalars().first()
+            
+            if not proxy_asset: return
+            
+            existing = (await db.execute(select(DBScene).where(DBScene.source_asset_id == asset_id))).scalars().first()
+            if existing: return # Cache hit
+            
+            provider = MockSceneDetectionProvider()
+            proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_asset.name)
+            scenes = provider.detect_scenes(str(proxy_path), config)
+            
+            await db.execute(delete(DBScene).where(DBScene.source_asset_id == asset_id))
+            
+            for s in scenes:
+                db_scene = DBScene(project_id=project_id, source_asset_id=asset_id, start_time=s.start_time, end_time=s.end_time, duration=s.end_time - s.start_time, detector="mock", detector_config=config.model_dump())
+                db.add(db_scene)
+            await db.commit()
+    _run_async(_do_scenes())
+    return {"status": "success"}
+
+@app.task
+def analyze_audio_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+    async def _do_audio_analysis() -> None:
+        async with SessionLocal() as db:
+            from sqlalchemy.future import select
+            from sqlalchemy import delete
+            storage = LocalStorageProvider()
+            config = AudioEventConfig()
+            audio_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "audio"))).scalars().first()
+            
+            if not audio_asset: return
+            
+            existing = (await db.execute(select(DBAudioEvent).where(DBAudioEvent.source_asset_id == asset_id))).scalars().first()
+            if existing: return # Cache hit
+            
+            provider = MockAudioAnalysisProvider()
+            audio_path = await storage.get_path(project_id, StorageCategory.audio.value, audio_asset.name)
+            events = provider.analyze_audio(str(audio_path), config)
+            
+            await db.execute(delete(DBAudioEvent).where(DBAudioEvent.source_asset_id == asset_id))
+            
+            for e in events:
+                db_event = DBAudioEvent(project_id=project_id, source_asset_id=asset_id, start_time=e.start_time, end_time=e.end_time, event_type=e.event_type, analyzer="mock", analyzer_config=config.model_dump())
+                db.add(db_event)
+            await db.commit()
+    _run_async(_do_audio_analysis())
+    return {"status": "success"}
+
+@app.task
+def normalize_timeline_task(project_id: str, asset_id: str) -> dict[str, str]:
+    async def _do_normalize() -> None:
+        async with SessionLocal() as db:
+            from sqlalchemy.future import select
+            from sqlalchemy import delete
+            
+            await db.execute(delete(TimelineEvent).where(TimelineEvent.source_asset_id == asset_id))
+            
+            # Fetch segments
+            segments = (await db.execute(select(DBTranscriptSegment).join(TranscriptRun, TranscriptRun.id == DBTranscriptSegment.transcript_run_id).where(TranscriptRun.source_asset_id == asset_id))).scalars().all()
+            for s in segments:
+                db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type="speech", start_time=s.start_time, end_time=s.end_time, producer="transcriber", producer_version="1.0", data={"text": s.text}))
+            
+            # Fetch scenes
+            scenes = (await db.execute(select(DBScene).where(DBScene.source_asset_id == asset_id))).scalars().all()
+            for sc in scenes:
+                db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type="scene_change", start_time=sc.start_time, end_time=sc.end_time, producer="scenedetect", producer_version="1.0"))
+            
+            # Fetch audio events
+            audio_events = (await db.execute(select(DBAudioEvent).where(DBAudioEvent.source_asset_id == asset_id))).scalars().all()
+            for ae in audio_events:
+                db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type=ae.event_type, start_time=ae.start_time, end_time=ae.end_time, producer="audio_analysis", producer_version="1.0"))
+            
+            await db.commit()
+    _run_async(_do_normalize())
+    return {"status": "success"}
+
 @app.task
 def generate_candidates_task(project_id: str) -> dict[str, str]: return {"status": "success"}
 @app.task

@@ -146,3 +146,15 @@ class EditClip(Base):
 class FeedbackEvent(Base):
     __tablename__ = "feedback_events"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+
+class AudioEvent(Base):
+    __tablename__ = "audio_events"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    start_time = Column(Float)
+    end_time = Column(Float)
+    event_type = Column(String)
+    analyzer = Column(String)
+    analyzer_config = Column(JSON)
+

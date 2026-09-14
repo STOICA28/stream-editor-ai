@@ -78,3 +78,21 @@ export function triggerProcessing(projectId: string): Promise<Job> {
     method: "POST",
   });
 }
+
+// ---------------------------------------------------------------------------
+// Analysis API
+// ---------------------------------------------------------------------------
+
+import type { TimelineEvent, TranscriptSegment, Scene } from "@/types/api";
+
+export function getProjectTimeline(projectId: string): Promise<TimelineEvent[]> {
+  return apiRequest<TimelineEvent[]>(`/api/v1/projects/${projectId}/timeline`);
+}
+
+export function getProjectTranscripts(projectId: string): Promise<TranscriptSegment[]> {
+  return apiRequest<TranscriptSegment[]>(`/api/v1/projects/${projectId}/transcripts`);
+}
+
+export function getProjectScenes(projectId: string): Promise<Scene[]> {
+  return apiRequest<Scene[]>(`/api/v1/projects/${projectId}/scenes`);
+}
