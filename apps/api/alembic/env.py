@@ -7,6 +7,7 @@ from alembic import context
 
 from stream_editor.api.database import Base
 from stream_editor.api.config import settings
+import stream_editor.api.models.project  # IMPORT MODELS SO ALEMBIC SEES THEM
 
 config = context.config
 
@@ -27,7 +28,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
     with context.begin_transaction():
         context.run_migrations()
 
