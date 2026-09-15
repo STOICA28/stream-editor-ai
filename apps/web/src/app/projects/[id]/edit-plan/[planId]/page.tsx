@@ -18,9 +18,11 @@ function formatTime(seconds: number) {
 export default function RoughCutPage() {
   const params = useParams<{ id: string; planId: string }>();
   const { id, planId } = params;
+  const router = useRouter();
   
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showRejected, setShowRejected] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -39,42 +41,57 @@ export default function RoughCutPage() {
     fetchData();
   }, [id, planId]);
 
-  async function handleDelete(clipId: string) {
-    if (!confirm("Remove this clip from the edit plan?")) return;
+  async function handleCreateRevision() {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/plans/${planId}/clips/${clipId}`, {
-        method: "DELETE"
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/plans/${planId}/revisions`, {
+        method: "POST"
       });
       if (res.ok) {
-        await fetchData();
+        const newPlan = await res.json();
+        router.push(`/projects/${id}/edit-plan/${newPlan.id}`);
       } else {
-        alert("Failed to delete clip");
+        alert("Failed to create revision");
       }
     } catch (e) {
-      alert("Error deleting clip");
+      console.error(e);
+      alert("Error creating revision");
     }
   }
 
-  async function handleExtendStart(clipId: string, currentStart: number, amountSecs: number) {
-    const newStart = Math.max(0, currentStart - amountSecs);
+  async function handleFeedback(clipId: string, feedbackType: string, newValue?: any) {
+    if (plan.origin === 'ai') {
+      alert("Cannot edit AI plans directly. Please create a revision first.");
+      return;
+    }
+    
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/plans/${planId}/clips/${clipId}`, {
-        method: "PATCH",
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/plans/${planId}/clips/${clipId}/feedback`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source_start: newStart })
+        body: JSON.stringify({
+          feedback_type: feedbackType,
+          new_value: newValue,
+          reason_category: "manual_edit",
+          reason_text: "User requested change in UI"
+        })
       });
+      
       if (res.ok) {
         await fetchData();
       } else {
-        alert("Failed to update clip boundaries");
+        const err = await res.json();
+        alert(`Failed: ${err.detail || 'Unknown error'}`);
       }
     } catch (e) {
-      alert("Error updating clip boundaries");
+      console.error(e);
+      alert("Error sending feedback");
     }
   }
 
   if (loading) return <PageLoader />;
   if (!plan) return <div className="p-8 text-center">Plan not found</div>;
+
+  const displayClips = plan.clips.filter((c: any) => showRejected || c.review_state !== 'rejected');
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -94,6 +111,20 @@ export default function RoughCutPage() {
             Back to Plans
           </Link>
         </div>
+        
+        {plan.origin === 'ai' && (
+          <div className="bg-amber-900/20 border border-amber-700/50 p-4 rounded-md mb-8 flex justify-between items-center">
+            <div>
+              <h3 className="text-amber-500 font-bold mb-1">Read-Only AI Plan</h3>
+              <p className="text-sm text-amber-500/80">
+                This is an original AI-generated plan and cannot be destructively modified. Create a revision to make edits.
+              </p>
+            </div>
+            <Button onClick={handleCreateRevision} variant="default" className="bg-amber-600 hover:bg-amber-700 text-white">
+              Create Revision
+            </Button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1 space-y-6">
@@ -103,6 +134,12 @@ export default function RoughCutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
+                  <div className="text-sm text-muted-foreground">Origin</div>
+                  <Badge variant={plan.origin === 'ai' ? 'default' : 'secondary'}>
+                    {plan.origin.toUpperCase()} {plan.revision_number ? `(Rev ${plan.revision_number})` : ''}
+                  </Badge>
+                </div>
+                <div>
                   <div className="text-sm text-muted-foreground">Original Duration</div>
                   <div className="font-medium">{formatTime(plan.original_duration)}</div>
                 </div>
@@ -111,18 +148,18 @@ export default function RoughCutPage() {
                   <div className="font-medium">{formatTime(plan.selected_duration)}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Compression Ratio</div>
-                  <div className="font-medium">{(plan.compression_ratio * 100).toFixed(1)}%</div>
-                </div>
-                <div>
                   <div className="text-sm text-muted-foreground">Clips</div>
                   <div className="font-medium">{plan.clip_count}</div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <Badge variant={plan.status === 'completed' ? 'success' : 'default'}>
-                    {plan.status}
-                  </Badge>
+                <div className="pt-4 border-t border-surface-border">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={showRejected} 
+                      onChange={(e) => setShowRejected(e.target.checked)} 
+                    />
+                    Show Rejected Clips
+                  </label>
                 </div>
               </CardContent>
             </Card>
@@ -134,45 +171,67 @@ export default function RoughCutPage() {
                 <CardTitle>Timeline</CardTitle>
               </CardHeader>
               <CardContent>
-                {plan.clips.length === 0 ? (
+                {displayClips.length === 0 ? (
                   <div className="text-center p-8 text-muted-foreground border border-dashed border-surface-border rounded">
-                    No clips in this plan.
+                    No clips to display.
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {plan.clips.map((clip: any, index: number) => (
-                      <div key={clip.id} className="flex gap-4 p-4 border border-surface-border rounded-md bg-surface-elevated">
-                        <div className="flex-shrink-0 w-16 text-center font-bold text-lg text-muted-foreground">
-                          {index + 1}
+                    {displayClips.map((clip: any, index: number) => {
+                      const isRejected = clip.review_state === 'rejected';
+                      return (
+                        <div key={clip.id} className={`flex gap-4 p-4 border border-surface-border rounded-md ${isRejected ? 'bg-red-900/10 opacity-75' : 'bg-surface-elevated'}`}>
+                          <div className="flex-shrink-0 w-16 text-center font-bold text-lg text-muted-foreground">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between mb-2">
+                              <span className={`font-medium ${isRejected ? 'line-through text-muted-foreground' : 'text-primary'}`}>
+                                Output: {formatTime(clip.output_start)} - {formatTime(clip.output_end)}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                Source: {formatTime(clip.source_start)} - {formatTime(clip.source_end)}
+                              </span>
+                            </div>
+                            <p className="text-sm mb-2">{clip.selection_reason}</p>
+                            
+                            <div className="flex gap-2 items-center mb-2">
+                              <Badge variant="outline">{clip.review_state}</Badge>
+                              {clip.locked && <Badge variant="default" className="bg-blue-600">Locked</Badge>}
+                              <Badge variant="outline">{clip.priority}</Badge>
+                            </div>
+                            
+                            {plan.origin !== 'ai' && (
+                              <div className="flex gap-2 items-center mt-4 pt-4 border-t border-surface-border">
+                                {!isRejected && (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => handleFeedback(clip.id, 'modify_start', clip.source_start - 8)}>
+                                      -8s Start
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => handleFeedback(clip.id, 'modify_end', clip.source_end + 8)}>
+                                      +8s End
+                                    </Button>
+                                    <Button size="sm" variant="secondary" onClick={() => handleFeedback(clip.id, 'lock', !clip.locked)}>
+                                      {clip.locked ? 'Unlock' : 'Lock'}
+                                    </Button>
+                                  </>
+                                )}
+                                
+                                {isRejected ? (
+                                  <Button size="sm" variant="outline" onClick={() => handleFeedback(clip.id, 'accept')}>
+                                    Restore (Accept)
+                                  </Button>
+                                ) : (
+                                  <Button size="sm" variant="destructive" onClick={() => handleFeedback(clip.id, 'reject')}>
+                                    Reject Clip
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between mb-2">
-                            <span className="font-medium text-primary">
-                              Output: {formatTime(clip.output_start)} - {formatTime(clip.output_end)}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              Source: {formatTime(clip.source_start)} - {formatTime(clip.source_end)}
-                            </span>
-                          </div>
-                          <p className="text-sm mb-2">{clip.selection_reason}</p>
-                          <div className="flex gap-2 items-center mb-2">
-                            <Badge variant="outline">{clip.priority} priority</Badge>
-                            <Badge variant="outline">Conf: {clip.confidence?.toFixed(2) || '0.00'}</Badge>
-                            {clip.locked && <Badge variant="default">Locked</Badge>}
-                          </div>
-                          
-                          <div className="flex gap-2 items-center mt-4 pt-4 border-t border-surface-border">
-                            <span className="text-xs font-medium mr-2">Quick Edits:</span>
-                            <Button size="sm" variant="outline" onClick={() => handleExtendStart(clip.id, clip.source_start, 8)}>
-                              + 8s (Start)
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDelete(clip.id)}>
-                              Cut / Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>

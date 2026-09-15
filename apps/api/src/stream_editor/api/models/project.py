@@ -332,6 +332,12 @@ class EditPlan(Base):
     # Optional constraints
     locked = Column(Boolean, default=False)
 
+
+    # M6 Revisions
+    parent_plan_id = Column(String, ForeignKey("edit_plans.id"), nullable=True)
+    revision_number = Column(Integer, default=1)
+    origin = Column(String, default="ai")  # ai | human | hybrid
+    revision_reason = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     clips = relationship("EditClip", back_populates="plan", cascade="all, delete-orphan")
@@ -351,6 +357,10 @@ class EditClip(Base):
     # Optional sub-boundaries for "core" vs "context" (M5 concept)
     core_start = Column(Float, nullable=True)
     core_end = Column(Float, nullable=True)
+    
+
+    # M6 Review State
+    review_state = Column(String, default="proposed")  # proposed | accepted | rejected | modified
     
     # Output timeline boundaries (calculated by compiler)
     output_start = Column(Float)
@@ -374,6 +384,23 @@ class EditClip(Base):
 class FeedbackEvent(Base):
     __tablename__ = "feedback_events"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    edit_plan_id = Column(String, ForeignKey("edit_plans.id"))
+    edit_clip_id = Column(String, ForeignKey("edit_clips.id"), nullable=True)
+    
+    feedback_type = Column(String)
+    previous_value = Column(JSON, nullable=True)
+    new_value = Column(JSON, nullable=True)
+    
+    reason_category = Column(String, nullable=True)
+    reason_text = Column(String, nullable=True)
+    
+    candidate_id = Column(String, nullable=True)
+    story_node_ids = Column(JSON, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class AudioEvent(Base):
     __tablename__ = "audio_events"

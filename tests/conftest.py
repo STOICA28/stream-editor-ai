@@ -16,3 +16,7 @@ def tmp_storage():
 @pytest.fixture
 def mock_editorial_provider():
     return MockEditorialProvider()
+
+import sys
+from unittest.mock import MagicMock
+sys.modules['torch'] = MagicMock()

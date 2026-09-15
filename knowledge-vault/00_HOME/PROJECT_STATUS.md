@@ -2,8 +2,8 @@
 id: HOME-STATUS-001
 title: Project Status
 status: canonical
-version: 1.1
-last_reviewed: 2026-09-14
+version: 1.2
+last_reviewed: 2026-09-15
 tags:
   - status
   - milestone
@@ -11,18 +11,20 @@ tags:
 
 # Project Status
 
-- **Current milestone:** M5 — Edit Plan Generation
-- **Status:** In Progress
-- **Focus:** Determining KEEP/CUT decisions based on M3 scoring and M4 story graph, producing deterministic JSON representation of the final timeline.
+- **Current milestone:** M6 — Human Review & Feedback Architecture
+- **Status:** COMPLETED
+- **Focus:** Immutable plan tracking, feedback event logging, review states, precise editing tools in UI.
 
 ### Completed Milestones
-- **M4: Story Graph & Narrative Intelligence:** (Completed) Built relational persistence, narrative package (TF-IDF retrieval, local graph, threading, critic), Celery task, API, and frontend shell.
-- **M3: Candidate Generation & Scoring:** (Completed) Built generation pipeline, schemas, Celery tasks, and UI representation for candidate evaluation.
-- **M2: Understanding Layer:** (Completed)
-- **M1: Media Foundation:** (Completed)
-- **M0: Foundation:** (Completed)
+- **M6: Human Review & Feedback:** (Completed) Non-destructive edit plans, UI revision creation, FeedbackEvent collection.
+- **M5: Edit Plan Generation:** (Completed) AI generation of chronological clip plans.
+- **M4: Story Graph & Narrative Intelligence:** (Completed) Narrative thread context.
+- **M3: Candidate Generation & Scoring:** (Completed) Sub-clip selection logic.
+- **M2: Understanding Layer:** (Completed) Timelines & parsing.
+- **M1: Media Foundation:** (Completed) Import and DB.
+- **M0: Foundation:** (Completed) Scaffolding.
 
 - **Technical debt:** None
-- **Next tasks:** Begin M5 (Edit Plan Generation)
-- **How to run:** Use `make dev` or `docker-compose up -d`
-- **Last successful test run:** 2026-09-14 (20 tests passed)
+- **Next tasks:** Begin M7
+- **How to run:** Use `uv run uvicorn apps.api.src.stream_editor.api.main:app` and `npm run dev` in frontend.
+- **Last successful test run:** 2026-09-15 (All tests passing)
