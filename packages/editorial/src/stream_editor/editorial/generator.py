@@ -1,4 +1,4 @@
-﻿"""
+"""
 CandidateGenerator: orchestrates the full M3 candidate generation pipeline.
 
 Pipeline:
@@ -303,13 +303,21 @@ class CandidateGenerator:
                     )
                     return result.model_dump()
 
+                cache_key = cache.generate_key(
+                    provider=provider_name,
+                    model="mock" if provider_name == "mock" else "gemini-2.0-flash",
+                    prompt_version=prompt_version,
+                    input_hash=hashlib.sha256(json.dumps(cache_input, sort_keys=True).encode("utf-8")).hexdigest(),
+                    editorial_rules_version=EDITORIAL_RULES_VERSION,
+                )
+
                 raw_result, hit = cache.get_or_set(
-                    db=db,
+                    db_session=db,
+                    cache_key=cache_key,
                     provider=provider_name,
                     model="mock" if provider_name == "mock" else "gemini-2.0-flash",
                     prompt_version=prompt_version,
                     editorial_rules_version=EDITORIAL_RULES_VERSION,
-                    input_payload=cache_input,
                     compute_fn=_compute_analysis,
                 )
 
@@ -407,14 +415,14 @@ class CandidateGenerator:
 
             db.commit()  # type: ignore[attr-defined]
 
-            run.status = "completed"
-            run.candidate_count = candidate_count
-            run.completed_at = datetime.utcnow()
+            run.status = "completed"  # type: ignore
+            run.candidate_count = candidate_count  # type: ignore
+            run.completed_at = datetime.utcnow()  # type: ignore
             db.commit()  # type: ignore[attr-defined]
 
         except Exception as err:
-            run.status = "failed"
-            run.error_message = str(err)[:500]
+            run.status = "failed"  # type: ignore
+            run.error_message = str(err)[:500]  # type: ignore
             db.commit()  # type: ignore[attr-defined]
             raise
 

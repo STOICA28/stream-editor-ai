@@ -15,6 +15,7 @@ members = [
     "stream-editor-editorial",
     "stream-editor-media",
     "stream-editor-models",
+    "stream-editor-narrative",
     "stream-editor-rendering",
     "stream-editor-storage",
     "stream-editor-vault",
@@ -1091,6 +1092,21 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "stream-editor-contracts", editable = "packages/contracts" }]
+
+[[package]]
+name = "stream-editor-narrative"
+version = "0.1.0"
+source = { editable = "packages/narrative" }
+dependencies = [
+    { name = "stream-editor-contracts" },
+    { name = "stream-editor-models" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "stream-editor-contracts", editable = "packages/contracts" },
+    { name = "stream-editor-models", editable = "packages/models" },
+]
 
 [[package]]
 name = "stream-editor-rendering"

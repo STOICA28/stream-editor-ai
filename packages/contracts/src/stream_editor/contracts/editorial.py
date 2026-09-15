@@ -1,4 +1,4 @@
-﻿"""
+"""
 M3 Editorial Contracts.
 
 Defines configuration models, score schemas, and provider protocols for the
@@ -221,48 +221,265 @@ class EditorialAnalysisProvider(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Story Graph types (M4 scope - not implemented in M3)
+# M4 Story Graph contracts
 # ---------------------------------------------------------------------------
 
-class NarrativeNodeType(str, Enum):
+class StoryNodeType(str, Enum):
+    """All recognized narrative node types in the Story Graph."""
+    candidate = "candidate"          # directly backed by an M3 CandidateSegment
     setup = "setup"
-    event = "event"
-    character_intro = "character_intro"
-    joke = "joke"
-    callback = "callback"
     payoff = "payoff"
+    callback = "callback"
+    introduction = "introduction"
     explanation = "explanation"
     decision = "decision"
+    action = "action"
     consequence = "consequence"
+    question = "question"
+    answer = "answer"
+    emotional_beat = "emotional_beat"
+    running_joke = "running_joke"
+    unresolved_thread = "unresolved_thread"
+    topic = "topic"
+    development = "development"
+    climax = "climax"
+    reference = "reference"
+
+    # Directional constraints:
+    # setup_for / payoff_of / callback_to / caused_by / consequence_of / answers
+    # require source to appear AFTER target temporally (i.e. target is earlier).
+    # same_thread / references / continues / contrasts_with are non-directional.
 
 
-class NarrativeEdgeType(str, Enum):
+class EdgeRelationType(str, Enum):
+    """Typed directed narrative relationship between two StoryNodes.
+
+    Source → target semantics:
+      depends_on:       source cannot be understood without target context
+      setup_for:        source is setup leading to target payoff
+      payoff_of:        source is the payoff of target setup
+      callback_to:      source is a callback referencing target earlier event
+      references:       source mentions/references target (looser than callback)
+      explains:         source explains the meaning/context of target
+      caused_by:        source resulted from target earlier action
+      consequence_of:   source is a consequence of target event
+      answers:          source answers a question posed in target
+      introduces:       source introduces a person/concept used in target
+      continues:        source continues the same narrative thread as target
+      contrasts_with:   source contrasts thematically with target
+      same_thread:      source and target are part of the same narrative thread
+    """
     depends_on = "depends_on"
+    setup_for = "setup_for"
+    payoff_of = "payoff_of"
     callback_to = "callback_to"
+    references = "references"
     explains = "explains"
     caused_by = "caused_by"
-    follows = "follows"
+    consequence_of = "consequence_of"
+    answers = "answers"
+    introduces = "introduces"
+    continues = "continues"
     contrasts_with = "contrasts_with"
+    same_thread = "same_thread"
 
 
-class NarrativeNode(BaseModel):
-    id: UUID
-    project_id: str
-    node_type: NarrativeNodeType
-    candidate_segment_id: UUID
-    label: str
-    description: str
+# Relations that require source to come AFTER target (source is temporally later)
+TEMPORALLY_DIRECTED_RELATIONS: frozenset[EdgeRelationType] = frozenset({
+    EdgeRelationType.payoff_of,
+    EdgeRelationType.callback_to,
+    EdgeRelationType.caused_by,
+    EdgeRelationType.consequence_of,
+    EdgeRelationType.answers,
+    EdgeRelationType.depends_on,
+})
+
+# Relations that should generally not form cycles
+ACYCLIC_RELATIONS: frozenset[EdgeRelationType] = frozenset({
+    EdgeRelationType.setup_for,
+    EdgeRelationType.payoff_of,
+    EdgeRelationType.caused_by,
+    EdgeRelationType.consequence_of,
+    EdgeRelationType.answers,
+})
 
 
-class NarrativeEdge(BaseModel):
-    id: UUID
-    from_node_id: UUID
-    to_node_id: UUID
-    edge_type: NarrativeEdgeType
-    strength: float
+class DependencyStrength(str, Enum):
+    """
+    How essential is the target context for understanding the source?
+
+    critical: clip cannot be understood without the context
+    helpful:  clip is richer with context but can stand alone
+    optional: minor enrichment only
+    """
+    critical = "critical"
+    helpful = "helpful"
+    optional = "optional"
 
 
-class StoryGraph(BaseModel):
-    project_id: str
-    nodes: list[NarrativeNode]
-    edges: list[NarrativeEdge]
+class ContextRequirement(BaseModel):
+    """
+    Narrative context assessment for a single StoryNode.
+    Produced as part of M4 graph generation. Never overrides M3 scores.
+    """
+    standalone_understandable: bool
+    required_predecessors: list[str] = Field(default_factory=list)   # node IDs
+    helpful_predecessors: list[str] = Field(default_factory=list)    # node IDs
+    confidence: float
+
+
+class ProposedRelationship(BaseModel):
+    """
+    A single relationship proposed by the narrative reasoning model.
+    Model may only reference application-supplied candidate/node IDs.
+    No chain-of-thought stored — only concise evidence summary.
+    """
+    source_candidate: str   # candidate or node ID supplied in prompt
+    target_candidate: str
+    relation: EdgeRelationType
+    confidence: float
+    dependency_strength: DependencyStrength
+    dependency_strength_score: float = Field(ge=0.0, le=1.0)
+    evidence_summary: str   # concise, no hidden reasoning
+
+
+class LocalGraphProposal(BaseModel):
+    """
+    Structured output from the narrative reasoning model for a local chapter.
+    Application generates all real IDs — model only uses supplied identifiers.
+    """
+    relationships: list[ProposedRelationship] = Field(default_factory=list)
+    entities_detected: list[str] = Field(default_factory=list)   # normalized labels
+    chapter_summary: str = ""
+    prompt_version: str = "v1"
+
+
+class StoryGraphConfig(BaseModel):
+    """
+    Configuration for a StoryGraphRun. Hashed into derivation_signature.
+    These are infrastructure knobs — NOT canonical editorial rules.
+    """
+    # Chapter grouping
+    chapter_duration_seconds: float = 600.0   # 10 min fallback chapters
+    # Retrieval
+    max_retrieval_candidates: int = 10         # max plausible pairs per node
+    min_tfidf_similarity: float = 0.15         # retrieval threshold
+    # Model routing
+    flash_model: str = "gemini-1.5-flash"
+    pro_model: str = "gemini-1.5-pro"
+    use_critic: bool = True
+    # Versions
+    prompt_version: str = "v1"
+    generator_version: str = "1.0.0"
+    editorial_rules_version: str = "1.0"
+
+    def get_signature(self, candidate_run_signature: str) -> str:
+        data = self.model_dump()
+        data["candidate_run_signature"] = candidate_run_signature
+        serialized = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+class NarrativeThreadContract(BaseModel):
+    """Contract representation of a NarrativeThread for API responses."""
+    id: str
+    story_graph_run_id: str
+    title: str
+    summary: str | None = None
+    thread_type: str | None = None
+    first_occurrence_time: float | None = None
+    last_occurrence_time: float | None = None
+    is_resolved: bool = True
+    importance: float | None = None
+    confidence: float
+    node_ids: list[str] = Field(default_factory=list)
+
+
+class StoryNodeContract(BaseModel):
+    """Contract representation of a StoryNode for API responses."""
+    id: str
+    story_graph_run_id: str
+    node_type: StoryNodeType
+    start_time: float
+    end_time: float
+    candidate_id: str | None = None
+    title: str | None = None
+    summary: str | None = None
+    confidence: float
+    context_requirement: ContextRequirement | None = None
+    graph_narrative_value: float | None = None
+    chapter_index: int | None = None
+    provider: str
+    model: str | None = None
+    thread_ids: list[str] = Field(default_factory=list)
+
+
+class StoryEdgeContract(BaseModel):
+    """Contract representation of a StoryEdge for API responses."""
+    id: str
+    story_graph_run_id: str
+    source_node_id: str
+    target_node_id: str
+    relation_type: EdgeRelationType
+    confidence: float
+    dependency_strength: DependencyStrength
+    dependency_strength_score: float | None = None
+    evidence_summary: str | None = None
+    provider: str
+    model: str | None = None
+    validated: int = 0
+
+
+@runtime_checkable
+class NarrativeAnalysisProvider(Protocol):
+    """
+    Protocol for narrative reasoning providers.
+    Gemini and Mock implementations must satisfy this interface.
+    Provider-specific response structures must NOT leak into the domain model.
+    """
+
+    def build_local_graph(
+        self,
+        chapter_candidates: list[dict[str, object]],
+        chapter_summary: str,
+        element_index: list[dict[str, object]],
+        config: StoryGraphConfig,
+    ) -> LocalGraphProposal:
+        """
+        Analyze candidates within a chapter and propose local narrative relationships.
+        Uses Flash model. Returns structured proposal — no free-form node IDs.
+        """
+        ...
+
+    def link_story_elements(
+        self,
+        candidate_pairs: list[tuple[dict[str, object], dict[str, object]]],
+        element_index: list[dict[str, object]],
+        config: StoryGraphConfig,
+    ) -> LocalGraphProposal:
+        """
+        Evaluate plausible cross-chapter link candidates proposed by retrieval.
+        Uses Pro model. Only called with bounded, curated pairs from retrieval.
+        """
+        ...
+
+    def review_graph(
+        self,
+        nodes: list[dict[str, object]],
+        edges: list[dict[str, object]],
+        threads: list[dict[str, object]],
+        config: StoryGraphConfig,
+    ) -> list[ProposedRelationship]:
+        """
+        Critic pass: review assembled graph for missing links, contradictions, orphans.
+        Uses Pro model selectively. Returns proposed corrections only.
+        """
+        ...
+
+
+# ---------------------------------------------------------------------------
+# Backward-compat aliases for M3 code that imported old stub names
+# ---------------------------------------------------------------------------
+NarrativeNodeType = StoryNodeType       # type: ignore[assignment]
+NarrativeEdgeType = EdgeRelationType    # type: ignore[assignment]
+

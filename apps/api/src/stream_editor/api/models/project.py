@@ -305,3 +305,163 @@ class AudioEvent(Base):
     analyzer = Column(String)
     analyzer_config = Column(JSON)
 
+
+# ---------------------------------------------------------------------------
+# M4 — Story Graph models
+# ---------------------------------------------------------------------------
+
+class StoryGraphRun(Base):
+    """
+    Versioned Story Graph generation run.
+    Idempotent by derivation_signature — same config + candidates → reuse run.
+    """
+    __tablename__ = "story_graph_runs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    candidate_run_id = Column(String, ForeignKey("candidate_runs.id"))
+    # Provider / model tracking
+    provider = Column(String)           # "mock" | "gemini"
+    flash_model = Column(String, nullable=True)
+    pro_model = Column(String, nullable=True)
+    prompt_version = Column(String)
+    generator_version = Column(String)
+    configuration = Column(JSON)        # StoryGraphConfig.model_dump()
+    derivation_signature = Column(String, unique=True)
+    # Status
+    status = Column(String, default="running")   # running | completed | failed | partial
+    error_message = Column(String, nullable=True)
+    # Metrics
+    node_count = Column(Integer, nullable=True)
+    edge_count = Column(Integer, nullable=True)
+    thread_count = Column(Integer, nullable=True)
+    callback_count = Column(Integer, nullable=True)
+    setup_payoff_pairs = Column(Integer, nullable=True)
+    orphan_node_count = Column(Integer, nullable=True)
+    # Cost telemetry
+    flash_requests = Column(Integer, nullable=True)
+    pro_requests = Column(Integer, nullable=True)
+    total_input_tokens = Column(Integer, nullable=True)
+    total_output_tokens = Column(Integer, nullable=True)
+    total_latency_ms = Column(Integer, nullable=True)
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class StoryNode(Base):
+    """
+    A single narrative element within the Story Graph.
+    May represent a candidate segment, a topic, a setup, payoff, callback, etc.
+    """
+    __tablename__ = "story_nodes"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    story_graph_run_id = Column(String, ForeignKey("story_graph_runs.id"))
+    project_id = Column(String, ForeignKey("projects.id"))
+    # Node identity
+    node_type = Column(String)          # StoryNodeType enum value
+    # Temporal position (seconds in source media)
+    start_time = Column(Float)
+    end_time = Column(Float)
+    # Link to M3 candidate (optional — some nodes are purely narrative constructs)
+    candidate_id = Column(String, ForeignKey("candidate_segments.id"), nullable=True)
+    # Content
+    title = Column(String, nullable=True)
+    summary = Column(String, nullable=True)
+    # Quality
+    confidence = Column(Float)
+    # Context requirement assessment (JSON)
+    # { standalone_understandable: bool, required_predecessors: [id], helpful_predecessors: [id], confidence: float }
+    context_requirement = Column(JSON, nullable=True)
+    # M4-derived narrative value (separate from M3 story_value, never overwrites it)
+    graph_narrative_value = Column(Float, nullable=True)
+    # Provenance
+    provider = Column(String)
+    model = Column(String, nullable=True)
+    prompt_version = Column(String, nullable=True)
+    chapter_index = Column(Integer, nullable=True)   # which chapter this was built in
+    node_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StoryEdge(Base):
+    """
+    A typed directed narrative relationship between two StoryNodes.
+    Direction: source → target, e.g. callback_to means source is a callback TO target.
+    """
+    __tablename__ = "story_edges"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    story_graph_run_id = Column(String, ForeignKey("story_graph_runs.id"))
+    source_node_id = Column(String, ForeignKey("story_nodes.id"))
+    target_node_id = Column(String, ForeignKey("story_nodes.id"))
+    relation_type = Column(String)          # EdgeRelationType enum value
+    # Quality
+    confidence = Column(Float)
+    dependency_strength = Column(String)    # DependencyStrength: critical | helpful | optional
+    dependency_strength_score = Column(Float, nullable=True)  # 0.0–1.0
+    # Explainability (concise, no chain-of-thought)
+    evidence_summary = Column(String, nullable=True)
+    # Provenance
+    provider = Column(String)
+    model = Column(String, nullable=True)
+    prompt_version = Column(String, nullable=True)
+    # Validation
+    validated = Column(Integer, default=0)   # 0 = pending, 1 = passed, -1 = rejected
+    validation_errors = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class NarrativeThread(Base):
+    """
+    A named narrative arc that groups related StoryNodes.
+    Examples: "trying to beat boss X", "running joke about blue car", "argument with chat".
+    """
+    __tablename__ = "narrative_threads"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    story_graph_run_id = Column(String, ForeignKey("story_graph_runs.id"))
+    project_id = Column(String, ForeignKey("projects.id"))
+    title = Column(String)
+    summary = Column(String, nullable=True)
+    thread_type = Column(String, nullable=True)   # running_joke | arc | callback_chain | unresolved
+    first_occurrence_time = Column(Float, nullable=True)
+    last_occurrence_time = Column(Float, nullable=True)
+    is_resolved = Column(Integer, default=1)   # 0 = unresolved thread (no payoff found)
+    importance = Column(Float, nullable=True)
+    confidence = Column(Float)
+    provider = Column(String)
+    model = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class NodeThreadMembership(Base):
+    """M2M join: which nodes belong to which narrative threads."""
+    __tablename__ = "node_thread_memberships"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    node_id = Column(String, ForeignKey("story_nodes.id"))
+    thread_id = Column(String, ForeignKey("narrative_threads.id"))
+    role_in_thread = Column(String, nullable=True)  # setup | occurrence | callback | payoff | resolution
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class NarrativeElement(Base):
+    """
+    Lightweight searchable index of narrative concepts/entities detected in the stream.
+    Allows later candidates to query: "does this reference something previously established?"
+    NOT a full knowledge graph — simple normalized labels.
+    """
+    __tablename__ = "narrative_elements"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    story_graph_run_id = Column(String, ForeignKey("story_graph_runs.id"))
+    project_id = Column(String, ForeignKey("projects.id"))
+    # The concept/entity
+    label = Column(String)              # e.g. "boss fight attempt", "blue car joke", "pepe123"
+    element_type = Column(String)       # person | place | item | joke | promise | event | topic | phrase
+    # First time this element appears
+    first_seen_time = Column(Float)
+    last_seen_time = Column(Float, nullable=True)
+    # Description for retrieval
+    description = Column(String, nullable=True)
+    # Source node IDs (JSON list of node IDs where this element appears)
+    node_ids = Column(JSON, nullable=True)
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)

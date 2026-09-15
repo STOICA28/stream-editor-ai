@@ -329,11 +329,12 @@ def generate_candidates_task(
     sync_url = database_url.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
     sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
 
-    from stream_editor.contracts.editorial import CandidateWindowConfig
+    from stream_editor.contracts.editorial import CandidateWindowConfig, EditorialAnalysisProvider
     from stream_editor.editorial.generator import CandidateGenerator
     from stream_editor.editorial.providers.mock import MockEditorialProvider
 
     config = CandidateWindowConfig()
+    provider: EditorialAnalysisProvider
 
     if provider_name == "gemini":
         try:
@@ -358,6 +359,55 @@ def generate_candidates_task(
         )
 
     logger.info("candidates_generated", run_id=run_id, project_id=project_id, asset_id=asset_id)
+    return {"status": "success", "run_id": run_id}
+
+
+@app.task
+def generate_story_graph_task(
+    project_id: str,
+    asset_id: str,
+    candidate_run_id: str,
+    provider_name: str = "mock",
+) -> dict[str, str]:
+    """
+    Generate the M4 Story Graph for a given candidate run.
+    """
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session as SyncSession
+
+    database_url = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
+    sync_url = database_url.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+
+    from stream_editor.contracts.editorial import StoryGraphConfig, NarrativeAnalysisProvider
+    from stream_editor.narrative.generator import StoryGraphGenerator
+    from stream_editor.narrative.providers.mock import MockNarrativeProvider
+
+    config = StoryGraphConfig()
+    provider: NarrativeAnalysisProvider
+
+    if provider_name == "gemini":
+        try:
+            from stream_editor.narrative.providers.gemini import GeminiNarrativeProvider
+            provider = GeminiNarrativeProvider()
+        except RuntimeError:
+            logger.warning("gemini_provider_unavailable_falling_back_to_mock")
+            provider = MockNarrativeProvider()
+    else:
+        provider = MockNarrativeProvider()
+
+    with SyncSession(sync_engine) as db:
+        generator = StoryGraphGenerator(session=db, provider=provider, config=config)
+        run_id = generator.generate(
+            project_id=project_id,
+            source_asset_id=asset_id,
+            candidate_run_id=candidate_run_id,
+            provider_name=provider_name,
+        )
+
+    logger.info("story_graph_generated", run_id=run_id, project_id=project_id, asset_id=asset_id)
     return {"status": "success", "run_id": run_id}
 
 
