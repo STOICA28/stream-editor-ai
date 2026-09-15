@@ -25,13 +25,13 @@ tags:
 - [x] M7: Visual Understanding & Focus
 - [x] M8: Effect Planning
 - [x] M9: Video Rendering & Export
-- [x] M10: EditDNA Research Engine
+- [ ] M10: EditDNA Research Engine (Blocked)
 - [ ] M11: Next Phase
 
 ## Status Update
 
 - **Completed:** M10 EditDNA. Built multi-signal alignment architecture (audio, transcript, visual), SQLAlchemy research models, synthetic ground-truth E2E tests for effects (zoom, grayscale, speed, freeze frame, layouts), and style profile aggregation logic.
-- **In Progress:** Transitioning to M11.
+- **In Progress:** Awaiting Authorized Reference Media to complete M10.1 Capability Gate.
 - **Blocked:** None
 - **Known bugs:** None
 - **Technical debt:** Need to implement real Gemini visual detection prompts and integrate actual audio fingerprinting logic for production use.
