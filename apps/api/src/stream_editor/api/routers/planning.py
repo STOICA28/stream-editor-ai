@@ -168,3 +168,83 @@ async def get_edit_plan(
             for c in clips
         ]
     }
+
+class ClipPatchRequest(BaseModel):
+    source_start: float | None = None
+    source_end: float | None = None
+
+async def _repack_plan_clips(db: AsyncSession, plan_id: str):
+    from stream_editor.api.models.project import EditPlan, EditClip
+    from sqlalchemy.orm import selectinload
+    
+    res = await db.execute(
+        select(EditPlan)
+        .options(selectinload(EditPlan.clips))
+        .where(EditPlan.id == str(plan_id))
+    )
+    plan = res.scalars().first()
+    if not plan:
+        return
+        
+    clips = sorted(plan.clips, key=lambda c: c.output_start)
+    current_time = 0.0
+    
+    for clip in clips:
+        # source_duration
+        dur = clip.source_end - clip.source_start
+        clip.output_start = current_time
+        clip.output_end = current_time + dur
+        current_time += dur
+        
+    plan.selected_duration = current_time
+    plan.clip_count = len(clips)
+    if plan.original_duration and plan.original_duration > 0:
+        plan.compression_ratio = plan.selected_duration / plan.original_duration
+    
+    await db.commit()
+
+@router.delete("/plans/{plan_id}/clips/{clip_id}")
+async def delete_clip(
+    project_id: str,
+    plan_id: str,
+    clip_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    from stream_editor.api.models.project import EditClip
+    clip = await db.get(EditClip, clip_id)
+    if not clip or clip.plan_id != plan_id:
+        raise HTTPException(status_code=404, detail="Clip not found")
+        
+    await db.delete(clip)
+    await db.commit()
+    
+    # Recalculate output times and plan stats
+    await _repack_plan_clips(db, plan_id)
+    return {"status": "ok"}
+
+@router.patch("/plans/{plan_id}/clips/{clip_id}")
+async def update_clip(
+    project_id: str,
+    plan_id: str,
+    clip_id: str,
+    request: ClipPatchRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    from stream_editor.api.models.project import EditClip
+    clip = await db.get(EditClip, clip_id)
+    if not clip or clip.plan_id != plan_id:
+        raise HTTPException(status_code=404, detail="Clip not found")
+        
+    if request.source_start is not None:
+        clip.source_start = request.source_start
+    if request.source_end is not None:
+        clip.source_end = request.source_end
+        
+    if clip.source_start > clip.source_end:
+        raise HTTPException(status_code=400, detail="source_start must be <= source_end")
+        
+    await db.commit()
+    
+    # Recalculate output times and plan stats
+    await _repack_plan_clips(db, plan_id)
+    return {"status": "ok"}

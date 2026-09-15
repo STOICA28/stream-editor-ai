@@ -23,7 +23,7 @@ export default function EditPlanPage() {
   const [targetDuration, setTargetDuration] = useState("9000");
   const [tolerance, setTolerance] = useState("900");
   const [profile, setProfile] = useState("balanced");
-  const [provider, setProvider] = useState("mock"); // Default mock to save API calls
+  const [provider, setProvider] = useState("mock");
 
   useEffect(() => {
     fetchData();
@@ -34,8 +34,8 @@ export default function EditPlanPage() {
   async function fetchData() {
     try {
       const [runsRes, plansRes] = await Promise.all([
-        fetch(http://127.0.0.1:8000/api/v1/projects/\/edit-plan/runs),
-        fetch(http://127.0.0.1:8000/api/v1/projects/\/edit-plan/plans)
+        fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/runs`),
+        fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan/plans`)
       ]);
       
       if (runsRes.ok) setRuns(await runsRes.json());
@@ -51,7 +51,7 @@ export default function EditPlanPage() {
     e.preventDefault();
     setGenerating(true);
     try {
-      const res = await fetch(http://127.0.0.1:8000/api/v1/projects/\/edit-plan, {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/projects/${id}/edit-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -87,7 +87,7 @@ export default function EditPlanPage() {
             </p>
           </div>
           <Link
-            href={\/projects/\\}
+            href={`/projects/${id}`}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
           >
             Back to Project
@@ -173,7 +173,7 @@ export default function EditPlanPage() {
                             <span>Ratio: {(plan.selected_duration / plan.original_duration * 100).toFixed(1)}%</span>
                           </div>
                         </div>
-                        <Link href={\/projects/\/edit-plan/\\}>
+                        <Link href={`/projects/${id}/edit-plan/${plan.id}`}>
                           <Button>View Rough Cut</Button>
                         </Link>
                       </CardContent>
@@ -196,9 +196,9 @@ export default function EditPlanPage() {
                         <span className="text-muted-foreground">{run.profile} (T:{run.target_duration_seconds}s)</span>
                       </div>
                       <Badge variant={
-                        run.status === 'completed' ? 'success' : 
-                        run.status === 'failed' ? 'destructive' : 
-                        'default'
+                        run.status === "completed" ? "success" : 
+                        run.status === "failed" ? "destructive" : 
+                        "default"
                       }>
                         {run.status}
                       </Badge>
