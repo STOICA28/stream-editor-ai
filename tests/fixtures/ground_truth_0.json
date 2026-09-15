@@ -1,0 +1,146 @@
+{
+  "blocks": [
+    {
+      "id": "6ad65da8-8c1b-4a0d-8a73-6912a2e05f32",
+      "run_id": "run-0",
+      "source_start": 0.0,
+      "source_end": 1.0,
+      "edit_start": 0.0,
+      "edit_end": 1.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "5b01d49e-9e01-4d63-9d68-8f3cd6412a2c",
+      "run_id": "run-0",
+      "source_start": 2.0,
+      "source_end": 4.0,
+      "edit_start": 1.0,
+      "edit_end": 2.0,
+      "speed_ratio": 2.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "18677c93-968b-4335-940d-66df5670cacc",
+      "run_id": "run-0",
+      "source_start": 4.0,
+      "source_end": 6.0,
+      "edit_start": 2.0,
+      "edit_end": 4.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "59fdb685-0772-4d1f-b5d4-166758786882",
+      "run_id": "run-0",
+      "source_start": 6.0,
+      "source_end": 7.0,
+      "edit_start": 4.0,
+      "edit_end": 5.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "2c8e093f-2f6f-4ca4-89fa-d9484c65f3d6",
+      "run_id": "run-0",
+      "source_start": 7.0,
+      "source_end": 9.0,
+      "edit_start": 5.0,
+      "edit_end": 7.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "e02f2f53-daa0-4b99-8316-b7b42a4657f6",
+      "run_id": "run-0",
+      "source_start": 9.0,
+      "source_end": 9.1,
+      "edit_start": 7.0,
+      "edit_end": 8.0,
+      "speed_ratio": 0.0,
+      "is_manual_override": false
+    }
+  ],
+  "effects": [
+    {
+      "id": "9050b923-0646-485f-8ec7-a8c0e755c4ef",
+      "pair_id": "pair-0",
+      "effect_type": "speed_up",
+      "target": "full_frame",
+      "source_start": 2.0,
+      "source_end": 4.0,
+      "edit_start": 1.0,
+      "edit_end": 2.0,
+      "is_manual_override": false,
+      "is_false_positive": false
+    },
+    {
+      "id": "1cdb3ba0-95b2-4387-a6a0-938649f28491",
+      "pair_id": "pair-0",
+      "effect_type": "zoom_face",
+      "target": "facecam",
+      "source_start": 5.0,
+      "source_end": 6.0,
+      "edit_start": 3.0,
+      "edit_end": 4.0,
+      "is_manual_override": false,
+      "is_false_positive": false,
+      "scale": 1.5,
+      "cx": 450,
+      "cy": 200
+    },
+    {
+      "id": "ade8854c-4813-42e0-9a89-d8cd4094a6d7",
+      "pair_id": "pair-0",
+      "effect_type": "grayscale",
+      "target": "full_frame",
+      "source_start": 6.0,
+      "source_end": 7.0,
+      "edit_start": 4.0,
+      "edit_end": 5.0,
+      "is_manual_override": false,
+      "is_false_positive": false
+    },
+    {
+      "id": "9e17e2ec-ceef-435c-9524-d2e32b25d219",
+      "pair_id": "pair-0",
+      "effect_type": "crop_focus",
+      "target": "screen_region",
+      "source_start": 7.0,
+      "source_end": 8.0,
+      "edit_start": 5.0,
+      "edit_end": 6.0,
+      "is_manual_override": false,
+      "is_false_positive": false
+    },
+    {
+      "id": "4e48c6c6-3cbf-4074-b51a-73c6da542003",
+      "pair_id": "pair-0",
+      "effect_type": "zoom_face",
+      "target": "facecam",
+      "source_start": 8.0,
+      "source_end": 9.0,
+      "edit_start": 6.0,
+      "edit_end": 7.0,
+      "is_manual_override": false,
+      "is_false_positive": false,
+      "scale": 1.8,
+      "cx": 450,
+      "cy": 200
+    },
+    {
+      "id": "ba8723ae-59f3-43f6-b82c-0a65f79c841c",
+      "pair_id": "pair-0",
+      "effect_type": "freeze_frame",
+      "target": "full_frame",
+      "source_start": 9.0,
+      "source_end": 9.1,
+      "edit_start": 7.0,
+      "edit_end": 8.0,
+      "is_manual_override": false,
+      "is_false_positive": false
+    }
+  ],
+  "source_duration": 10.0,
+  "edit_duration": 8.0
+}

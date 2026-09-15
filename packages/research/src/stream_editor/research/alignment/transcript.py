@@ -1,11 +1,13 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from stream_editor.contracts.research import AlignmentBlockContract
 import uuid
 import json
+import numpy as np
 
 class TranscriptAligner:
     """
-    Implements real sequence alignment (e.g. Smith-Waterman or LCS) to match transcripts.
+    Implements dynamic programming sequence alignment to match transcripts,
+    handling repeated words and gaps.
     """
     
     def align(self, source_path: str, edited_path: str) -> List[AlignmentBlockContract]:
@@ -20,62 +22,116 @@ class TranscriptAligner:
         except FileNotFoundError:
             return []
             
+        if not s_words or not e_words:
+            return []
+            
+        N = len(s_words)
+        M = len(e_words)
+        
+        dp = np.zeros((N + 1, M + 1))
+        trace = np.zeros((N + 1, M + 1), dtype=int)
+        
+        MATCH_REWARD = 2
+        MISMATCH_PENALTY = -2
+        GAP_PENALTY = -1
+        
+        for i in range(1, N + 1):
+            dp[i, 0] = dp[i-1, 0] + GAP_PENALTY
+            trace[i, 0] = 1
+        for j in range(1, M + 1):
+            dp[0, j] = dp[0, j-1] + GAP_PENALTY
+            trace[0, j] = 2
+            
+        for i in range(1, N + 1):
+            for j in range(1, M + 1):
+                s_w = s_words[i-1]
+                e_w = e_words[j-1]
+                
+                is_match = s_w["text"].lower() == e_w["text"].lower()
+                match_score = MATCH_REWARD if is_match else MISMATCH_PENALTY
+                
+                diag = dp[i-1, j-1] + match_score
+                up = dp[i-1, j] + GAP_PENALTY
+                left = dp[i, j-1] + GAP_PENALTY
+                
+                best = max(diag, up, left)
+                dp[i, j] = best
+                
+                if best == diag:
+                    trace[i, j] = 0
+                elif best == up:
+                    trace[i, j] = 1
+                else:
+                    trace[i, j] = 2
+                    
+        i, j = N, M
+        matches = []
+        while i > 0 and j > 0:
+            if trace[i, j] == 0:
+                s_w = s_words[i-1]
+                e_w = e_words[j-1]
+                if s_w["text"].lower() == e_w["text"].lower():
+                    matches.append((i-1, j-1))
+                i -= 1
+                j -= 1
+            elif trace[i, j] == 1:
+                i -= 1
+            else:
+                j -= 1
+                
+        matches.reverse()
+        
         blocks = []
+        if not matches:
+            return blocks
+            
+        current_block = {
+            "s_start": s_words[matches[0][0]]["start"],
+            "s_end": s_words[matches[0][0]]["end"],
+            "e_start": e_words[matches[0][1]]["start"],
+            "e_end": e_words[matches[0][1]]["end"],
+            "words": 1,
+            "s_indices": [matches[0][0]],
+            "e_indices": [matches[0][1]]
+        }
         
-        # Simple greedy sequence matching
-        e_idx = 0
-        s_idx = 0
-        
-        current_block = None
-        
-        while e_idx < len(e_words):
+        for k in range(1, len(matches)):
+            s_idx, e_idx = matches[k]
+            s_w = s_words[s_idx]
             e_w = e_words[e_idx]
             
-            # Find match in source within a window
-            match_idx = -1
-            for i in range(s_idx, min(s_idx + 20, len(s_words))):
-                if s_words[i]["text"].lower() == e_w["text"].lower():
-                    match_idx = i
-                    break
-                    
-            if match_idx != -1:
-                s_w = s_words[match_idx]
+            s_gap = s_w["start"] - current_block["s_end"]
+            e_gap = e_w["start"] - current_block["e_end"]
+            
+            # The speed is calculated based on the *local* step
+            local_s_dur = s_w["end"] - s_words[current_block["s_indices"][-1]]["start"]
+            local_e_dur = e_w["end"] - e_words[current_block["e_indices"][-1]]["start"]
+            
+            c_s_dur = current_block["s_end"] - current_block["s_start"]
+            c_e_dur = current_block["e_end"] - current_block["e_start"]
+            block_speed = c_s_dur / c_e_dur if c_e_dur > 0 else 1.0
+            
+            local_speed = local_s_dur / local_e_dur if local_e_dur > 0 else 1.0
+            
+            # Allow slightly loose gap if speeds match roughly
+            if abs(block_speed - local_speed) < 0.2 and s_gap < 0.5:
+                current_block["s_end"] = max(current_block["s_end"], s_w["end"])
+                current_block["e_end"] = max(current_block["e_end"], e_w["end"])
+                current_block["words"] += 1
+                current_block["s_indices"].append(s_idx)
+                current_block["e_indices"].append(e_idx)
+            else:
+                blocks.append(self._finalize(current_block))
+                current_block = {
+                    "s_start": s_w["start"],
+                    "s_end": s_w["end"],
+                    "e_start": e_w["start"],
+                    "e_end": e_w["end"],
+                    "words": 1,
+                    "s_indices": [s_idx],
+                    "e_indices": [e_idx]
+                }
                 
-                if current_block is None:
-                    current_block = {
-                        "s_start": s_w["start"],
-                        "e_start": e_w["start"],
-                        "s_end": s_w["end"],
-                        "e_end": e_w["end"],
-                        "words": 1
-                    }
-                else:
-                    s_gap = s_w["start"] - current_block["s_end"]
-                    e_gap = e_w["start"] - current_block["e_end"]
-                    
-                    c_s_dur = current_block["s_end"] - current_block["s_start"]
-                    c_e_dur = current_block["e_end"] - current_block["e_start"]
-                    speed = c_s_dur / c_e_dur if c_e_dur > 0 else 1.0
-                    
-                    expected_e_gap = s_gap / speed if speed > 0 else 0
-                    
-                    if abs(e_gap - expected_e_gap) < 0.2 and s_gap < 1.0:
-                        current_block["s_end"] = max(current_block["s_end"], s_w["end"])
-                        current_block["e_end"] = max(current_block["e_end"], e_w["end"])
-                        current_block["words"] += 1
-                    else:
-                        blocks.append(self._finalize(current_block))
-                        current_block = {
-                            "s_start": s_w["start"],
-                            "e_start": e_w["start"],
-                            "s_end": s_w["end"],
-                            "e_end": e_w["end"],
-                            "words": 1
-                        }
-                s_idx = match_idx + 1
-            
-            e_idx += 1
-            
         if current_block:
             blocks.append(self._finalize(current_block))
             

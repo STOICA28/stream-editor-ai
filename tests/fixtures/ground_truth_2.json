@@ -1,0 +1,27 @@
+{
+  "blocks": [
+    {
+      "id": "11d5ceb0-2dac-4498-942f-83516c08adbc",
+      "run_id": "run-2",
+      "source_start": 0.0,
+      "source_end": 2.0,
+      "edit_start": 0.0,
+      "edit_end": 2.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    },
+    {
+      "id": "913cfb11-93f2-491c-8a2c-45dbf712cac7",
+      "run_id": "run-2",
+      "source_start": 4.0,
+      "source_end": 8.0,
+      "edit_start": 2.0,
+      "edit_end": 6.0,
+      "speed_ratio": 1.0,
+      "is_manual_override": false
+    }
+  ],
+  "effects": [],
+  "source_duration": 10.0,
+  "edit_duration": 6.0
+}
