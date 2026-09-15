@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from .routers import analysis, candidates, health, jobs, planning, projects, story_graph, review, visual, effects
+from .routers import analysis, candidates, health, jobs, planning, projects, story_graph, review, visual, effects, renders
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
@@ -22,3 +22,5 @@ app.include_router(visual.router, prefix="/api/v1")
 app.include_router(visual.run_router, prefix="/api/v1")
 app.include_router(effects.router, prefix="/api/v1")
 app.include_router(effects.run_router, prefix="/api/v1")
+app.include_router(renders.router, prefix="/api/v1")
+app.include_router(renders.run_router, prefix="/api/v1")
