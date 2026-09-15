@@ -62,6 +62,8 @@ class AlignmentBlock(Base):
     speed_ratio = Column(Float, nullable=False, default=1.0)
     method = Column(String, nullable=False)
     is_manual_override = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    replaces_id = Column(String, ForeignKey("alignment_blocks.id"), nullable=True)
 
     run = relationship("ReferenceAlignmentRun", back_populates="blocks")
 
@@ -100,6 +102,8 @@ class ObservedEffect(Base):
     detection_method = Column(String, nullable=False)
     is_manual_override = Column(Boolean, nullable=False, default=False)
     is_false_positive = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    replaces_id = Column(String, ForeignKey("observed_effects.id"), nullable=True)
 
     pair = relationship("ReferenceVideoPair", back_populates="effects")
 
