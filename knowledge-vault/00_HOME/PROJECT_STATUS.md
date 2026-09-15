@@ -11,22 +11,28 @@ tags:
 
 # Project Status
 
-- **Current milestone:** M6 — Human Review & Feedback Architecture
-- **Status:** COMPLETED
-- **Focus:** Immutable plan tracking, feedback event logging, review states, precise editing tools in UI.
-- **Focus:** Visual analysis and feature extraction.
+**Current Milestone:** M8 — EFFECT PLANNING (COMPLETED)
 
-### Completed Milestones
-- **M7: Visual Understanding:** (Completed) Visual analysis and feature extraction.
-- **M6: Human Review & Feedback:** (Completed) Non-destructive edit plans, UI revision creation, FeedbackEvent collection.
-- **M5: Edit Plan Generation:** (Completed) AI generation of chronological clip plans.
-- **M4: Story Graph & Narrative Intelligence:** (Completed) Narrative thread context.
-- **M3: Candidate Generation & Scoring:** (Completed) Sub-clip selection logic.
-- **M2: Understanding Layer:** (Completed) Timelines & parsing.
-- **M1: Media Foundation:** (Completed) Import and DB.
-- **M0: Foundation:** (Completed) Scaffolding.
+## Progress
 
-- **Technical debt:** None
-- **Next tasks:** Begin M8 (Rendering & Effects)
+- [x] M0: Foundation & Infrastructure
+- [x] M1: Media Import & Proxies
+- [x] M2: Audio & Semantic Analysis
+- [x] M3: Candidate Generation & Editorial Scoring
+- [x] M4: Story Graph & Narrative Intelligence
+- [x] M5: Global Editorial Selection
+- [x] M6: Human Review & Feedback Architecture
+- [x] M7: Visual Understanding & Focus
+- [x] M8: Effect Planning
+- [ ] M9: Video Rendering & Export
+
+## Status Update
+
+- **Completed:** M8 Effect Planning models, contracts, endpoints, frontend UI, and unit tests.
+- **In Progress:** Transitioning to M9.
+- **Blocked:** None
+- **Known bugs:** None
+- **Technical debt:** Need to implement a real Gemini Effect Planning provider once prompts are finalized.
+- **Next tasks:** Begin M9 Video Rendering pipeline integration.
 - **How to run:** Use `uv run uvicorn apps.api.src.stream_editor.api.main:app` and `npm run dev` in frontend.
 - **Last successful test run:** 2026-09-15 (All tests passing)
