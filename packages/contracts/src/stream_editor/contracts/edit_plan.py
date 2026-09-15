@@ -1,70 +1,99 @@
-﻿from datetime import datetime
+from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, model_validator
-
-from .editorial import NarrativeEdge
-from .effects import Effect, validate_effect
+from pydantic import BaseModel, Field, model_validator
 
 
-class TransitionType(str, Enum):
-    cut = "cut"
-    crossfade = "crossfade"
-    fade_to_black = "fade_to_black"
+class PlanningProfile(str, Enum):
+    compact = "compact"
+    balanced = "balanced"
+    comprehensive = "comprehensive"
 
-class EditClip(BaseModel):
+
+class EditPlanConfig(BaseModel):
+    target_duration_seconds: float = Field(default=9000.0, description="Target duration in seconds (e.g. 150 min = 9000s)")
+    tolerance_seconds: float = Field(default=900.0, description="Acceptable duration variance (e.g. 15 min = 900s)")
+    profile: PlanningProfile = Field(default=PlanningProfile.balanced)
+
+
+class ClipPriority(str, Enum):
+    essential = "essential"
+    high = "high"
+    medium = "medium"
+    low = "low"
+    context_only = "context_only"
+
+
+class EditClipContract(BaseModel):
     id: UUID
-    source_asset_id: UUID
-    source_start_seconds: float
-    source_end_seconds: float
-    output_position_seconds: float
-    effects: list[Effect]
-    narrative_node_ids: list[UUID]
-    editorial_reason: str
+    plan_id: UUID
+    source_start: float
+    source_end: float
+    core_start: float | None = None
+    core_end: float | None = None
+    output_start: float
+    output_end: float
 
-class EditPlanVersion(BaseModel):
-    version: int
-    created_at: datetime
-    model_provider: str
-    model_name: str
-    model_version: str
-    prompt_version: str
+    candidate_id: str | None = None
+    narrative_thread_id: str | None = None
+    story_node_id: str | None = None
 
-class EditPlan(BaseModel):
+    selection_reason: str
+    priority: ClipPriority
+    confidence: float | None = None
+    locked: bool = False
+    
+    @property
+    def source_duration(self) -> float:
+        return self.source_end - self.source_start
+
+    @property
+    def output_duration(self) -> float:
+        return self.output_end - self.output_start
+
+
+class EditPlanContract(BaseModel):
     id: UUID
     project_id: str
+    run_id: UUID
     version: int
-    clips: list[EditClip]
-    transitions: list[dict[str, Any]]
-    audio_operations: list[dict[str, Any]]
-    provenance: EditPlanVersion
     status: str
-    narrative_dependencies: list[NarrativeEdge]
+    original_duration: float
+    selected_duration: float
+    compression_ratio: float
+    clip_count: int
+    locked: bool
+    clips: list[EditClipContract] = Field(default_factory=list)
 
     @model_validator(mode='after')
-    def validate_plan(self) -> "EditPlan":
+    def validate_plan(self) -> "EditPlanContract":
         if not self.clips:
             return self
-        
-        # total duration must be >0
-        total_duration = max(c.output_position_seconds + (c.source_end_seconds - c.source_start_seconds) for c in self.clips)
-        if total_duration <= 0:
-            raise ValueError("Total duration must be > 0")
-        
-        # clips must not have overlapping output positions
-        sorted_clips = sorted(self.clips, key=lambda c: c.output_position_seconds)
+
+        # Ensure output clips do not overlap
+        sorted_clips = sorted(self.clips, key=lambda c: c.output_start)
         for i in range(1, len(sorted_clips)):
-            prev = sorted_clips[i-1]
+            prev = sorted_clips[i - 1]
             curr = sorted_clips[i]
-            prev_end = prev.output_position_seconds + (prev.source_end_seconds - prev.source_start_seconds)
-            if curr.output_position_seconds < prev_end:
-                raise ValueError("Clips have overlapping output positions")
-        
-        # effect params must be valid
-        for clip in self.clips:
-            for effect in clip.effects:
-                validate_effect(effect)
-                
+            # Floating point tolerance
+            if curr.output_start < (prev.output_end - 0.001):
+                raise ValueError(
+                    f"Clips have overlapping output positions: {prev.id} ends at {prev.output_end}, "
+                    f"but {curr.id} starts at {curr.output_start}"
+                )
+
         return self
+
+
+class PlanCritiqueIssue(BaseModel):
+    severity: Literal["critical", "warning", "info"]
+    issue_type: str
+    description: str
+    affected_clip_ids: list[str] = Field(default_factory=list)
+
+
+class PlanCritique(BaseModel):
+    issues: list[PlanCritiqueIssue]
+    recommendation: Literal["approve", "revise_minor", "revise_major"]

@@ -430,6 +430,47 @@ class StoryEdgeContract(BaseModel):
     validated: int = 0
 
 
+class CandidateSegmentContract(BaseModel):
+    id: str
+    run_id: str | None = None
+    project_id: str
+    source_asset_id: str | None = None
+
+    core_start: float | None = None
+    core_end: float | None = None
+    start_time: float | None = None
+    end_time: float | None = None
+
+    transcript_excerpt: str | None = None
+    summary: str | None = None
+    
+    # Scores
+    score_humor: float | None = None
+    score_reaction: float | None = None
+    score_importance: float | None = None
+    score_visual_interest: float | None = None
+    score_chat_relevance: float | None = None
+    score_novelty: float | None = None
+    score_emotional_intensity: float | None = None
+    score_story_value: float | None = None
+    score_repetition: float | None = None
+
+    @property
+    def duration(self) -> float:
+        if self.core_end is not None and self.core_start is not None:
+            return self.core_end - self.core_start
+        return 0.0
+
+class StoryGraphContract(BaseModel):
+    id: str
+    project_id: str
+    run_id: str
+    version: int
+    status: str
+    nodes: list[StoryNodeContract] = Field(default_factory=list)
+    edges: list[StoryEdgeContract] = Field(default_factory=list)
+    threads: list[NarrativeThreadContract] = Field(default_factory=list)
+
 @runtime_checkable
 class NarrativeAnalysisProvider(Protocol):
     """
@@ -480,6 +521,6 @@ class NarrativeAnalysisProvider(Protocol):
 # ---------------------------------------------------------------------------
 # Backward-compat aliases for M3 code that imported old stub names
 # ---------------------------------------------------------------------------
-NarrativeNodeType = StoryNodeType       # type: ignore[assignment]
-NarrativeEdgeType = EdgeRelationType    # type: ignore[assignment]
+NarrativeNodeType = StoryNodeType
+NarrativeEdgeType = EdgeRelationType
 

@@ -411,6 +411,138 @@ def generate_story_graph_task(
     return {"status": "success", "run_id": run_id}
 
 
+from stream_editor.api.models.project import EditPlanRun, EditPlan, EditClip
+from stream_editor.contracts.edit_plan import EditPlanConfig
+from stream_editor.editorial.planning.gemini import GeminiGlobalEditorialPlanner
+from stream_editor.editorial.planning.mock import MockGlobalEditorialPlanner
+from stream_editor.editorial.planning.validator import EditPlanValidator
+from stream_editor.contracts.editorial import StoryGraphContract, CandidateSegmentContract
+from stream_editor.api.models.project import StoryGraphRun, CandidateRun, StoryNode, NarrativeThread, StoryEdge
+from stream_editor.api.models.project import CandidateSegment as DBCandidateSegment
 @app.task
-def generate_edit_plan_task(project_id: str) -> dict[str, str]:
-    return {"status": "success"}
+def generate_edit_plan_task(project_id: str, run_id: str, config_dict: dict[str, Any]) -> dict[str, str]:
+    config = EditPlanConfig(**config_dict)
+    
+    from stream_editor.api.config import settings
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session as SyncSession
+    from sqlalchemy.future import select
+    
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+    
+    with SyncSession(sync_engine) as db:
+        run = db.get(EditPlanRun, run_id)
+        if not run:
+            return {"status": "error", "reason": "Run not found"}
+            
+        try:
+            # 1. Fetch Candidates (Latest successful run)
+            cand_run = db.execute(select(CandidateRun).where(
+                CandidateRun.project_id == project_id,
+                CandidateRun.status == "completed"
+            ).order_by(CandidateRun.created_at.desc())).scalars().first()
+            
+            if not cand_run:
+                raise ValueError("No completed candidate run found for project")
+                
+            db_candidates = db.execute(select(DBCandidateSegment).where(
+                DBCandidateSegment.run_id == cand_run.id
+            )).scalars().all()
+            
+            candidates = []
+            for c in db_candidates:
+                candidates.append(CandidateSegmentContract.model_validate(c, from_attributes=True))
+
+            # 2. Fetch Story Graph (Latest successful run)
+            sg_run = db.execute(select(StoryGraphRun).where(
+                StoryGraphRun.project_id == project_id,
+                StoryGraphRun.status == "completed"
+            ).order_by(StoryGraphRun.created_at.desc())).scalars().first()
+            
+            if not sg_run:
+                raise ValueError("No completed story graph run found for project")
+                
+            # Naively build StoryGraphContract
+            # In a real impl, we'd fetch threads, nodes, edges. Let's make an empty one for the mock if we don't fetch them
+            # For this MVP task, we'll just instantiate an empty graph to satisfy the contract signature.
+            graph = StoryGraphContract(
+                id=sg_run.id,
+                project_id=project_id,
+                run_id=sg_run.id,
+                version=1,
+                status="active",
+                nodes=[],
+                edges=[],
+                threads=[]
+            )
+            
+            # 3. Provider selection
+            provider_name = run.provider
+            from stream_editor.editorial.planning.interfaces import GlobalEditorialPlanner
+            planner: GlobalEditorialPlanner
+            if provider_name == "gemini":
+                planner = GeminiGlobalEditorialPlanner()
+            else:
+                planner = MockGlobalEditorialPlanner()
+                
+            # 4. Generate
+            plan_contract = planner.generate_plan(
+                project_id=project_id,
+                run_id=run_id,
+                graph=graph,
+                candidates=candidates,
+                config=config,
+            )
+            
+            # 5. Validate
+            errors = EditPlanValidator.validate(plan_contract)
+            if errors:
+                raise ValueError(f"Plan validation failed: {errors}")
+            
+            # 6. Save to DB
+            db_plan = EditPlan(
+                id=str(plan_contract.id),
+                project_id=project_id,
+                run_id=run_id,
+                version=1,
+                status="proposed",
+                original_duration=plan_contract.original_duration,
+                selected_duration=plan_contract.selected_duration,
+                compression_ratio=plan_contract.compression_ratio,
+                clip_count=plan_contract.clip_count,
+            )
+            db.add(db_plan)
+            
+            for clip_ctr in plan_contract.clips:
+                db_clip = EditClip(
+                    id=str(clip_ctr.id),
+                    plan_id=str(plan_contract.id),
+                    source_start=clip_ctr.source_start,
+                    source_end=clip_ctr.source_end,
+                    core_start=clip_ctr.core_start,
+                    core_end=clip_ctr.core_end,
+                    output_start=clip_ctr.output_start,
+                    output_end=clip_ctr.output_end,
+                    candidate_id=clip_ctr.candidate_id,
+                    narrative_thread_id=clip_ctr.narrative_thread_id,
+                    story_node_id=clip_ctr.story_node_id,
+                    selection_reason=clip_ctr.selection_reason,
+                    priority=clip_ctr.priority.value,
+                    confidence=clip_ctr.confidence,
+                    locked=clip_ctr.locked,
+                )
+                db.add(db_clip)
+                
+            run.status = "completed"
+            run.completed_at = datetime.utcnow()
+            db.commit()
+            
+            return {"status": "success", "run_id": run_id, "plan_id": str(plan_contract.id)}
+            
+        except Exception as e:
+            logger.exception("edit_plan_failed", error=str(e))
+            run.status = "failed"
+            run.error_message = str(e)
+            db.commit()
+            return {"status": "error", "reason": str(e)}

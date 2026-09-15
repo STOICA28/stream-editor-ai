@@ -60,7 +60,7 @@ async def generate_story_graph(
     background_tasks.add_task(
         generate_story_graph_task.delay,
         str(project_id),
-        str(asset_id),
+        asset.id,
         request.candidate_run_id,
         request.provider,
     )

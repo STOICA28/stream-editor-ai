@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 from ..database import Base
 
@@ -278,17 +279,97 @@ class ModelResultCache(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+# ---------------------------------------------------------------------------
+# M5 - Global Editorial Selection & Edit Plan
+# ---------------------------------------------------------------------------
+
+class EditPlanRun(Base):
+    """
+    Versioned Edit Plan generation run.
+    Idempotent by derivation_signature.
+    """
+    __tablename__ = "edit_plan_runs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    candidate_run_id = Column(String, ForeignKey("candidate_runs.id"), nullable=True)
+    story_graph_run_id = Column(String, ForeignKey("story_graph_runs.id"), nullable=True)
+    
+    # Target duration constraints
+    target_duration_seconds = Column(Float, nullable=True)
+    tolerance_seconds = Column(Float, nullable=True)
+    
+    # Configuration / Provenance
+    planning_profile = Column(String) # compact | balanced | comprehensive
+    provider = Column(String)         # mock | gemini
+    model = Column(String)            
+    prompt_version = Column(String)
+    planner_version = Column(String)
+    
+    derivation_signature = Column(String, unique=True)
+    status = Column(String, default="running") # running | completed | failed
+    error_message = Column(String, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
 class EditPlan(Base):
     __tablename__ = "edit_plans"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = Column(String, ForeignKey("projects.id"))
+    run_id = Column(String, ForeignKey("edit_plan_runs.id"))
+    
+    version = Column(Integer, default=1)
+    status = Column(String, default="proposed") # proposed | accepted | rejected | modified
+    
+    # Stats / diagnostics
+    original_duration = Column(Float)
+    selected_duration = Column(Float)
+    compression_ratio = Column(Float)
+    clip_count = Column(Integer)
+    
+    # Optional constraints
+    locked = Column(Boolean, default=False)
 
-class EditPlanVersion(Base):
-    __tablename__ = "edit_plan_versions"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    clips = relationship("EditClip", back_populates="plan", cascade="all, delete-orphan")
+
 
 class EditClip(Base):
     __tablename__ = "edit_clips"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    plan_id = Column(String, ForeignKey("edit_plans.id"))
+    
+    plan = relationship("EditPlan", back_populates="clips")
+    
+    # Source boundaries
+    source_start = Column(Float)
+    source_end = Column(Float)
+    
+    # Optional sub-boundaries for "core" vs "context" (M5 concept)
+    core_start = Column(Float, nullable=True)
+    core_end = Column(Float, nullable=True)
+    
+    # Output timeline boundaries (calculated by compiler)
+    output_start = Column(Float)
+    output_end = Column(Float)
+    
+    # Traceability
+    candidate_id = Column(String, ForeignKey("candidate_segments.id"), nullable=True)
+    narrative_thread_id = Column(String, nullable=True)  # Free string for now, could FK to threads
+    story_node_id = Column(String, ForeignKey("story_nodes.id"), nullable=True)
+    
+    # Editorial justification
+    selection_reason = Column(String)
+    priority = Column(String) # essential | high | medium | low | context_only
+    confidence = Column(Float, nullable=True)
+    
+    # Constraints
+    locked = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class FeedbackEvent(Base):
     __tablename__ = "feedback_events"
