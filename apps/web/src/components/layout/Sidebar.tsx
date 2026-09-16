@@ -38,6 +38,37 @@ const NAV_ITEMS = [
   },
 ];
 
+import { useState, useEffect } from "react";
+
+function AIProviderStatus() {
+  const [status, setStatus] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/health/ai")
+      .then((res) => res.json())
+      .then((data) => setStatus(data))
+      .catch(() => setStatus({ status: "error", message: "Failed to fetch" }));
+  }, []);
+
+  if (!status) return null;
+
+  return (
+    <div className="px-4 py-3 mb-2 mx-2 rounded-md bg-surface-overlay text-xs">
+      <div className="flex items-center gap-2 font-medium mb-1">
+        <div className={`w-2 h-2 rounded-full ${status.status === "ok" ? "bg-green-500" : "bg-red-500"}`} />
+        <span>AI: {status.provider || "Unknown"}</span>
+      </div>
+      {status.status === "ok" ? (
+        <div className="text-text-muted flex flex-col gap-0.5">
+          <span>Model: {status.model}</span>
+        </div>
+      ) : (
+        <span className="text-red-400">Offline</span>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -85,6 +116,8 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <AIProviderStatus />
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-surface-border">

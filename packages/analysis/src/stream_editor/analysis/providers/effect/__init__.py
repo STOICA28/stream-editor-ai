@@ -1,13 +1,12 @@
 from .base import EffectPlanningProvider, EffectPlanCritic
 from .mock import MockEffectPlanner, MockEffectCritic
-from .gemini import GeminiEffectPlanner
-from .critic import GeminiEffectCritic
+from .antigravity import AntigravityEffectPlanner, AntigravityEffectCritic
 
 __all__ = [
     "EffectPlanningProvider",
     "EffectPlanCritic",
     "MockEffectPlanner",
     "MockEffectCritic",
-    "GeminiEffectPlanner",
-    "GeminiEffectCritic"
+    "AntigravityEffectPlanner",
+    "AntigravityEffectCritic"
 ]

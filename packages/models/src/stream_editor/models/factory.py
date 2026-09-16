@@ -1,7 +1,6 @@
 import os
 
 from .anthropic_provider import AnthropicProvider
-from .gemini_provider import GeminiProvider
 from .mock_provider import MockProvider
 from .provider import ModelProvider
 
@@ -12,9 +11,10 @@ def get_provider(name: str | None = None) -> ModelProvider:
     
     if name == "mock":
         return MockProvider()
-    elif name == "gemini":
-        return GeminiProvider()
     elif name == "anthropic":
         return AnthropicProvider()
+    elif name == "antigravity":
+        # Placeholder for antigravity if needed directly via factory
+        raise NotImplementedError("Antigravity uses specific domain providers rather than a monolithic ModelProvider")
     else:
         raise ValueError(f"Unknown provider: {name}")

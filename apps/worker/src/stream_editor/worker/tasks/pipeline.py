@@ -336,15 +336,15 @@ def generate_candidates_task(
     config = CandidateWindowConfig()
     provider: EditorialAnalysisProvider
 
-    if provider_name == "gemini":
-        try:
-            from stream_editor.editorial.providers.gemini import GeminiEditorialProvider
-            provider = GeminiEditorialProvider()
-        except RuntimeError:
-            logger.warning("gemini_provider_unavailable_falling_back_to_mock")
-            provider = MockEditorialProvider()
-    else:
+    if provider_name == "mock":
         provider = MockEditorialProvider()
+    elif provider_name == "antigravity":
+        from stream_editor.editorial.providers.antigravity import AntigravityEditorialProvider
+        from stream_editor.models.antigravity_client import AntigravityClient
+        client = AntigravityClient()
+        provider = AntigravityEditorialProvider(client)
+    else:
+        raise ValueError(f"Unknown editorial provider: {provider_name}")
 
     with SyncSession(sync_engine) as db:
         generator = CandidateGenerator()
@@ -388,15 +388,15 @@ def generate_story_graph_task(
     config = StoryGraphConfig()
     provider: NarrativeAnalysisProvider
 
-    if provider_name == "gemini":
-        try:
-            from stream_editor.narrative.providers.gemini import GeminiNarrativeProvider
-            provider = GeminiNarrativeProvider()
-        except RuntimeError:
-            logger.warning("gemini_provider_unavailable_falling_back_to_mock")
-            provider = MockNarrativeProvider()
-    else:
+    if provider_name == "mock":
         provider = MockNarrativeProvider()
+    elif provider_name == "antigravity":
+        from stream_editor.narrative.providers.antigravity import AntigravityNarrativeProvider
+        from stream_editor.models.antigravity_client import AntigravityClient
+        client = AntigravityClient()
+        provider = AntigravityNarrativeProvider(client)
+    else:
+        raise ValueError(f"Unknown narrative provider: {provider_name}")
 
     with SyncSession(sync_engine) as db:
         generator = StoryGraphGenerator(session=db, provider=provider, config=config)
@@ -481,10 +481,15 @@ def generate_edit_plan_task(project_id: str, run_id: str, config_dict: dict[str,
             provider_name = run.provider
             from stream_editor.editorial.planning.interfaces import GlobalEditorialPlanner
             planner: GlobalEditorialPlanner
-            if provider_name == "gemini":
-                planner = GeminiGlobalEditorialPlanner()
-            else:
+            if provider_name == "mock":
                 planner = MockGlobalEditorialPlanner()
+            elif provider_name == "antigravity":
+                from stream_editor.editorial.planning.antigravity import AntigravityGlobalEditorialPlanner
+                from stream_editor.models.antigravity_client import AntigravityClient
+                client = AntigravityClient()
+                planner = AntigravityGlobalEditorialPlanner(client)
+            else:
+                raise ValueError(f"Unknown planning provider: {provider_name}")
                 
             # 4. Generate
             plan_contract = planner.generate_plan(

@@ -1,13 +1,5 @@
 from .interfaces import GlobalEditorialPlanner
 from .mock import MockGlobalEditorialPlanner
-from .gemini import GeminiGlobalEditorialPlanner
-from .optimizer import DeterministicDurationOptimizer
-from .validator import EditPlanValidator
+from .antigravity import AntigravityGlobalEditorialPlanner
 
-__all__ = [
-    "GlobalEditorialPlanner",
-    "MockGlobalEditorialPlanner",
-    "GeminiGlobalEditorialPlanner",
-    "DeterministicDurationOptimizer",
-    "EditPlanValidator",
-]
+__all__ = ["GlobalEditorialPlanner", "MockGlobalEditorialPlanner", "AntigravityGlobalEditorialPlanner"]
