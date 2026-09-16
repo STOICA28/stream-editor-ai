@@ -45,7 +45,7 @@ class AntigravityEditorialProvider:
         
         prompt = build_candidate_prompt(
             transcript_excerpt=transcript_excerpt,
-            local_features=local_features.to_dict(),
+            local_features=local_features.model_dump() if hasattr(local_features, "model_dump") else local_features,
             nearby_events=nearby_events,
             local_summary=local_summary,
             chapter_summary=chapter_summary
