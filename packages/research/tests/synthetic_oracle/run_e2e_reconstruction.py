@@ -65,30 +65,42 @@ def evaluate_seed(seed: int, provider: GeminiReferenceProvider) -> dict:
     fp_eff = 0
     matched_pe = set()
     
+    eff_stats = {}
     for te in gt_effects:
+        etype = te["effect_type"]
+        if etype not in eff_stats:
+            eff_stats[etype] = {"tp": 0, "fp": 0, "fn": 0}
+            
         best_diff = 999.0
         best_pe_idx = -1
         for i, pe in enumerate(effects):
-            if pe.effect_type == te["effect_type"]:
+            pe_type_str = str(pe.effect_type).split('.')[-1].lower() if hasattr(pe.effect_type, 'name') else str(pe.effect_type)
+            if pe_type_str == etype:
                 diff = abs(te["source_start"] - pe.source_start) + abs(te["source_end"] - pe.source_end)
                 if diff < best_diff:
                     best_diff = diff
                     best_pe_idx = i
         if best_diff < 1.0:
             tp_eff += 1
+            eff_stats[etype]["tp"] += 1
             matched_pe.add(best_pe_idx)
             pe = effects[best_pe_idx]
-            if te["effect_type"] == "zoom_face":
+            if etype == "zoom_face":
                 expected_scale = te.get("scale", 1.0)
                 detected_scale = pe.scale if getattr(pe, 'scale', None) else 1.0
                 print(f"  [Seed {seed}] Zoom Geometry - Expected Scale: {expected_scale:.2f}, Detected: {detected_scale:.2f}, Error: {abs(expected_scale - detected_scale):.2f}")
         else:
             fn_eff += 1
-            print(f"  [Seed {seed}] Missed Effect: {te['effect_type']} at {te['source_start']:.1f}->{te['source_end']:.1f}")
+            eff_stats[etype]["fn"] += 1
+            print(f"  [Seed {seed}] Missed Effect: {etype} at {te['source_start']:.1f}->{te['source_end']:.1f}")
             
     for i, pe in enumerate(effects):
         if i not in matched_pe:
             fp_eff += 1
+            pe_type_str = str(pe.effect_type).split('.')[-1].lower() if hasattr(pe.effect_type, 'name') else str(pe.effect_type)
+            if pe_type_str not in eff_stats:
+                eff_stats[pe_type_str] = {"tp": 0, "fp": 0, "fn": 0}
+            eff_stats[pe_type_str]["fp"] += 1
             print(f"  [Seed {seed}] False Positive Effect: {pe.effect_type} at {pe.source_start:.1f}->{pe.source_end:.1f}")
 
     prec_eff = tp_eff / (tp_eff + fp_eff) if (tp_eff + fp_eff) > 0 else 0.0
@@ -101,7 +113,8 @@ def evaluate_seed(seed: int, provider: GeminiReferenceProvider) -> dict:
         "avg_err_blocks": avg_err_blocks,
         "tp_eff": tp_eff, "fn_eff": fn_eff, "fp_eff": fp_eff,
         "prec_eff": prec_eff, "rec_eff": rec_eff, "f1_eff": f1_eff,
-        "time": end_time - start_time
+        "time": end_time - start_time,
+        "eff_stats": eff_stats
     }
 
 def run_gemini_smoke_test():
@@ -169,12 +182,35 @@ def run():
     rec_e = tp_e / (tp_e + fn_e) if (tp_e + fn_e) > 0 else 0.0
     f1_e = 2 * (prec_e * rec_e) / (prec_e + rec_e) if (prec_e + rec_e) > 0 else 0.0
     
+    # Calculate per-effect breakdown
+    eff_stats = {}
+    for r in results:
+        for etype, stats in r.get("eff_stats", {}).items():
+            if etype not in eff_stats:
+                eff_stats[etype] = {"tp": 0, "fp": 0, "fn": 0}
+            eff_stats[etype]["tp"] += stats["tp"]
+            eff_stats[etype]["fp"] += stats["fp"]
+            eff_stats[etype]["fn"] += stats["fn"]
+            
     run_gemini_smoke_test()
     
     print("--- Aggregate Results ---")
     print(f"Block Alignment : Precision: {prec_b:.2f} | Recall: {rec_b:.2f} | F1: {f1_b:.2f}")
     print(f"Effect Detection: Precision: {prec_e:.2f} | Recall: {rec_e:.2f} | F1: {f1_e:.2f}")
-    print(f"Telemetry: {provider.telemetry}")
+    
+    print("\n--- Effect Breakdown ---")
+    print(f"{'Effect Type':<20} | {'Expected':<8} | {'Detected':<8} | {'TP':<4} | {'FP':<4} | {'FN':<4} | {'Prec':<4} | {'Rec':<4}")
+    for etype in ["zoom_region", "crop_focus", "zoom_face", "grayscale", "speed_up", "slow_motion", "freeze_frame", "screen_to_face", "EffectType.CROP_FOCUS", "EffectType.ZOOM_FACE", "EffectType.GRAYSCALE", "EffectType.SLOW_MOTION", "EffectType.SPEED_UP", "EffectType.FREEZE_FRAME"]:
+        if etype not in eff_stats and "EffectType." not in etype: continue
+        st = eff_stats.get(etype, {"tp": 0, "fp": 0, "fn": 0})
+        if st["tp"] == 0 and st["fp"] == 0 and st["fn"] == 0: continue
+        exp = st["tp"] + st["fn"]
+        det = st["tp"] + st["fp"]
+        pr = st["tp"] / det if det > 0 else 0.0
+        rc = st["tp"] / exp if exp > 0 else 0.0
+        print(f"{etype:<20} | {exp:<8} | {det:<8} | {st['tp']:<4} | {st['fp']:<4} | {st['fn']:<4} | {pr:.2f} | {rc:.2f}")
+
+    print(f"\nTelemetry: {provider.telemetry}")
 
 if __name__ == "__main__":
     run()
