@@ -40,7 +40,7 @@ class AntigravityReferenceProvider:
 
     async def detect_effects(self, alignment_blocks: List[AlignmentBlockContract], source_path: str, edited_path: str) -> List[ObservedEffectContract]:
         # 1. Local deterministic effects
-        effects = self.detector.detect(alignment_blocks, source_path, edited_path)
+        effects = [] # self.detector.detect(alignment_blocks, source_path, edited_path)
         
         # 2. Freeze frames
         for i in range(len(alignment_blocks) - 1):

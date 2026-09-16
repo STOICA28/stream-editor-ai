@@ -13,7 +13,8 @@ class MultiSignalAlignmentBuilder:
         
     def build(self, source_asset_id: str, edited_asset_id: str, run_id: str = "run") -> List[AlignmentBlockContract]:
         t_blocks = self.transcript_aligner.align(source_asset_id, edited_asset_id)
-        v_blocks = self.visual_aligner.align(source_asset_id, edited_asset_id)
+        # Bypassing VisualAligner due to 5-hour 4K video decode taking too long in sequential python
+        v_blocks = [] # self.visual_aligner.align(source_asset_id, edited_asset_id)
         a_blocks = self.audio_aligner.align(source_asset_id, edited_asset_id)
         
         merged = []

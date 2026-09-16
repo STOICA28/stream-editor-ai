@@ -9,32 +9,50 @@ class AudioAligner:
     Implements real audio cross-correlation to align edited video with source video.
     """
     
-    def __init__(self, target_sr: int = 1000):
+    def __init__(self, target_sr: int = 10):
         self.target_sr = target_sr
         
     def align(self, source_path: str, edited_path: str) -> List[AlignmentBlockContract]:
-        source_audio = source_path.replace('.mp4', '.wav')
-        edited_audio = edited_path.replace('.mp4', '.wav')
+        print("AudioAligner: Starting alignment...", flush=True)
+        source_audio = source_path.replace(".mp4", ".wav")
+        edited_audio = edited_path.replace(".mp4", ".wav")
         
         try:
+            print("AudioAligner: Reading source...", flush=True)
             s_sr, s_data = wavfile.read(source_audio)
+            print("AudioAligner: Reading edited...", flush=True)
             e_sr, e_data = wavfile.read(edited_audio)
-        except Exception:
+            print(f"AudioAligner: Read complete. s_len={len(s_data)}, e_len={len(e_data)}", flush=True)
+        except Exception as ex:
+            print(f"AudioAligner: Exception reading wavs: {ex}", flush=True)
             return []
             
         if len(s_data.shape) > 1: s_data = s_data.mean(axis=1)
         if len(e_data.shape) > 1: e_data = e_data.mean(axis=1)
         
-        # Envelope extraction to handle speed variations
-        # A simple absolute moving average
         window = int(s_sr * 0.1)
-        s_env = np.convolve(np.abs(s_data), np.ones(window)/window, mode='valid')
-        e_env = np.convolve(np.abs(e_data), np.ones(window)/window, mode='valid')
-        
         s_step = s_sr // self.target_sr
         e_step = e_sr // self.target_sr
-        s_env = s_env[::s_step]
-        e_env = e_env[::e_step]
+        
+        import scipy.signal
+        s_env = []
+        chunk_len = s_sr * 60 # 60 seconds
+        for i in range(0, len(s_data), chunk_len):
+            chunk = np.abs(s_data[i:i+chunk_len])
+            chunk = chunk[::s_step]
+            window_small = max(1, window // s_step)
+            env_chunk = scipy.signal.fftconvolve(chunk, np.ones(window_small)/window_small, mode='same')
+            s_env.append(env_chunk)
+        s_env = np.concatenate(s_env)
+        
+        e_env = []
+        for i in range(0, len(e_data), chunk_len):
+            chunk = np.abs(e_data[i:i+chunk_len])
+            chunk = chunk[::e_step]
+            window_small = max(1, window // e_step)
+            env_chunk = scipy.signal.fftconvolve(chunk, np.ones(window_small)/window_small, mode='same')
+            e_env.append(env_chunk)
+        e_env = np.concatenate(e_env)
         
         blocks = []
         chunk_size = int(self.target_sr * 0.5)
