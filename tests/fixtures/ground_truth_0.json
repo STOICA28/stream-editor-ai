@@ -1,7 +1,7 @@
 {
   "blocks": [
     {
-      "id": "6ad65da8-8c1b-4a0d-8a73-6912a2e05f32",
+      "id": "78d4fbc8-de87-4dc0-8913-e6effe942343",
       "run_id": "run-0",
       "source_start": 0.0,
       "source_end": 1.0,
@@ -11,7 +11,7 @@
       "is_manual_override": false
     },
     {
-      "id": "5b01d49e-9e01-4d63-9d68-8f3cd6412a2c",
+      "id": "afe17c85-2085-49f5-b630-76ab7300910d",
       "run_id": "run-0",
       "source_start": 2.0,
       "source_end": 4.0,
@@ -21,7 +21,7 @@
       "is_manual_override": false
     },
     {
-      "id": "18677c93-968b-4335-940d-66df5670cacc",
+      "id": "24194a46-47c2-49b3-b0a9-fa5bd0d22d0b",
       "run_id": "run-0",
       "source_start": 4.0,
       "source_end": 6.0,
@@ -31,7 +31,7 @@
       "is_manual_override": false
     },
     {
-      "id": "59fdb685-0772-4d1f-b5d4-166758786882",
+      "id": "bb231238-dd60-4000-841a-cb202e153f66",
       "run_id": "run-0",
       "source_start": 6.0,
       "source_end": 7.0,
@@ -41,7 +41,7 @@
       "is_manual_override": false
     },
     {
-      "id": "2c8e093f-2f6f-4ca4-89fa-d9484c65f3d6",
+      "id": "77b3035c-9721-47ea-bcd2-ecd1ac9b06f5",
       "run_id": "run-0",
       "source_start": 7.0,
       "source_end": 9.0,
@@ -51,7 +51,7 @@
       "is_manual_override": false
     },
     {
-      "id": "e02f2f53-daa0-4b99-8316-b7b42a4657f6",
+      "id": "fa0bd09f-6dd2-4c47-a12f-2f4b8daea991",
       "run_id": "run-0",
       "source_start": 9.0,
       "source_end": 9.1,
@@ -63,7 +63,7 @@
   ],
   "effects": [
     {
-      "id": "9050b923-0646-485f-8ec7-a8c0e755c4ef",
+      "id": "1a7b9059-7d84-4ae3-85a0-5f9e8102f92b",
       "pair_id": "pair-0",
       "effect_type": "speed_up",
       "target": "full_frame",
@@ -75,7 +75,7 @@
       "is_false_positive": false
     },
     {
-      "id": "1cdb3ba0-95b2-4387-a6a0-938649f28491",
+      "id": "c3479b52-d0a8-4fa0-a566-5cd858e0e018",
       "pair_id": "pair-0",
       "effect_type": "zoom_face",
       "target": "facecam",
@@ -90,7 +90,7 @@
       "cy": 200
     },
     {
-      "id": "ade8854c-4813-42e0-9a89-d8cd4094a6d7",
+      "id": "48050458-b88a-4b95-a1d4-624b271a1259",
       "pair_id": "pair-0",
       "effect_type": "grayscale",
       "target": "full_frame",
@@ -102,7 +102,7 @@
       "is_false_positive": false
     },
     {
-      "id": "9e17e2ec-ceef-435c-9524-d2e32b25d219",
+      "id": "5855a312-6d6b-48f0-9917-4f19590a0111",
       "pair_id": "pair-0",
       "effect_type": "crop_focus",
       "target": "screen_region",
@@ -114,7 +114,7 @@
       "is_false_positive": false
     },
     {
-      "id": "4e48c6c6-3cbf-4074-b51a-73c6da542003",
+      "id": "60417ace-df6d-4bcb-8653-a25464c67b16",
       "pair_id": "pair-0",
       "effect_type": "zoom_face",
       "target": "facecam",
@@ -129,7 +129,7 @@
       "cy": 200
     },
     {
-      "id": "ba8723ae-59f3-43f6-b82c-0a65f79c841c",
+      "id": "002ab0e3-c19f-4750-bb19-c03e5a340b0c",
       "pair_id": "pair-0",
       "effect_type": "freeze_frame",
       "target": "full_frame",

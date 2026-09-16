@@ -1,7 +1,7 @@
 {
   "blocks": [
     {
-      "id": "5e6f97fc-1077-4244-b17c-ff4ab17ac568",
+      "id": "016865d5-1933-464b-8194-78420b451fc6",
       "run_id": "run-1",
       "source_start": 1.0,
       "source_end": 3.0,
@@ -11,7 +11,7 @@
       "is_manual_override": false
     },
     {
-      "id": "b986587c-787c-4b66-8551-560eb2161a04",
+      "id": "b8f70468-7fad-42b8-9a3c-8d188fcd4850",
       "run_id": "run-1",
       "source_start": 4.0,
       "source_end": 5.0,
@@ -21,7 +21,7 @@
       "is_manual_override": false
     },
     {
-      "id": "4131d1bc-c935-4791-bd79-de23e60684e3",
+      "id": "84979e92-f417-44d5-abbf-b66e87d9ff84",
       "run_id": "run-1",
       "source_start": 5.0,
       "source_end": 6.0,
@@ -31,7 +31,7 @@
       "is_manual_override": false
     },
     {
-      "id": "24174500-3c3c-4371-8db9-f01d24673308",
+      "id": "9494ff0e-b7d4-4d4c-892e-246982bb5824",
       "run_id": "run-1",
       "source_start": 6.0,
       "source_end": 8.0,
@@ -43,7 +43,7 @@
   ],
   "effects": [
     {
-      "id": "e013e7ad-df2e-47f5-a8d1-bae18eac163b",
+      "id": "b675921a-d611-4d67-9580-742b4d75bedf",
       "pair_id": "pair-1",
       "effect_type": "grayscale",
       "target": "full_frame",
@@ -55,7 +55,7 @@
       "is_false_positive": false
     },
     {
-      "id": "734a92cd-1d67-4e9e-8306-ef8955d15b39",
+      "id": "8d5e8fad-b350-40b2-9bcc-98203a88f51e",
       "pair_id": "pair-1",
       "effect_type": "slow_motion",
       "target": "full_frame",
@@ -67,7 +67,7 @@
       "is_false_positive": false
     },
     {
-      "id": "603e9e15-6758-45b0-a437-6b830167d6a1",
+      "id": "e601f880-462c-4507-8690-d7f6a1423c72",
       "pair_id": "pair-1",
       "effect_type": "zoom_face",
       "target": "facecam",
