@@ -28,9 +28,18 @@ tags:
 - [ ] M10: EditDNA Research Engine (Blocked at M10.3)
 - [ ] M11: Next Phase
 
-## Status Update
+## Current Status
+**Phase:** M10.3 / Global AI Migration complete. Blocked on real authorized media validation.
+**Latest Milestone:** GLOBAL AI MIGRATION (Implemented)
+**Next Actions:** Provide real authenticated media pair for M10 final validation.
 
-- **Completed:** M1-M9 (Core Editing Pipeline). M10.1 Real Capability Gate. M10.2 Synthetic Accuracy Hardening (94% Alignment F1, multi-signal fusion, zoom geometry tracking).
+### Recent Updates
+- [x] Implemented M10.1 (Real Capability Gate: Local alignment stubs removed)
+- [x] Implemented M10.2 (Synthetic Accuracy Hardening: 94% F1)
+- [x] Implemented M10.3 (Final Validation Gate: Added AntigravityReferenceProvider)
+- [x] Executed GLOBAL AI MIGRATION (All domains now route through AntigravityClient -> agy CLI)
+- [x] Migrated M3, M4, M5, M8, M10 away from Google Generative AI SDK to AntigravityClient
+- [x] Added `/api/health/ai` and Sidebar UI for AI connection status.
 - **In Progress:** M10.3 Final Validation Gate.
 - **Blocked:** M10.3 requires a REAL 10-30 min authorized source/edit reference pair. (Semantic validation block removed via `AntigravityReferenceProvider`).
 - **Known bugs:** Local effect detection drops recall on complex overlapping speed modifications (expected fallback behavior; requires Antigravity/Gemini Flash to resolve).
