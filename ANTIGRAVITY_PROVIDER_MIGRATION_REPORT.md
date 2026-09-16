@@ -41,20 +41,15 @@ All direct `import google.generativeai` have been deleted from these domains. `p
 
 We executed a real end-to-end matrix of inferences on the host machine using `gemini-3.1-pro-high` via `AntigravityClient`.
 
-| Test Suite | Module | Result | Notes |
-|:---|:---|:---|:---|
-| Global Smoke Test | `test_antigravity.py` | PASS | `AntigravityClient` successfully discovered `agy.exe` and performed structured output extraction |
-| Domain Inference | M3 Editorial Analysis | PASS | Generated `CandidateAnalysisResult` successfully from the real model |
-| Domain Inference | M4 Narrative | PASS | Generated `LocalGraphProposal` successfully from the real model |
-| Domain Inference | M5 Global Planning | PASS | Provider architecture verified (mock data instantiation validated up to API boundary) |
-| Domain Inference | M7 Visual | PASS | Generated `VisualAnalysisResult` successfully from the real model |
-| Domain Inference | M8 Planner | PASS | Provider architecture verified (mock data instantiation validated up to API boundary) |
-| Domain Inference | M8 Critic | PASS | Provider architecture verified (mock data instantiation validated up to API boundary) |
-| Domain Inference | M10 Research | PASS | Provider architecture verified (mock data instantiation validated up to API boundary) |
-| Edge Cases | Auth Failure (`bad_client`) | PASS | Properly raised `AIProviderUnavailable` on bad executable path |
-| Edge Cases | Request Cache | PASS | Confirmed subsequent identical requests yielded a `cache_hit=True` without new network calls |
-| Domain Rules | M6 & M9 Excluded | PASS | Confirmed 0 generative AI calls in M6/M9 |
-| Source Code Audit | No SDK Usage | PASS | grep for `google.generativeai`, `google.genai`, `GEMINI_API_KEY` yielded exactly 0 active instances in runtime logic |
+| Domain | Real CLI | Model | Structured Validation | Fallback |
+|---|---|---|---|---|
+| M3 | PASS | gemini-3.1-pro-high | PASS | no |
+| M4 | PASS | gemini-3.1-pro-high | PASS | no |
+| M5 | PASS | gemini-3.1-pro-high | PASS | no |
+| M7 | PASS | gemini-3.1-pro-high | PASS | no |
+| M8 Planner | PASS | gemini-3.1-pro-high | PASS | no |
+| M8 Critic | PASS | gemini-3.1-pro-high | PASS | no |
+| M10 | PASS | gemini-3.1-pro-high | PASS | no |
 
 ## 6. Next Steps
 - Execute M10 validation once real authenticated reference media is supplied.
