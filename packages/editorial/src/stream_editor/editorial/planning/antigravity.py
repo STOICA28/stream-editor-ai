@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from stream_editor.contracts.editorial import CandidateSegmentContract
 from stream_editor.contracts.edit_plan import ClipPriority, EditClipContract, EditPlanConfig, EditPlanContract
 from stream_editor.contracts.editorial import StoryGraphContract
+from stream_editor.contracts.style import StyledCandidateAssessment
 from stream_editor.api.config import settings
 
 from stream_editor.models.antigravity_client import AntigravityClient, AIProviderUnavailable
@@ -37,20 +38,41 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
         graph: StoryGraphContract,
         candidates: list[CandidateSegmentContract],
         config: EditPlanConfig,
+        styled_candidates: list[StyledCandidateAssessment] | None = None,
         **kwargs: Any
     ) -> EditPlanContract:
         
+        style_map = {}
+        if styled_candidates:
+            style_map = {sc.candidate_id: sc for sc in styled_candidates}
+            
         candidate_catalog = []
         for c in sorted(candidates, key=lambda x: x.start_time or 0.0):
             # Using basic scores if `c.score` is refactored, just handle it gracefully
             score_val = getattr(c, "score_importance", 0.0) or 0.0
-            candidate_catalog.append({
+            
+            # Apply StylePolicy overrides or adjustments
+            sc = style_map.get(str(c.id))
+            style_notes = []
+            if sc:
+                for inf in sc.influences:
+                    if inf.override_action == "FORCE_KEEP":
+                        style_notes.append("STYLE_POLICY_MANDATES_KEEP")
+                    elif inf.override_action == "FORCE_CUT":
+                        style_notes.append("STYLE_POLICY_MANDATES_CUT")
+                    score_val += inf.adjustment
+                    
+            item = {
                 "id": str(c.id),
                 "time": f"{c.start_time or 0.0:.1f} - {c.end_time or 0.0:.1f}",
                 "duration": round(c.duration, 1),
                 "summary": c.summary,
                 "score": round(score_val, 2)
-            })
+            }
+            if style_notes:
+                item["style_policy_overrides"] = style_notes
+                
+            candidate_catalog.append(item)
             
         threads_summary = []
         for t in graph.threads:
@@ -76,6 +98,12 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
             "Do not invoke tools.\n"
             "Do not change project state.\n\n"
             f"{system_instruction}\n\n"
+            f"PRECEDENCE RULES:\n"
+            f"1. Technical Invariants (Do not select clips outside the original video length)\n"
+            f"2. Human Locks (If a user explicitly locked a clip, you MUST KEEP IT)\n"
+            f"3. Canonical Rules (No dead air, no audio feedback)\n"
+            f"4. Project Preferences (e.g. Target Duration)\n"
+            f"5. StylePolicy (STYLE_POLICY_MANDATES_KEEP or STYLE_POLICY_MANDATES_CUT in Candidate Catalog)\n\n"
             f"Target Duration: ~{config.target_duration_seconds} seconds\n"
             f"Planning Profile: {config.profile.value if hasattr(config.profile, 'value') else config.profile}\n\n"
             f"STORY THREADS:\n{json.dumps(threads_summary, indent=2)}\n\n"
@@ -141,3 +169,4 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
             locked=False,
             clips=final_clips
         )
+

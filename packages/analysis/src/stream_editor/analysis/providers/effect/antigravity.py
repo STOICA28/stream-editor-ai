@@ -1,6 +1,7 @@
 import json
 import uuid
 import logging
+from stream_editor.editorial.style.effect_adapter import EffectStyleAdapter
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
@@ -54,6 +55,12 @@ class AntigravityEffectPlanner(EffectPlanningProvider):
             return []
             
         opps_data = [opp.model_dump() for opp in opportunities]
+        style_prompt = ""
+        effect_adapter = context.get("effect_adapter")
+        if isinstance(effect_adapter, EffectStyleAdapter) and effect_adapter.policy:
+            preferred = effect_adapter.get_preferred_effects()
+            density = effect_adapter.get_effect_density_modifier()
+            style_prompt = f"\nSTYLE POLICY ACTIVE:\n- Preferred effects: {preferred}\n- Effect density multiplier: {density}\n"
         prompt = f"""
         Analyze only the provided evidence.
         Return the required structured output.
@@ -67,6 +74,7 @@ class AntigravityEffectPlanner(EffectPlanningProvider):
         {json.dumps(opps_data, indent=2)}
         
         Do not over-edit. Use 'none' if no effect is needed.
+        {style_prompt}
         """
 
         try:
@@ -148,3 +156,4 @@ class AntigravityEffectCritic(EffectPlanCritic):
         except Exception as e:
             logger.error(f"Failed to get Antigravity effect critic response: {e}")
             return []
+

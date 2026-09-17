@@ -24,3 +24,5 @@ app.include_router(effects.router, prefix="/api/v1")
 app.include_router(effects.run_router, prefix="/api/v1")
 app.include_router(renders.router, prefix="/api/v1")
 app.include_router(renders.run_router, prefix="/api/v1")
+app.include_router(style.router, prefix="/api/v1")
+

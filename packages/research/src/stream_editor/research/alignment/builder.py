@@ -12,87 +12,63 @@ class MultiSignalAlignmentBuilder:
         self.visual_aligner = VisualAligner()
         
     def build(self, source_asset_id: str, edited_asset_id: str, run_id: str = "run") -> List[AlignmentBlockContract]:
-        t_blocks = self.transcript_aligner.align(source_asset_id, edited_asset_id)
-        # Bypassing VisualAligner due to 5-hour 4K video decode taking too long in sequential python
-        v_blocks = [] # self.visual_aligner.align(source_asset_id, edited_asset_id)
+        print("Builder: Running Audio Aligner...")
         a_blocks = self.audio_aligner.align(source_asset_id, edited_asset_id)
         
-        merged = []
-        for tb in t_blocks:
-            tb.run_id = run_id
-            merged.append(tb)
+        print("Builder: Running Continuity Filter on Audio Blocks...")
+        a_blocks.sort(key=lambda x: x.edit_start)
+        sequences = []
+        current_seq = []
+        for b in a_blocks:
+            if not current_seq:
+                current_seq.append(b)
+                continue
+            prev = current_seq[-1]
+            edit_diff = b.edit_start - prev.edit_start
+            source_diff = b.source_start - prev.source_start
+            if edit_diff > 0 and 0.5 <= source_diff / edit_diff <= 1.5:
+                current_seq.append(b)
+            else:
+                sequences.append(current_seq)
+                current_seq = [b]
+        if current_seq: sequences.append(current_seq)
+        
+        filtered_audio_blocks = []
+        for seq in sequences:
+            if len(seq) >= 2:
+                filtered_audio_blocks.extend(seq)
+                
+        # Calculate unmatched intervals
+        mapped_intervals = []
+        current_interval = None
+        for b in filtered_audio_blocks:
+            if not current_interval:
+                current_interval = [b.edit_start, b.edit_end]
+                continue
+            if b.edit_start <= current_interval[1] + 1.0:
+                current_interval[1] = max(current_interval[1], b.edit_end)
+            else:
+                mapped_intervals.append(current_interval)
+                current_interval = [b.edit_start, b.edit_end]
+        if current_interval: mapped_intervals.append(current_interval)
+        
+        unmatched_intervals = []
+        last_end = 0.0
+        for start, end in mapped_intervals:
+            if start > last_end:
+                unmatched_intervals.append([last_end, start])
+            last_end = end
+        if last_end < 2400.0: # Edited video is 40 mins
+            unmatched_intervals.append([last_end, 2400.0])
             
-        for vb in v_blocks:
-            vb.run_id = run_id
-            overlap_dur = 0
-            for mb in merged:
-                start = max(vb.edit_start, mb.edit_start)
-                end = min(vb.edit_end, mb.edit_end)
-                if end > start:
-                    overlap_dur += (end - start)
-            if overlap_dur < (vb.edit_end - vb.edit_start) * 0.5:
-                merged.append(vb)
-                
-        for ab in a_blocks:
-            ab.run_id = run_id
-            overlap_dur = 0
-            for mb in merged:
-                start = max(ab.edit_start, mb.edit_start)
-                end = min(ab.edit_end, mb.edit_end)
-                if end > start:
-                    overlap_dur += (end - start)
-            if overlap_dur < (ab.edit_end - ab.edit_start) * 0.5:
-                merged.append(ab)
-                
+        print(f"Builder: Found {len(unmatched_intervals)} unmatched intervals.")
+        
+        v_blocks = self.visual_aligner.align(source_asset_id, edited_asset_id, unmatched_intervals)
+        
+        merged = filtered_audio_blocks + v_blocks
         merged.sort(key=lambda x: x.edit_start)
         
-        final_blocks = []
-        if not merged:
-            return []
+        for mb in merged:
+            mb.run_id = run_id
             
-        current = merged[0]
-        for i in range(1, len(merged)):
-            nxt = merged[i]
-            
-            s_gap = nxt.source_start - current.source_end
-            e_gap = nxt.edit_start - current.edit_end
-            
-            # Allow merging across different methods if speed is the same
-            if current.speed_ratio == nxt.speed_ratio and abs(s_gap - e_gap) < 0.5 and s_gap < 1.0:
-                current.source_end = max(current.source_end, nxt.source_end)
-                current.edit_end = max(current.edit_end, nxt.edit_end)
-                current.method = "combined"
-            else:
-                final_blocks.append(current)
-                current = nxt
-                
-        final_blocks.append(current)
-        
-        clean = []
-        if not final_blocks:
-            return clean
-            
-        current = final_blocks[0]
-        for i in range(1, len(final_blocks)):
-            nxt = final_blocks[i]
-            
-            if nxt.edit_start < current.edit_end:
-                overlap = current.edit_end - nxt.edit_start
-                nxt.edit_start += overlap
-                nxt.source_start += overlap * nxt.speed_ratio
-                if nxt.edit_start >= nxt.edit_end:
-                    continue 
-                    
-            s_gap = nxt.source_start - current.source_end
-            e_gap = nxt.edit_start - current.edit_end
-            
-            if current.speed_ratio == nxt.speed_ratio and abs(s_gap - e_gap) < 0.2 and 0 <= s_gap < 1.0:
-                current.source_end = nxt.source_end
-                current.edit_end = nxt.edit_end
-                current.method = "mixed"
-            else:
-                clean.append(current)
-                current = nxt
-        clean.append(current)
-            
-        return clean
+        return merged

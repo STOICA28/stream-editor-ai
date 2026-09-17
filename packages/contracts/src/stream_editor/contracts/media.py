@@ -37,7 +37,10 @@ class ProxyConfig(BaseModel):
     crf: int = 23
     fps_mode: str = "cap"  # "preserve" or "cap"
     fps_max: float = 30.0
-    generator_version: str = "1.0.0"
+    gop_size: int = 30 # For fast deterministic seeking
+    preset: str = "veryfast"
+    faststart: bool = True
+    generator_version: str = "1.1.0"
 
     def get_signature(self, source_fingerprint: str) -> str:
         import hashlib

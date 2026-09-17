@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from stream_editor.contracts.editorial import CandidateSegmentContract
+from stream_editor.contracts.style import StyledCandidateAssessment
 from stream_editor.contracts.edit_plan import EditPlanConfig, EditPlanContract
 from stream_editor.contracts.editorial import StoryGraphContract
 
@@ -21,9 +22,11 @@ class GlobalEditorialPlanner(ABC):
         graph: StoryGraphContract,
         candidates: list[CandidateSegmentContract],
         config: EditPlanConfig,
+        styled_candidates: list[StyledCandidateAssessment] | None = None,
         **kwargs: Any
     ) -> EditPlanContract:
         """
         Generate a global edit plan.
         """
         ...
+

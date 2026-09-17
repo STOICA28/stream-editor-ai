@@ -14,6 +14,8 @@ class Project(Base):
     description = Column(String, nullable=True)
     status = Column(String, default="created")
     source_video_path = Column(String, nullable=True)
+    style_policy_id = Column(String, ForeignKey('editorial_style_policies.id'), nullable=True)
+    style_policy_version = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -766,3 +768,4 @@ class RenderJob(Base):
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+

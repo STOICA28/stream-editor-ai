@@ -1,12 +1,14 @@
 import cv2
-import numpy as np
+import os
+import subprocess
+import uuid
 from typing import List
+import numpy as np
 from stream_editor.contracts.research import AlignmentBlockContract, ObservedEffectContract
 from stream_editor.contracts.effect_planning import EffectType, EffectTargetType
-import uuid
 
 class LocalEffectDetector:
-    def detect(self, blocks: List[AlignmentBlockContract], source_path: str, edited_path: str, edit_duration: float = None) -> List[ObservedEffectContract]:
+    def detect(self, blocks: List[AlignmentBlockContract], source_path: str, edited_path: str, edit_duration: float = None, source_offset: float = 0.0, edited_offset: float = 0.0) -> List[ObservedEffectContract]:
         effects = []
         
         cap_s = cv2.VideoCapture(source_path)
@@ -25,8 +27,8 @@ class LocalEffectDetector:
             ret, frame = cap_e.read()
             if not ret: break
             gray = cv2.cvtColor(cv2.resize(frame, (16, 16)), cv2.COLOR_BGR2GRAY)
-            e_frames.append((idx / fps, gray))
-            idx += int(fps / 4) if fps > 4 else 1 # 4 fps sampling
+            e_frames.append(((idx / fps) + edited_offset, gray))
+            idx += int(fps / 2) if fps > 4 else 1 # 4 fps sampling
             
         freeze_start = None
         for i in range(1, len(e_frames)):
@@ -89,10 +91,11 @@ class LocalEffectDetector:
             while current_src < b.source_end - 0.1:
                 current_edit = b.edit_start + (current_src - b.source_start) / b.speed_ratio if b.speed_ratio > 0 else b.edit_start
                 
-                cap_s.set(cv2.CAP_PROP_POS_MSEC, current_src * 1000)
+                # Apply offset so we seek relative to the proxy's start time
+                cap_s.set(cv2.CAP_PROP_POS_MSEC, (current_src - source_offset) * 1000)
                 ret_s, frame_s = cap_s.read()
                 
-                cap_e.set(cv2.CAP_PROP_POS_MSEC, current_edit * 1000)
+                cap_e.set(cv2.CAP_PROP_POS_MSEC, (current_edit - edited_offset) * 1000)
                 ret_e, frame_e = cap_e.read()
                 
                 detected_type = None

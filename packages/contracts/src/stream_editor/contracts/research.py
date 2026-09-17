@@ -25,6 +25,7 @@ class EditorialDecisionType(str, Enum):
     EFFECT_APPLIED = "effect_applied"
     SPEED_CHANGED = "speed_changed"
     EXTERNAL_INSERT = "external_insert"
+    TRANSFORMED_SOURCE = "transformed_source"
     UNKNOWN = "unknown"
 
 class AlignmentMethod(str, Enum):

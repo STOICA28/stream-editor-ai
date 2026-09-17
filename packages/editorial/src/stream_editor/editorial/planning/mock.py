@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from stream_editor.contracts.editorial import CandidateSegmentContract
+from stream_editor.contracts.style import StyledCandidateAssessment
 from stream_editor.contracts.edit_plan import ClipPriority, EditClipContract, EditPlanConfig, EditPlanContract
 from stream_editor.contracts.editorial import StoryGraphContract
 
@@ -22,6 +23,7 @@ class MockGlobalEditorialPlanner(GlobalEditorialPlanner):
         graph: StoryGraphContract,
         candidates: list[CandidateSegmentContract],
         config: EditPlanConfig,
+        styled_candidates: list[StyledCandidateAssessment] | None = None,
         **kwargs: Any
     ) -> EditPlanContract:
         
@@ -72,3 +74,4 @@ class MockGlobalEditorialPlanner(GlobalEditorialPlanner):
             locked=False,
             clips=final_clips
         )
+

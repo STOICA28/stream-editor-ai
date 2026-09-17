@@ -22,17 +22,22 @@ def generate_proxy(input_path: str, output_path: str, config: ProxyConfig, sourc
         if config.fps_mode == "cap" and target_fps > config.fps_max:
             target_fps = config.fps_max
             
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", scale_filter,
+            "-r", str(target_fps),
+            "-c:v", config.video_codec,
+            "-preset", config.preset,
+            "-g", str(config.gop_size),
+            "-crf", str(config.crf),
+            "-c:a", config.audio_codec
+        ]
+        if config.faststart:
+            cmd.extend(["-movflags", "+faststart"])
+        cmd.extend(["-f", config.container, partial_path])
+
         subprocess.run(
-            [
-                "ffmpeg", "-y", "-i", input_path,
-                "-vf", scale_filter,
-                "-r", str(target_fps),
-                "-c:v", config.video_codec,
-                "-crf", str(config.crf),
-                "-c:a", config.audio_codec,
-                "-f", config.container,
-                partial_path
-            ],
+            cmd,
             check=True
         )
         os.replace(partial_path, output_path)

@@ -73,9 +73,10 @@ export function getProjectJobs(projectId: string): Promise<Job[]> {
   return apiRequest<Job[]>(`/api/v1/projects/${projectId}/jobs`);
 }
 
-export function triggerProcessing(projectId: string): Promise<Job> {
+export function triggerProcessing(projectId: string, payload?: { style_policy_id?: string; dry_run?: boolean }): Promise<Job> {
   return apiRequest<Job>(`/api/v1/projects/${projectId}/process`, {
     method: "POST",
+    body: payload ? JSON.stringify(payload) : undefined,
   });
 }
 
@@ -96,3 +97,4 @@ export function getProjectTranscripts(projectId: string): Promise<TranscriptSegm
 export function getProjectScenes(projectId: string): Promise<Scene[]> {
   return apiRequest<Scene[]>(`/api/v1/projects/${projectId}/scenes`);
 }
+
