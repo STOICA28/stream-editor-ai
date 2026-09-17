@@ -18,6 +18,7 @@ StreamEditor AI is a system designed to reconstruct the livestream experience by
 
 ## Navigation
 - [[00_HOME/PROJECT_STATUS|Project Status]]: Current state of the project.
+- [[00_HOME/VERIFICATION_RULES|Verification Rules]]: STRICT criteria for execution and reporting.
 - [[01_PRODUCT/PRODUCT_VISION|Product Vision]]: What we are building and why.
 - [[02_ARCHITECTURE/SYSTEM_OVERVIEW|System Overview]]: High-level architecture.
 - [[03_EDITORIAL_BIBLE/EDITORIAL_PHILOSOPHY|Editorial Philosophy]]: The rules of editing.
