@@ -35,6 +35,7 @@ class CandidateWindowConfig(BaseModel):
     postroll: float = 5.0              # seconds - context after core end
     merge_gap: float = 3.0             # seconds - merge clusters closer than this
     overlap_threshold: float = 0.5     # fraction - merge if overlap > this
+    backward_setup_window: float = 1.5 # seconds - scan backward for narrative/speech setup
     generator_version: str = "1.0.0"
 
     def get_signature(self, source_fingerprint: str) -> str:
