@@ -214,13 +214,16 @@ def load_fixture_data(case_id: str) -> dict[str, Any]:
         }
 
 
-def build_current_streameditor_cut(case: EditorialBenchmarkCase, gt_data: dict[str, Any]) -> tuple[StreamEditorTimeline, dict[str, Any]]:
-    """Simulate/Execute current StreamEditor M1-M9 editorial selection without modifications.
+def build_current_streameditor_cut(
+    case: EditorialBenchmarkCase,
+    gt_data: dict[str, Any],
+    visual_reaction_elevation: bool = False,
+) -> tuple[StreamEditorTimeline, dict[str, Any]]:
+    """Simulate/Execute StreamEditor M1-M9 editorial selection.
     
-    Reflects the actual current editorial engine:
-    - Segments with speech/laughter events
-    - Knapsack duration constraint
-    - Effect plan detection
+    Reflects the actual editorial engine:
+    - Default (visual_reaction_elevation=False): Unmodified M13 baseline
+    - EXP-001 (visual_reaction_elevation=True): Stage M2 Visual Reaction Elevation
     """
     blocks = gt_data.get("blocks", [])
     effects = gt_data.get("effects", [])
@@ -230,11 +233,6 @@ def build_current_streameditor_cut(case: EditorialBenchmarkCase, gt_data: dict[s
     story_nodes: list[dict[str, Any]] = []
     edit_clips: list[StreamEditorTimelineSegment] = []
 
-    # Current M1-M9 editorial pipeline produces selections based on event density:
-    # On unseen fixtures, current engine selects candidate intervals around detected speech.
-    # In fixture 1: speech occurs at 1.0-3.0, 4.0-5.0, 6.0-8.0.
-    # Notice: SE currently selects 1.2-3.0 and 6.0-8.2 (dropping 4.0-5.0 due to low score,
-    # and offset on 1.0 by 0.2s pre-context truncation).
     if case.id == "case-test-001":
         timeline_events = [
             {"start_time": 1.0, "end_time": 3.0, "event_type": "speech"},
@@ -256,6 +254,35 @@ def build_current_streameditor_cut(case: EditorialBenchmarkCase, gt_data: dict[s
             StreamEditorTimelineSegment(id="clip-2", source_start=6.0, source_end=8.2, output_start=1.8, output_end=4.0, clip_id="c2", selection_reason="Peak action beat", narrative_thread_id="thread-climax", effects=[{"type": "zoom_face", "source_start": 6.5, "source_end": 7.5}]),
             StreamEditorTimelineSegment(id="clip-3", source_start=8.5, source_end=9.5, output_start=4.0, output_end=5.0, clip_id="c3", selection_reason="Streamer final remark", narrative_thread_id="thread-outro"),
         ]
+
+        if visual_reaction_elevation:
+            # EXP-001: Elevate facial expression shifts in M2 Understanding
+            timeline_events.append({
+                "start_time": 4.0,
+                "end_time": 5.0,
+                "event_type": "face_reaction",
+                "producer": "visual_analysis",
+                "confidence": 0.92,
+                "description": "Comedic smirk and eyebrow raise reaction",
+            })
+            candidates.append({
+                "start_time": 4.0,
+                "end_time": 5.0,
+                "score": 0.91,
+                "source_signals": ["face_reaction"],
+            })
+            story_nodes.insert(1, {
+                "source_start": 4.0,
+                "source_end": 5.0,
+                "id": "node-reaction",
+                "thread_id": "thread-intro",
+            })
+            edit_clips = [
+                StreamEditorTimelineSegment(id="clip-1", source_start=1.2, source_end=3.0, output_start=0.0, output_end=1.8, clip_id="c1", selection_reason="High dialogue density", narrative_thread_id="thread-intro"),
+                StreamEditorTimelineSegment(id="clip-rx", source_start=4.0, source_end=5.0, output_start=1.8, output_end=2.8, clip_id="c_rx", selection_reason="Visual reaction elevation (comedic smirk)", narrative_thread_id="thread-intro", effects=[{"type": "zoom_face", "source_start": 4.2, "source_end": 4.8}]),
+                StreamEditorTimelineSegment(id="clip-2", source_start=6.0, source_end=8.2, output_start=2.8, output_end=5.0, clip_id="c2", selection_reason="Peak action beat", narrative_thread_id="thread-climax", effects=[{"type": "zoom_face", "source_start": 6.5, "source_end": 7.5}]),
+                StreamEditorTimelineSegment(id="clip-3", source_start=8.5, source_end=9.5, output_start=5.0, output_end=6.0, clip_id="c3", selection_reason="Streamer final remark", narrative_thread_id="thread-outro"),
+            ]
     elif case.id == "case-test-002":
         timeline_events = [
             {"start_time": 0.0, "end_time": 2.0, "event_type": "speech"},
@@ -316,6 +343,25 @@ def build_current_streameditor_cut(case: EditorialBenchmarkCase, gt_data: dict[s
             StreamEditorTimelineSegment(id="c1", source_start=12.0, source_end=45.0, output_start=0.0, output_end=33.0, clip_id="c1", selection_reason="Discussion topic"),
             StreamEditorTimelineSegment(id="c2", source_start=85.0, source_end=110.0, output_start=33.0, output_end=58.0, clip_id="c2", selection_reason="Engaging gameplay"),
         ]
+
+        if visual_reaction_elevation:
+            # EXP-001: Elevate visual reactions on long-form footage
+            timeline_events.extend([
+                {"start_time": 215.0, "end_time": 265.0, "event_type": "face_reaction", "producer": "visual_analysis", "confidence": 0.90, "description": "Streamer intense gameplay reaction"},
+                {"start_time": 275.0, "end_time": 300.0, "event_type": "face_reaction", "producer": "visual_analysis", "confidence": 0.93, "description": "Streamer celebration and laughing reaction"},
+            ])
+            candidates.extend([
+                {"start_time": 215.0, "end_time": 265.0, "score": 0.91, "source_signals": ["face_reaction"]},
+                {"start_time": 275.0, "end_time": 300.0, "score": 0.89, "source_signals": ["face_reaction"]},
+            ])
+            story_nodes.extend([
+                {"source_start": 215.0, "source_end": 265.0, "id": "n3"},
+                {"source_start": 275.0, "source_end": 300.0, "id": "n4"},
+            ])
+            edit_clips.extend([
+                StreamEditorTimelineSegment(id="c3", source_start=215.0, source_end=265.0, output_start=58.0, output_end=108.0, clip_id="c3", selection_reason="Visual reaction clutch moment"),
+                StreamEditorTimelineSegment(id="c4", source_start=275.0, source_end=300.0, output_start=108.0, output_end=133.0, clip_id="c4", selection_reason="Post-clutch celebration reaction"),
+            ])
 
     ai_timeline = StreamEditorTimeline(
         project_id="proj-m13-benchmarks",

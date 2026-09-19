@@ -23,11 +23,39 @@ from stream_editor.contracts.benchmark import (
     ExperimentStatus,
 )
 
+import asyncio
+
 router = APIRouter(prefix="/benchmarks", tags=["Benchmarks"])
 
 
+async def _db_execute(db: Any, stmt: Any) -> Any:
+    res = db.execute(stmt)
+    if asyncio.iscoroutine(res):
+        return await res
+    return res
+
+
+async def _db_commit(db: Any) -> None:
+    res = db.commit()
+    if asyncio.iscoroutine(res):
+        await res
+
+
+async def _db_refresh(db: Any, instance: Any) -> None:
+    res = db.refresh(instance)
+    if asyncio.iscoroutine(res):
+        await res
+
+
+async def _db_get(db: Any, model: Any, ident: Any) -> Any:
+    res = db.get(model, ident)
+    if asyncio.iscoroutine(res):
+        return await res
+    return res
+
+
 @router.post("/cases", response_model=EditorialBenchmarkCase)
-def create_case(payload: dict[str, Any], db: Session = Depends(get_db)) -> EditorialBenchmarkCase:
+async def create_case(payload: dict[str, Any], db: Any = Depends(get_db)) -> EditorialBenchmarkCase:
     case_id = payload.get("id") or str(uuid.uuid4())
     case_model = EditorialBenchmarkCaseModel(
         id=case_id,
@@ -46,8 +74,8 @@ def create_case(payload: dict[str, Any], db: Session = Depends(get_db)) -> Edito
         created_at=datetime.now(UTC),
     )
     db.add(case_model)
-    db.commit()
-    db.refresh(case_model)
+    await _db_commit(db)
+    await _db_refresh(db, case_model)
 
     return EditorialBenchmarkCase(
         id=case_model.id,
@@ -68,14 +96,15 @@ def create_case(payload: dict[str, Any], db: Session = Depends(get_db)) -> Edito
 
 
 @router.get("/cases", response_model=List[EditorialBenchmarkCase])
-def list_cases(
+async def list_cases(
     split: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
+    db: Any = Depends(get_db),
 ) -> List[EditorialBenchmarkCase]:
     query = select(EditorialBenchmarkCaseModel)
     if split:
         query = query.where(EditorialBenchmarkCaseModel.split == split)
-    models = db.execute(query).scalars().all()
+    res = await _db_execute(db, query)
+    models = res.scalars().all()
     results = []
     for m in models:
         results.append(
@@ -100,8 +129,8 @@ def list_cases(
 
 
 @router.get("/cases/{case_id}", response_model=EditorialBenchmarkCase)
-def get_case(case_id: str, db: Session = Depends(get_db)) -> EditorialBenchmarkCase:
-    m = db.get(EditorialBenchmarkCaseModel, case_id)
+async def get_case(case_id: str, db: Any = Depends(get_db)) -> EditorialBenchmarkCase:
+    m = await _db_get(db, EditorialBenchmarkCaseModel, case_id)
     if not m:
         raise HTTPException(status_code=404, detail="Benchmark case not found")
     return EditorialBenchmarkCase(
@@ -123,7 +152,7 @@ def get_case(case_id: str, db: Session = Depends(get_db)) -> EditorialBenchmarkC
 
 
 @router.post("/runs", response_model=dict[str, Any])
-def record_run(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
+async def record_run(payload: dict[str, Any], db: Any = Depends(get_db)) -> dict[str, Any]:
     run_id = payload.get("id") or str(uuid.uuid4())
     run_model = EditorialBenchmarkRunModel(
         id=run_id,
@@ -188,22 +217,23 @@ def record_run(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[s
         )
         db.add(f_model)
 
-    db.commit()
+    await _db_commit(db)
     return {"run_id": run_id, "status": "recorded"}
 
 
 @router.get("/runs", response_model=List[dict[str, Any]])
-def list_runs(
+async def list_runs(
     case_id: Optional[str] = Query(None),
     is_baseline: Optional[bool] = Query(None),
-    db: Session = Depends(get_db),
+    db: Any = Depends(get_db),
 ) -> List[dict[str, Any]]:
     query = select(EditorialBenchmarkRunModel)
     if case_id:
         query = query.where(EditorialBenchmarkRunModel.benchmark_case_id == case_id)
     if is_baseline is not None:
         query = query.where(EditorialBenchmarkRunModel.is_baseline == is_baseline)
-    models = db.execute(query).scalars().all()
+    res = await _db_execute(db, query)
+    models = res.scalars().all()
     results = []
     for r in models:
         results.append({
@@ -222,18 +252,22 @@ def list_runs(
 
 
 @router.get("/runs/{run_id}", response_model=dict[str, Any])
-def get_run(run_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
-    run = db.get(EditorialBenchmarkRunModel, run_id)
+async def get_run(run_id: str, db: Any = Depends(get_db)) -> dict[str, Any]:
+    run = await _db_get(db, EditorialBenchmarkRunModel, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Benchmark run not found")
 
-    result = db.execute(
+    res_result = await _db_execute(
+        db,
         select(EditorialBenchmarkResultModel).where(EditorialBenchmarkResultModel.run_id == run_id)
-    ).scalar_one_or_none()
+    )
+    result = res_result.scalar_one_or_none()
 
-    failures = db.execute(
+    res_failures = await _db_execute(
+        db,
         select(EditorialFailureModel).where(EditorialFailureModel.benchmark_run_id == run_id)
-    ).scalars().all()
+    )
+    failures = res_failures.scalars().all()
 
     return {
         "run": {
@@ -279,7 +313,7 @@ def get_run(run_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.post("/experiments", response_model=EditorialExperiment)
-def create_experiment(payload: dict[str, Any], db: Session = Depends(get_db)) -> EditorialExperiment:
+async def create_experiment(payload: dict[str, Any], db: Any = Depends(get_db)) -> EditorialExperiment:
     exp_id = str(uuid.uuid4())
     exp_model = EditorialExperimentModel(
         id=exp_id,
@@ -293,8 +327,8 @@ def create_experiment(payload: dict[str, Any], db: Session = Depends(get_db)) ->
         created_at=datetime.now(UTC),
     )
     db.add(exp_model)
-    db.commit()
-    db.refresh(exp_model)
+    await _db_commit(db)
+    await _db_refresh(db, exp_model)
 
     return EditorialExperiment(
         id=exp_model.id,
@@ -310,8 +344,9 @@ def create_experiment(payload: dict[str, Any], db: Session = Depends(get_db)) ->
 
 
 @router.get("/experiments", response_model=List[EditorialExperiment])
-def list_experiments(db: Session = Depends(get_db)) -> List[EditorialExperiment]:
-    models = db.execute(select(EditorialExperimentModel)).scalars().all()
+async def list_experiments(db: Any = Depends(get_db)) -> List[EditorialExperiment]:
+    res = await _db_execute(db, select(EditorialExperimentModel))
+    models = res.scalars().all()
     results = []
     for m in models:
         results.append(

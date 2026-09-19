@@ -338,11 +338,21 @@ class CandidateGenerator:
                 if signals.repetition is None:
                     signals = signals.model_copy(update={"repetition": repetition_score})
 
-                # Visual interest from scene_change_rate
+                # Visual interest from scene_change_rate and visual reactions (EXP-001)
                 if signals.visual_interest is None and features.scene_change_rate is not None:
                     # Normalize: >2 changes/min = high, 0 = none. Clamp to [0,1]
                     vi = min(1.0, (features.scene_change_rate or 0.0) / 2.0)
                     signals = signals.model_copy(update={"visual_interest": round(vi, 4)})
+
+                if features.visual_reaction_count and features.visual_reaction_count > 0:
+                    current_vi = signals.visual_interest or 0.0
+                    boosted_vi = min(1.0, max(current_vi, 0.6 + 0.15 * features.visual_reaction_count))
+                    signals = signals.model_copy(update={"visual_interest": round(boosted_vi, 4)})
+                    current_rx = signals.reaction or 0.0
+                    boosted_rx = min(1.0, max(current_rx, 0.75))
+                    signals = signals.model_copy(update={"reaction": round(boosted_rx, 4)})
+                    if signals.humor is not None and signals.humor < 0.6:
+                        signals = signals.model_copy(update={"humor": 0.75})
 
                 # Experimental rank
                 exp_rank = ranker.rank(signals, ranking_profile)

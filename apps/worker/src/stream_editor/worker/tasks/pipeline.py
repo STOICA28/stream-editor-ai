@@ -23,6 +23,10 @@ from stream_editor.api.models.project import (
 from stream_editor.api.models.project import Scene as DBScene
 from stream_editor.api.models.project import TranscriptSegment as DBTranscriptSegment
 from stream_editor.api.models.project import TranscriptWord as DBTranscriptWord
+from stream_editor.api.models.project import (
+    VisualAnalysisRun,
+    VisualEvent as DBVisualEvent,
+)
 from stream_editor.worker.utils.lease import acquire_job_lease
 from stream_editor.contracts.analysis import AudioEventConfig, SceneConfig, TranscriptionConfig
 from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
@@ -313,6 +317,32 @@ def normalize_timeline_task(self, project_id: str, asset_id: str) -> dict[str, s
             for ae in audio_events:
                 db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type=ae.event_type, start_time=ae.start_time, end_time=ae.end_time, producer="audio_analysis", producer_version="1.0"))
             
+            # Fetch visual events (EXP-001: Stage M2 Visual Reaction Elevation)
+            visual_events = (
+                await db.execute(
+                    select(DBVisualEvent)
+                    .join(VisualAnalysisRun, VisualAnalysisRun.id == DBVisualEvent.visual_analysis_run_id)
+                    .where(VisualAnalysisRun.source_asset_id == asset_id)
+                )
+            ).scalars().all()
+            for ve in visual_events:
+                conf = float(ve.confidence) if ve.confidence is not None else 1.0
+                if conf >= 0.70:
+                    evt_type = "face_reaction" if ve.event_type in ("strong_face_reaction", "face_reaction") else ve.event_type
+                    db.add(
+                        TimelineEvent(
+                            project_id=project_id,
+                            source_asset_id=asset_id,
+                            event_type=evt_type,
+                            start_time=ve.start_time,
+                            end_time=ve.end_time,
+                            confidence=conf,
+                            producer="visual_analysis",
+                            producer_version="1.0",
+                            data={"description": ve.description, "original_event_type": ve.event_type},
+                        )
+                    )
+            
             await db.commit()
     _run_async(_do_normalize())
     return {"status": "success"}
@@ -440,7 +470,7 @@ def generate_edit_plan_task(self, project_id: str, run_id: str, config_dict: dic
     from sqlalchemy.orm import Session as SyncSession
     from sqlalchemy.future import select
     
-    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
     sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
     
     with SyncSession(sync_engine) as db:
@@ -569,7 +599,7 @@ def generate_visual_analysis_task(self, project_id: str, asset_id: str, provider
     from sqlalchemy.orm import Session
     from stream_editor.api.config import settings
     from sqlalchemy import create_engine
-    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
     sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
     from datetime import datetime, UTC
     from stream_editor.analysis.providers.visual.antigravity import AntigravityVisualUnderstandingProvider
@@ -580,18 +610,32 @@ def generate_visual_analysis_task(self, project_id: str, asset_id: str, provider
         plan = db.query(EditPlan).filter_by(project_id=project_id, status="approved").order_by(EditPlan.version.desc()).first()
         if not plan: return {"status": "error", "reason": "No approved EditPlan found"}
         
-        run = db.query(VisualAnalysisRun).filter_by(derivation_signature=f"{provider_name}-{asset_id}").first()
+        sig = f"{provider_name}-{asset_id}"
+        run = db.query(VisualAnalysisRun).filter_by(derivation_signature=sig).first()
         if run and run.status == "completed":
             return {"status": "success", "run_id": run.id}
             
         if not run:
-            run = VisualAnalysisRun(
-                project_id=project_id, source_asset_id=asset_id,
-                provider=provider_name, configuration={}, derivation_signature=f"{provider_name}-{asset_id}",
-                status="pending", created_at=datetime.now(UTC)
-            )
-            db.add(run)
-            db.commit()
+            try:
+                run = VisualAnalysisRun(
+                    project_id=project_id, source_asset_id=asset_id,
+                    provider=provider_name, configuration={}, derivation_signature=sig,
+                    status="pending", created_at=datetime.now(UTC)
+                )
+                db.add(run)
+                db.commit()
+            except Exception:
+                db.rollback()
+                run = db.query(VisualAnalysisRun).filter_by(derivation_signature=sig).first()
+                if run and run.status == "completed":
+                    return {"status": "success", "run_id": run.id}
+                import time
+                for _ in range(30):
+                    time.sleep(1)
+                    db.expire_all()
+                    run = db.query(VisualAnalysisRun).filter_by(derivation_signature=sig).first()
+                    if run and run.status == "completed":
+                        return {"status": "success", "run_id": run.id}
         run_id = run.id
         
         try:
@@ -616,7 +660,7 @@ def generate_effect_plan_task(self, project_id: str, plan_id: str, visual_run_id
     from sqlalchemy.orm import Session
     from stream_editor.api.config import settings
     from sqlalchemy import create_engine
-    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
     sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
     from datetime import datetime, UTC
     from stream_editor.analysis.providers.effect.antigravity import AntigravityEffectPlanner
@@ -625,13 +669,32 @@ def generate_effect_plan_task(self, project_id: str, plan_id: str, visual_run_id
     import asyncio, uuid
     
     with Session(sync_engine) as db:
-        run = EffectPlanRun(
-            project_id=project_id, edit_plan_id=plan_id, visual_analysis_run_id=visual_run_id,
-            provider=provider_name, configuration={}, derivation_signature=f"{provider_name}-{plan_id}-{visual_run_id}",
-            status="pending", created_at=datetime.now(UTC)
-        )
-        db.add(run)
-        db.commit()
+        sig = f"{provider_name}-{plan_id}-{visual_run_id}"
+        run = db.query(EffectPlanRun).filter_by(derivation_signature=sig).first()
+        if run and run.status == "completed":
+            return {"status": "success", "run_id": run.id}
+            
+        if not run:
+            try:
+                run = EffectPlanRun(
+                    project_id=project_id, edit_plan_id=plan_id, visual_analysis_run_id=visual_run_id,
+                    provider=provider_name, configuration={}, derivation_signature=sig,
+                    status="pending", created_at=datetime.now(UTC)
+                )
+                db.add(run)
+                db.commit()
+            except Exception:
+                db.rollback()
+                run = db.query(EffectPlanRun).filter_by(derivation_signature=sig).first()
+                if run and run.status == "completed":
+                    return {"status": "success", "run_id": run.id}
+                import time
+                for _ in range(30):
+                    time.sleep(1)
+                    db.expire_all()
+                    run = db.query(EffectPlanRun).filter_by(derivation_signature=sig).first()
+                    if run and run.status == "completed":
+                        return {"status": "success", "run_id": run.id}
         run_id = run.id
         
         try:
@@ -660,7 +723,7 @@ def render_job_task(self, project_id: str, render_job_id: str) -> dict:
     from sqlalchemy.orm import Session
     from stream_editor.api.config import settings
     from sqlalchemy import create_engine
-    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace("postgresql+asyncpg", "postgresql")
     sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
     from datetime import datetime, UTC
     from stream_editor.rendering.engine import RenderingEngine

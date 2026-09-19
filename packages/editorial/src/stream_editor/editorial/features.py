@@ -1,4 +1,4 @@
-﻿"""Extract local features for candidate windows."""
+"""Extract local features for candidate windows."""
 from __future__ import annotations
 
 import re
@@ -12,7 +12,7 @@ class LocalFeatureExtractor:
     @staticmethod
     def extract(
         segments: list[TranscriptSegmentData],
-        events: list[dict],
+        events: list[dict],  # type: ignore[type-arg]
         scenes: list[SceneData],
         start_time: float,
         end_time: float,
@@ -64,6 +64,18 @@ class LocalFeatureExtractor:
                 # dummy metric based on unique words to satisfy tests
                 lexical_novelty = len(counts) / len(words)
 
+        # visual reactions & events (EXP-001)
+        visual_reaction_count = sum(
+            1 for e in window_events
+            if e.get("event_type") in ("face_reaction", "strong_face_reaction", "reaction")
+            or e.get("type") in ("face_reaction", "strong_face_reaction", "reaction")
+        )
+        visual_event_count = sum(
+            1 for e in window_events
+            if e.get("event_type") in ("visual_event", "face_reaction", "strong_face_reaction", "reaction", "large_motion")
+            or e.get("type") in ("visual_event", "face_reaction", "strong_face_reaction", "reaction", "large_motion")
+        )
+
         return LocalFeatures(
             speech_density=speech_density,
             silence_ratio=silence_ratio,
@@ -74,5 +86,7 @@ class LocalFeatureExtractor:
             exclamation_density=exclamation_density,
             lexical_novelty=lexical_novelty,
             duration_seconds=duration_seconds,
-            audio_rms_estimate=0.5 # placeholder
+            audio_rms_estimate=0.5, # placeholder
+            visual_reaction_count=visual_reaction_count,
+            visual_event_count=visual_event_count,
         )

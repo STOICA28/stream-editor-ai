@@ -151,6 +151,8 @@ class LocalFeatures(BaseModel):
     exclamation_density: float | None = None      # exclamation marks per sentence
     lexical_novelty: float | None = None          # TF-IDF novelty vs. surrounding windows
     duration_seconds: float | None = None
+    visual_reaction_count: int | None = 0         # count of facial reactions / smirks (EXP-001)
+    visual_event_count: int | None = 0            # count of visual events in window (EXP-001)
 
 
 # ---------------------------------------------------------------------------
