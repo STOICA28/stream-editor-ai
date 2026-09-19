@@ -64,3 +64,26 @@ class StyleImpactReport(BaseModel):
     style_policy_id: str
     metrics: List[StyleImpactMetric] = Field(default_factory=list)
     dry_run: bool = False
+
+class StyleApplicationRunContract(BaseModel):
+    id: str
+    project_id: str
+    style_policy_id: Optional[str] = None
+    style_policy_version_id: Optional[str] = None
+    style_application_config: Dict[str, Any] = Field(default_factory=dict)
+    experimental: bool = False
+    dry_run: bool = False
+    
+    input_candidate_run_id: Optional[str] = None
+    input_story_graph_run_id: Optional[str] = None
+    input_visual_analysis_run_id: Optional[str] = None
+    
+    output_edit_plan_run_id: Optional[str] = None
+    output_effect_plan_run_id: Optional[str] = None
+    
+    signature: Optional[str] = None
+    status: str = Field(default="pending", description="pending, running, completed, failed")
+    
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+

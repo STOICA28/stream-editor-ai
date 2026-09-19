@@ -26,3 +26,15 @@ export function Card({ children, className, header, actions }: CardProps) {
     </div>
   );
 }
+
+export function CardHeader({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <div className={cn("px-5 py-4 border-b border-surface-border", className)}>{children}</div>;
+}
+
+export function CardTitle({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <div className={cn("text-sm font-semibold text-text-primary", className)}>{children}</div>;
+}
+
+export function CardContent({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <div className={cn("p-5", className)}>{children}</div>;
+}

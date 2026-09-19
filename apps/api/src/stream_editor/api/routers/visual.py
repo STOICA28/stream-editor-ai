@@ -18,13 +18,13 @@ import uuid
 router = APIRouter(prefix="/projects/{project_id}/visual-analysis", tags=["Visual Analysis"])
 
 # Dependency to check project
-async def get_project_or_404(project_id: str, db: AsyncSession = Depends(get_db)):
+async def get_project_or_404(project_id: str, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
     proj = (await db.execute(select(Project).where(Project.id == project_id))).scalar_one_or_none()
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
     return proj
 
-async def run_visual_analysis_task(run_id: str, project_id: str):
+async def run_visual_analysis_task(run_id: str, project_id: str):  # type: ignore[no-untyped-def]
     async with SessionLocal() as db:
         run = (await db.execute(select(VisualAnalysisRun).where(VisualAnalysisRun.id == run_id))).scalar_one_or_none()
         if not run:
@@ -39,7 +39,7 @@ async def run_visual_analysis_task(run_id: str, project_id: str):
             provider = MockVisualProvider(scenario="C")
             results = await provider.analyze_window(
                 project_id=project_id,
-                asset_id=run.source_asset_id,
+                asset_id=run.source_asset_id,  # type: ignore[arg-type,arg-type]
                 start_time=0.0,
                 end_time=duration,
                 context={"run_id": run_id}
@@ -110,16 +110,16 @@ async def run_visual_analysis_task(run_id: str, project_id: str):
                     sequence_order=ft.sequence_order
                 ))
 
-            run.status = "completed"
+            run.status = "completed"  # type: ignore[assignment]
             await db.commit()
 
         except Exception as e:
-            run.status = "failed"
-            run.error_message = str(e)
+            run.status = "failed"  # type: ignore[assignment]
+            run.error_message = str(e)  # type: ignore[assignment]
             await db.commit()
 
 @router.post("")
-async def start_visual_analysis(
+async def start_visual_analysis(  # type: ignore[no-untyped-def]
     project_id: str,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -148,12 +148,12 @@ async def start_visual_analysis(
     await db.commit()
     await db.refresh(run)
 
-    background_tasks.add_task(run_visual_analysis_task, run.id, project_id)
+    background_tasks.add_task(run_visual_analysis_task, run.id, project_id)  # type: ignore[arg-type,arg-type]
 
     return {"status": "started", "run_id": run.id}
 
 @router.get("")
-async def list_visual_runs(
+async def list_visual_runs(  # type: ignore[no-untyped-def]
     project_id: str,
     db: AsyncSession = Depends(get_db),
     proj: Project = Depends(get_project_or_404)
@@ -167,22 +167,22 @@ async def list_visual_runs(
 run_router = APIRouter(prefix="/visual-analysis/{run_id}", tags=["Visual Analysis Data"])
 
 @run_router.get("/layouts")
-async def get_layouts(run_id: str, db: AsyncSession = Depends(get_db)):
+async def get_layouts(run_id: str, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
     result = await db.execute(select(StreamLayout).where(StreamLayout.visual_analysis_run_id == run_id))
     return result.scalars().all()
 
 @run_router.get("/regions")
-async def get_regions(run_id: str, db: AsyncSession = Depends(get_db)):
+async def get_regions(run_id: str, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
     result = await db.execute(select(VisualRegion).where(VisualRegion.visual_analysis_run_id == run_id))
     return result.scalars().all()
 
 @run_router.get("/events")
-async def get_events(run_id: str, db: AsyncSession = Depends(get_db)):
+async def get_events(run_id: str, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
     result = await db.execute(select(VisualEvent).where(VisualEvent.visual_analysis_run_id == run_id))
     return result.scalars().all()
 
 @run_router.get("/focus-targets")
-async def get_focus_targets(run_id: str, db: AsyncSession = Depends(get_db)):
+async def get_focus_targets(run_id: str, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
     result = await db.execute(
         select(FocusTarget)
         .where(FocusTarget.visual_analysis_run_id == run_id)

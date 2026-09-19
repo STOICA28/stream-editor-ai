@@ -88,7 +88,7 @@ class TranscriptWindowSummarizer:
             chapter_ids = local_window_ids[i : i + self.CHAPTER_SIZE]
             from stream_editor.api.models.project import TranscriptWindow as DBWindow
             db_windows = [
-                db.query(DBWindow).filter(DBWindow.id == wid).first()
+                db.query(DBWindow).filter(DBWindow.id == wid).first()  # type: ignore[attr-defined]
                 for wid in chapter_ids
             ]
             db_windows = [w for w in db_windows if w is not None]
@@ -161,7 +161,7 @@ class TranscriptWindowSummarizer:
             level=level,
             parent_window_id=parent_window_id,
             summary=str(result.get("summary", "")),
-            key_topics=list(result.get("key_topics", [])),
+            key_topics=list(result.get("key_topics", [])),  # type: ignore[call-overload]
             provider="mock" if "MOCK" in str(result.get("summary", "")) else "gemini",
             prompt_version=PROMPT_VERSION,
             derivation_signature=derivation_signature,

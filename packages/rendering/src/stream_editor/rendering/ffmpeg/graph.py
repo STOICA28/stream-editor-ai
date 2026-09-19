@@ -49,10 +49,7 @@ class FFmpegGraphBuilder:
                 
         # We assume base input is [0:v] and [0:a]
         # In this simple builder we chain video filters
-        v_chain = ",".join(video_filters) if video_filters else "copy"
-        a_chain = ",".join(audio_filters) if audio_filters else "copy"
+        v_chain = ",".join(video_filters) if video_filters else ""
+        a_chain = ",".join(audio_filters) if audio_filters else ""
         
-        # Actually, copy is not a filter. 
-        # If we use -vf and -af, we shouldn't use "copy".
-        # So we just return the chains.
         return v_chain, a_chain

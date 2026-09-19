@@ -8,7 +8,7 @@ from stream_editor.contracts.research import AlignmentBlockContract, ObservedEff
 from stream_editor.contracts.effect_planning import EffectType, EffectTargetType
 
 class LocalEffectDetector:
-    def detect(self, blocks: List[AlignmentBlockContract], source_path: str, edited_path: str, edit_duration: float = None, source_offset: float = 0.0, edited_offset: float = 0.0) -> List[ObservedEffectContract]:
+    def detect(self, blocks: List[AlignmentBlockContract], source_path: str, edited_path: str, edit_duration: float = None, source_offset: float = 0.0, edited_offset: float = 0.0) -> List[ObservedEffectContract]:  # type: ignore[assignment]
         effects = []
         
         cap_s = cv2.VideoCapture(source_path)
@@ -158,7 +158,7 @@ class LocalEffectDetector:
                     if current_effect is not None:
                         effects.append(ObservedEffectContract(
                             id=str(uuid.uuid4()), pair_id="pair", effect_type=current_effect, target=EffectTargetType.FULL_FRAME if current_effect == EffectType.GRAYSCALE else EffectTargetType.SCREEN_REGION if current_effect == EffectType.CROP_FOCUS else EffectTargetType.FACECAM,
-                            source_start=round(effect_start_src,2), source_end=round(current_src,2), edit_start=round(effect_start_edit,2), edit_end=round(current_edit,2),
+                            source_start=round(effect_start_src,2), source_end=round(current_src,2), edit_start=round(effect_start_edit,2), edit_end=round(current_edit,2),  # type: ignore[arg-type,arg-type]
                             confidence=0.9, detection_method="visual", scale=scale_detected, is_manual_override=False, is_false_positive=False
                         ))
                     if detected_type is not None:
@@ -172,7 +172,7 @@ class LocalEffectDetector:
             if current_effect is not None:
                 effects.append(ObservedEffectContract(
                     id=str(uuid.uuid4()), pair_id="pair", effect_type=current_effect, target=EffectTargetType.FULL_FRAME if current_effect == EffectType.GRAYSCALE else EffectTargetType.SCREEN_REGION if current_effect == EffectType.CROP_FOCUS else EffectTargetType.FACECAM,
-                    source_start=round(effect_start_src,2), source_end=round(b.source_end,2), edit_start=round(effect_start_edit,2), edit_end=round(b.edit_end,2),
+                    source_start=round(effect_start_src,2), source_end=round(b.source_end,2), edit_start=round(effect_start_edit,2), edit_end=round(b.edit_end,2),  # type: ignore[arg-type,arg-type]
                     confidence=0.9, detection_method="visual", scale=scale_detected, is_manual_override=False, is_false_positive=False
                 ))
                 

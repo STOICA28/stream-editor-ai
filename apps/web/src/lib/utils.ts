@@ -42,3 +42,9 @@ export function jobStatusVariant(status: JobStatus): BadgeVariant {
 export function jobStatusLabel(status: JobStatus): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
+
+export function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}

@@ -3,9 +3,9 @@ import json
 import uuid
 import sys
 from stream_editor.contracts.research import AlignmentBlockContract
-from stream_editor.research.providers.antigravity import AntigravityReferenceProvider
+from stream_editor.research.providers.antigravity import AntigravityReferenceProvider  # type: ignore[import-untyped]
 
-def run_smoke_test():
+def run_smoke_test():  # type: ignore[no-untyped-def]
     print("--- AntigravityReferenceProvider Smoke Test ---")
     provider = AntigravityReferenceProvider(
         flash_model="gemini-1.5-flash-latest",
@@ -59,4 +59,4 @@ def run_smoke_test():
         print("\nM10.3 LOCAL VALIDATION: FAILED")
 
 if __name__ == "__main__":
-    run_smoke_test()
+    run_smoke_test()  # type: ignore[no-untyped-call]

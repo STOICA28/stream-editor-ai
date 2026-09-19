@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from stream_editor.api.models.mixins import JobLeaseMixin
+from stream_editor.api.models.states import JobState
+from sqlalchemy import UniqueConstraint, JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, BigInteger, String
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -26,7 +28,7 @@ class MediaAsset(Base):
     name = Column(String)
     path = Column(String)
     media_type = Column(String)
-    file_size_bytes = Column(Integer)
+    file_size_bytes = Column(BigInteger().with_variant(Integer, "sqlite"))
     media_info = Column(JSON)
     
     # Provenance
@@ -37,7 +39,7 @@ class MediaAsset(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class ProcessingJob(Base):
+class ProcessingJob(JobLeaseMixin, Base):
     __tablename__ = "processing_jobs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
@@ -63,7 +65,7 @@ class JobStep(Base):
     retry_count = Column(Integer, default=0)
     output_paths = Column(JSON)
 
-class TranscriptRun(Base):
+class TranscriptRun(JobLeaseMixin, Base):
     __tablename__ = "transcript_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
@@ -73,7 +75,7 @@ class TranscriptRun(Base):
     language = Column(String, nullable=True)
     configuration = Column(JSON)
     derivation_signature = Column(String, unique=True)
-    status = Column(String, default="running") # running, completed, failed
+    status = Column(String, default=JobState.RUNNING.value) # running, completed, failed
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 
@@ -83,7 +85,7 @@ class TranscriptChunk(Base):
     run_id = Column(String, ForeignKey("transcript_runs.id"))
     start_time = Column(Float)
     end_time = Column(Float)
-    status = Column(String, default="pending")
+    status = Column(String, default=JobState.PENDING.value)
     result_path = Column(String, nullable=True)
 
 class TranscriptSegment(Base):
@@ -131,7 +133,7 @@ class TimelineEvent(Base):
     confidence = Column(Float, nullable=True)
     data = Column(JSON, nullable=True)
 
-class CandidateRun(Base):
+class CandidateRun(JobLeaseMixin, Base):
     """Versioned run of the candidate generation pipeline."""
     __tablename__ = "candidate_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -148,7 +150,7 @@ class CandidateRun(Base):
     # Idempotency
     derivation_signature = Column(String, unique=True)
     # Lifecycle
-    status = Column(String, default="running")  # running | completed | failed
+    status = Column(String, default=JobState.RUNNING.value)  # running | completed | failed
     candidate_count = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
@@ -223,7 +225,7 @@ class CandidateSegment(Base):
     derivation_signature = Column(String)
 
     # Lifecycle
-    status = Column(String, default="pending")  # pending | analyzed | failed
+    status = Column(String, default=JobState.PENDING.value)  # pending | analyzed | failed
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -285,7 +287,7 @@ class ModelResultCache(Base):
 # M5 - Global Editorial Selection & Edit Plan
 # ---------------------------------------------------------------------------
 
-class EditPlanRun(Base):
+class EditPlanRun(JobLeaseMixin, Base):
     """
     Versioned Edit Plan generation run.
     Idempotent by derivation_signature.
@@ -309,7 +311,7 @@ class EditPlanRun(Base):
     planner_version = Column(String)
     
     derivation_signature = Column(String, unique=True)
-    status = Column(String, default="running") # running | completed | failed
+    status = Column(String, default=JobState.RUNNING.value) # running | completed | failed
     error_message = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -420,7 +422,7 @@ class AudioEvent(Base):
 # M4 — Story Graph models
 # ---------------------------------------------------------------------------
 
-class StoryGraphRun(Base):
+class StoryGraphRun(JobLeaseMixin, Base):
     """
     Versioned Story Graph generation run.
     Idempotent by derivation_signature — same config + candidates → reuse run.
@@ -439,7 +441,7 @@ class StoryGraphRun(Base):
     configuration = Column(JSON)        # StoryGraphConfig.model_dump()
     derivation_signature = Column(String, unique=True)
     # Status
-    status = Column(String, default="running")   # running | completed | failed | partial
+    status = Column(String, default=JobState.RUNNING.value)   # running | completed | failed | partial
     error_message = Column(String, nullable=True)
     # Metrics
     node_count = Column(Integer, nullable=True)
@@ -581,7 +583,7 @@ class NarrativeElement(Base):
 # M7 - Visual Understanding models
 # ---------------------------------------------------------------------------
 
-class VisualAnalysisRun(Base):
+class VisualAnalysisRun(JobLeaseMixin, Base):
     __tablename__ = "visual_analysis_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
@@ -594,7 +596,7 @@ class VisualAnalysisRun(Base):
     derivation_signature = Column(String, unique=True)
     
     # Status & Telemetry
-    status = Column(String, default="running")  # running | completed | failed | partial
+    status = Column(String, default=JobState.RUNNING.value)  # running | completed | failed | partial
     error_message = Column(String, nullable=True)
     flash_requests = Column(Integer, default=0)
     pro_requests = Column(Integer, default=0)
@@ -689,7 +691,7 @@ class FocusTarget(Base):
 # M8 - Effect Planning models
 # ---------------------------------------------------------------------------
 
-class EffectPlanRun(Base):
+class EffectPlanRun(JobLeaseMixin, Base):
     __tablename__ = "effect_plan_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
@@ -705,7 +707,7 @@ class EffectPlanRun(Base):
     derivation_signature = Column(String, unique=True)
     
     # Status & Telemetry
-    status = Column(String, default="running")  # running | completed | failed | partial
+    status = Column(String, default=JobState.RUNNING.value)  # running | completed | failed | partial
     error_message = Column(String, nullable=True)
     
     # Timestamps
@@ -748,7 +750,7 @@ class EffectInstruction(Base):
 # M9 - Rendering Engine models
 # ---------------------------------------------------------------------------
 
-class RenderJob(Base):
+class RenderJob(JobLeaseMixin, Base):
     __tablename__ = "render_jobs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
@@ -760,7 +762,7 @@ class RenderJob(Base):
     derivation_signature = Column(String, unique=True, nullable=True)
     renderer_version = Column(String, default="1.0")
     
-    status = Column(String, default="pending")
+    status = Column(String, default=JobState.PENDING.value)
     progress = Column(Float, default=0.0)
     output_asset_id = Column(String, ForeignKey("media_assets.id"), nullable=True)
     error_message = Column(String, nullable=True)

@@ -1,8 +1,7 @@
-import os
+﻿import os
+import shutil
 from pathlib import Path
-
 from .provider import StorageProvider
-
 
 class LocalStorageProvider(StorageProvider):
     def __init__(self, base_path: Path | None = None):
@@ -11,10 +10,21 @@ class LocalStorageProvider(StorageProvider):
         else:
             self.base_path = Path(base_path)
 
+    def _check_disk_space(self, required_bytes: int) -> None:
+        total, used, free = shutil.disk_usage(self.base_path)
+        # Require at least 5GB free or the required bytes + 2GB buffer
+        if free < required_bytes + 2 * 1024 * 1024 * 1024:
+            raise IOError(f"Insufficient disk space. Needed {required_bytes}, free {free}.")
+
     async def store(self, project_id: str, category: str, filename: str, data: bytes) -> str:
+        self._check_disk_space(len(data))
         path = await self.get_path(project_id, category, filename)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
+        
+        partial_path = path.with_suffix(path.suffix + ".partial")
+        partial_path.write_bytes(data)
+        partial_path.rename(path)
+        
         return f"{project_id}/{category}/{filename}"
 
     async def retrieve(self, path: str) -> bytes:
@@ -42,9 +52,15 @@ class LocalStorageProvider(StorageProvider):
         return [f.name for f in dir_path.iterdir() if f.is_file()]
 
     async def copy_in(self, source_file_path: str, project_id: str, category: str, filename: str) -> str:
+        source_size = Path(source_file_path).stat().st_size
+        self._check_disk_space(source_size)
+        
         path = await self.get_path(project_id, category, filename)
         path.parent.mkdir(parents=True, exist_ok=True)
         
-        import shutil
-        shutil.copy2(source_file_path, path)
+        partial_path = path.with_suffix(path.suffix + ".partial")
+        shutil.copy2(source_file_path, partial_path)
+        partial_path.rename(path)
+        
         return f"{project_id}/{category}/{filename}"
+

@@ -6,7 +6,7 @@ from stream_editor.editorial.style.candidate_adapter import CandidateStyleAdapte
 from stream_editor.contracts.editorial import CandidateSegmentContract
 from stream_editor.editorial.style.cache import get_style_cache_key
 
-def test_style_policy_compiler_low_n_omission():
+def test_style_policy_compiler_low_n_omission():  # type: ignore[no-untyped-def]
     compiler = StylePolicyCompiler(n_threshold_low=3)
     
     # Needs to match what StylePolicyCompiler expects from profile
@@ -26,7 +26,7 @@ def test_style_policy_compiler_low_n_omission():
     # All signals should be skipped or 0 confidence because N=2 < 3
     assert all(s.confidence == 0.0 for s in contract.signals)
 
-def test_candidate_style_adapter():
+def test_candidate_style_adapter():  # type: ignore[no-untyped-def]
     policy = EditorialStylePolicyContract(
         id="pol_1",
         name="Test",
@@ -64,7 +64,7 @@ def test_candidate_style_adapter():
     
     assert adapter.policy == policy
 
-def test_cache_key_generation():
+def test_cache_key_generation():  # type: ignore[no-untyped-def]
     key1 = get_style_cache_key("v1", "pol_1", 1, dry_run=False)
     key2 = get_style_cache_key("v1", "pol_2", 1, dry_run=False)
     key3 = get_style_cache_key("v1", "pol_1", 2, dry_run=False)

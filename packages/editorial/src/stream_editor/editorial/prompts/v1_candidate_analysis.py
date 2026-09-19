@@ -30,7 +30,7 @@ OUTPUT_SCHEMA = {
     "required": ["summary", "signals", "confidence", "reasoning_summary"]
 }
 
-def build_prompt(transcript_excerpt: str, local_features: dict, nearby_events: list[dict], local_summary: str | None, chapter_summary: str | None) -> str:
+def build_prompt(transcript_excerpt: str, local_features: dict, nearby_events: list[dict], local_summary: str | None, chapter_summary: str | None) -> str:  # type: ignore[type-arg]
     return f"""You are an editorial assistant analyzing a live stream segment to determine if it is an interesting highlight.
 Return ONLY valid JSON matching the following schema. Do NOT include markdown code blocks or chain-of-thought text.
 

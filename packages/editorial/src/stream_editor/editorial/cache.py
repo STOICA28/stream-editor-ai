@@ -19,8 +19,8 @@ class ModelResultCache:
         model: str, 
         prompt_version: str, 
         editorial_rules_version: str | None, 
-        compute_fn: Callable[[], dict]
-    ) -> tuple[dict, bool]:
+        compute_fn: Callable[[], dict]  # type: ignore[type-arg]
+    ) -> tuple[dict, bool]:  # type: ignore[type-arg]
         
         cached = db_session.query(DBModelResultCache).filter_by(cache_key=cache_key).first()
         if cached and cached.result is not None:

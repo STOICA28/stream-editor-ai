@@ -39,7 +39,7 @@ def downgrade() -> None:
         # WARNING: constraint name is None; this directive will fail as
         # rendered.  Add a name, or use a naming convention; see
         # https://alembic.sqlalchemy.org/en/latest/naming.html
-        batch_op.drop_constraint(None, type_='foreignkey')
+        batch_op.drop_constraint(None, type_='foreignkey')  # type: ignore[arg-type,arg-type]
         batch_op.drop_column('replaces_id')
         batch_op.drop_column('is_active')
 
@@ -47,7 +47,7 @@ def downgrade() -> None:
         # WARNING: constraint name is None; this directive will fail as
         # rendered.  Add a name, or use a naming convention; see
         # https://alembic.sqlalchemy.org/en/latest/naming.html
-        batch_op.drop_constraint(None, type_='foreignkey')
+        batch_op.drop_constraint(None, type_='foreignkey')  # type: ignore[arg-type,arg-type]
         batch_op.drop_column('replaces_id')
         batch_op.drop_column('is_active')
 

@@ -120,7 +120,7 @@ export default function RoughCutPage() {
                 This is an original AI-generated plan and cannot be destructively modified. Create a revision to make edits.
               </p>
             </div>
-            <Button onClick={handleCreateRevision} variant="default" className="bg-amber-600 hover:bg-amber-700 text-white">
+            <Button onClick={handleCreateRevision} variant="primary" className="bg-amber-600 hover:bg-amber-700 text-white">
               Create Revision
             </Button>
           </div>
@@ -135,7 +135,7 @@ export default function RoughCutPage() {
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Origin</div>
-                  <Badge variant={plan.origin === 'ai' ? 'default' : 'secondary'}>
+                  <Badge variant={plan.origin === 'ai' ? 'default' : 'info'}>
                     {plan.origin.toUpperCase()} {plan.revision_number ? `(Rev ${plan.revision_number})` : ''}
                   </Badge>
                 </div>

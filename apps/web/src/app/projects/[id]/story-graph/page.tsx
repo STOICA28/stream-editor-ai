@@ -45,7 +45,7 @@ export default async function StoryGraphPage({ params }: { params: { id: string 
 
       {!latestRun ? (
         <div className="border border-dashed rounded-lg p-12 text-center text-muted-foreground">
-          No Story Graph runs found for this project. Click "Generate Story Graph" to start.
+          No Story Graph runs found for this project. Click &quot;Generate Story Graph&quot; to start.
         </div>
       ) : (
         <div className="space-y-6">

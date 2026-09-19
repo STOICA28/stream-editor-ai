@@ -63,7 +63,7 @@ export default async function CandidatesPage({ params }: { params: { id: string 
 
       {!latestRun ? (
         <div className="border border-dashed rounded-lg p-12 text-center text-muted-foreground">
-          No candidate runs found for this project. Click "Generate Candidates" to start.
+          No candidate runs found for this project. Click &quot;Generate Candidates&quot; to start.
         </div>
       ) : (
         <div className="space-y-6">

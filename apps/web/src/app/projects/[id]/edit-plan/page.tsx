@@ -197,7 +197,7 @@ export default function EditPlanPage() {
                       </div>
                       <Badge variant={
                         run.status === "completed" ? "success" : 
-                        run.status === "failed" ? "destructive" : 
+                        run.status === "failed" ? "error" : 
                         "default"
                       }>
                         {run.status}

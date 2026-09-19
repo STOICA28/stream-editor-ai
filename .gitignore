@@ -99,3 +99,9 @@ coverage.xml
 scratch/
 tmp/
 *.db
+*.sqlite
+*.sqlite3
+*.rdb
+audit_frames/
+audit_frames_v2/
+cache/

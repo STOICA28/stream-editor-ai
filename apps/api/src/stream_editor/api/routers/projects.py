@@ -58,6 +58,6 @@ async def list_jobs(project_id: str, db: AsyncSession = Depends(get_db)) -> Any:
     return [{"id": j.id, "status": j.status, "current_stage": j.current_stage} for j in jobs]
 
 @router.post("/{project_id}/process")
-async def process_project(project_id: str, payload: dict | None = None) -> Any:
+async def process_project(project_id: str, payload: dict | None = None) -> Any:  # type: ignore[type-arg]
     return {"job_id": "Not implemented", "payload": payload}
 

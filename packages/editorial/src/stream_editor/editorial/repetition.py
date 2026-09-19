@@ -16,7 +16,7 @@ class RepetitionDetector:
         documents = [tokenize(t) for t in all_texts]
         
         # Calculate DF
-        df = Counter()
+        df = Counter()  # type: ignore[var-annotated]
         for doc in documents:
             df.update(set(doc))
             

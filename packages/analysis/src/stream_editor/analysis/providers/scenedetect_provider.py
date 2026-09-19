@@ -4,7 +4,7 @@ from stream_editor.contracts.analysis import Scene, SceneConfig, SceneDetectionP
 
 class ScenedetectProvider(SceneDetectionProvider):
     def detect_scenes(self, video_path: str, config: SceneConfig) -> list[Scene]:
-        from scenedetect import ContentDetector, detect
+        from scenedetect import ContentDetector, detect  # type: ignore[import-not-found]
         
         detector = ContentDetector(threshold=config.threshold, min_scene_len=config.min_scene_len)
         scene_list = detect(video_path, detector)

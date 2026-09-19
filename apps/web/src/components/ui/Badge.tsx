@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export type BadgeVariant = "default" | "success" | "warning" | "error" | "info" | "pending";
+export type BadgeVariant = "default" | "success" | "warning" | "error" | "info" | "pending" | "outline";
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -16,6 +16,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   error:    "bg-red-900/40    text-red-400    border border-red-800",
   info:     "bg-sky-900/40    text-sky-400    border border-sky-800",
   pending:  "bg-slate-800/60  text-slate-400  border border-slate-700",
+  outline:  "bg-transparent text-text-secondary border border-surface-border",
 };
 
 export function Badge({ variant = "default", children, className }: BadgeProps) {

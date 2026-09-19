@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 import uuid
 from typing import Any
@@ -31,7 +32,7 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
     def __init__(self, client: AntigravityClient) -> None:
         self.client = client
         
-    async def generate_plan(
+    def generate_plan(
         self,
         project_id: str,
         run_id: str,
@@ -56,11 +57,11 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
             style_notes = []
             if sc:
                 for inf in sc.influences:
-                    if inf.override_action == "FORCE_KEEP":
+                    if inf.override_action == "FORCE_KEEP":  # type: ignore[attr-defined]
                         style_notes.append("STYLE_POLICY_MANDATES_KEEP")
-                    elif inf.override_action == "FORCE_CUT":
+                    elif inf.override_action == "FORCE_CUT":  # type: ignore[attr-defined]
                         style_notes.append("STYLE_POLICY_MANDATES_CUT")
-                    score_val += inf.adjustment
+                    score_val += inf.adjustment  # type: ignore[attr-defined]
                     
             item = {
                 "id": str(c.id),
@@ -112,7 +113,7 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
         )
         
         try:
-            response = await self.client.generate_structured(prompt, EditPlanResponse)
+            response = asyncio.run(self.client.generate_structured(prompt, EditPlanResponse))
             selections_data = response.selections
         except AIProviderUnavailable:
             logger.warning("Antigravity unavailable. Returning empty plan.")

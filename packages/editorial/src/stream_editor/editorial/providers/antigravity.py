@@ -31,7 +31,7 @@ class AntigravityEditorialProvider:
     def __init__(self, client: AntigravityClient):
         self.client = client
 
-    async def analyze_candidate(
+    def analyze_candidate(
         self,
         *,
         candidate_id: str,
@@ -45,7 +45,7 @@ class AntigravityEditorialProvider:
         
         prompt = build_candidate_prompt(
             transcript_excerpt=transcript_excerpt,
-            local_features=local_features.model_dump() if hasattr(local_features, "model_dump") else local_features,
+            local_features=local_features.model_dump() if hasattr(local_features, "model_dump") else local_features,  # type: ignore[arg-type,arg-type]
             nearby_events=nearby_events,
             local_summary=local_summary,
             chapter_summary=chapter_summary
@@ -62,7 +62,8 @@ class AntigravityEditorialProvider:
         )
         
         try:
-            data = await self.client.generate_structured(prompt, EditorialAnalysisOutput)
+            import asyncio
+            data = asyncio.run(self.client.generate_structured(prompt, EditorialAnalysisOutput))
             
             return CandidateAnalysisResult(
                 summary=data.summary,
@@ -77,7 +78,7 @@ class AntigravityEditorialProvider:
         except AIProviderUnavailable as e:
             raise RuntimeError(f"Antigravity unavailable: {e}")
 
-    async def summarize_window(
+    def summarize_window(
         self,
         *,
         transcript: str,
@@ -104,7 +105,8 @@ class AntigravityEditorialProvider:
         )
         
         try:
-            data = await self.client.generate_structured(prompt, ChapterSummaryOutput)
+            import asyncio
+            data = asyncio.run(self.client.generate_structured(prompt, ChapterSummaryOutput))
             return data.model_dump()
         except AIProviderUnavailable as e:
             raise RuntimeError(f"Antigravity unavailable: {e}")

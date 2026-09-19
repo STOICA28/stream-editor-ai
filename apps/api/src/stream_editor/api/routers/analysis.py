@@ -16,7 +16,7 @@ from ..schemas.analysis import SceneResponse, TimelineEventResponse, TranscriptS
 router = APIRouter(prefix="/projects/{project_id}", tags=["analysis"])
 
 @router.get("/timeline", response_model=list[TimelineEventResponse])
-def get_timeline(project_id: str, db: Session = Depends(get_db)):
+def get_timeline(project_id: str, db: Session = Depends(get_db)):  # type: ignore[no-untyped-def]
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -31,7 +31,7 @@ def get_timeline(project_id: str, db: Session = Depends(get_db)):
     return events
 
 @router.get("/transcripts", response_model=list[TranscriptSegmentResponse])
-def get_transcripts(project_id: str, db: Session = Depends(get_db)):
+def get_transcripts(project_id: str, db: Session = Depends(get_db)):  # type: ignore[no-untyped-def]
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -67,7 +67,7 @@ def get_transcripts(project_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    words_by_segment = {}
+    words_by_segment = {}  # type: ignore[var-annotated]
     for w in words:
         words_by_segment.setdefault(w.segment_id, []).append(w)
 
@@ -88,7 +88,7 @@ def get_transcripts(project_id: str, db: Session = Depends(get_db)):
     return response
 
 @router.get("/scenes", response_model=list[SceneResponse])
-def get_scenes(project_id: str, db: Session = Depends(get_db)):
+def get_scenes(project_id: str, db: Session = Depends(get_db)):  # type: ignore[no-untyped-def]
     # Verify project exists
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:

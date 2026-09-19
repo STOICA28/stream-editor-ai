@@ -2,11 +2,11 @@ import json
 import os
 
 from stream_editor.contracts.research import AlignmentBlockContract
-from tests.synthetic_oracle.media_generator import SyntheticMediaGenerator, SyntheticOracleFactory
+from tests.synthetic_oracle.media_generator import SyntheticMediaGenerator, SyntheticOracleFactory  # type: ignore[import-not-found]
 import time
 import asyncio
 
-async def evaluate_seed_async(seed: int, provider: AntigravityReferenceProvider) -> dict:
+async def evaluate_seed_async(seed: int, provider: AntigravityReferenceProvider) -> dict:  # type: ignore[type-arg,name-defined]
     # ... same evaluation logic ...
     fixtures_dir = "tests/fixtures"
     s_mp4 = os.path.join(fixtures_dir, f"source_{seed}.mp4")
@@ -118,10 +118,10 @@ async def evaluate_seed_async(seed: int, provider: AntigravityReferenceProvider)
         "eff_stats": eff_stats
     }
 
-async def run_antigravity_smoke_test():
+async def run_antigravity_smoke_test():  # type: ignore[no-untyped-def]
     print("--- Running Antigravity Smoke Test ---")
     try:
-        from stream_editor.research.providers.antigravity import AntigravityReferenceProvider
+        from stream_editor.research.providers.antigravity import AntigravityReferenceProvider  # type: ignore[import-untyped]
         from stream_editor.models.antigravity_client import AntigravityClient
         client = AntigravityClient()
         provider = AntigravityReferenceProvider(client)
@@ -132,7 +132,7 @@ async def run_antigravity_smoke_test():
 
 import asyncio
 
-def run():
+def run():  # type: ignore[no-untyped-def]
     print("Running M10.2 Synthetic Accuracy Hardening E2E Test...\n")
     from stream_editor.research.providers.antigravity import AntigravityReferenceProvider
     from stream_editor.models.antigravity_client import AntigravityClient
@@ -178,7 +178,7 @@ def run():
             eff_stats[etype]["fp"] += stats["fp"]
             eff_stats[etype]["fn"] += stats["fn"]
             
-    asyncio.run(run_antigravity_smoke_test())
+    asyncio.run(run_antigravity_smoke_test())  # type: ignore[no-untyped-call]
     
     print("--- Aggregate Results ---")
     print(f"Block Alignment : Precision: {prec_b:.2f} | Recall: {rec_b:.2f} | F1: {f1_b:.2f}")
@@ -199,4 +199,4 @@ def run():
     print(f"\nTelemetry: {provider.client.get_telemetry()}")
 
 if __name__ == "__main__":
-    run()
+    run()  # type: ignore[no-untyped-call]

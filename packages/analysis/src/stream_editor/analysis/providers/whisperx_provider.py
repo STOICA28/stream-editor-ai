@@ -11,7 +11,7 @@ from stream_editor.contracts.analysis import (
 
 class WhisperXTranscriptionProvider(TranscriptionProvider):
     def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
-        import whisperx
+        import whisperx  # type: ignore[import-not-found]
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         compute_type = config.compute_type if device == "cuda" else "int8"

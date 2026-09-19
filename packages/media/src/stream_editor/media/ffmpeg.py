@@ -1,11 +1,20 @@
 import os
+import shutil
 import subprocess
+import uuid
+import structlog
+
+logger = structlog.get_logger()
 
 from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
 
 
+def _is_video(source_info: MediaInfo) -> bool:
+    return source_info.video_codec is not None
+
+
 def generate_proxy(input_path: str, output_path: str, config: ProxyConfig, source_info: MediaInfo) -> None:
-    partial_path = output_path + ".partial"
+    partial_path = output_path + f".{uuid.uuid4().hex}.partial"
     
     # Pre-generation cleanup
     if os.path.exists(partial_path):
@@ -47,7 +56,7 @@ def generate_proxy(input_path: str, output_path: str, config: ProxyConfig, sourc
         raise
 
 def extract_audio(input_path: str, output_path: str, config: AudioConfig) -> None:
-    partial_path = output_path + ".partial"
+    partial_path = output_path + f".{uuid.uuid4().hex}.partial"
     
     # Pre-generation cleanup
     if os.path.exists(partial_path):

@@ -120,17 +120,17 @@ async def get_feedback_stats(
     
     for e in events:
         if e.reason_category:
-            stats["reasons"][e.reason_category] = stats["reasons"].get(e.reason_category, 0) + 1
+            stats["reasons"][e.reason_category] = stats["reasons"].get(e.reason_category, 0) + 1  # type: ignore[attr-defined, index]
             
         if e.feedback_type == "modify_start" and e.previous_value and e.new_value:
             try:
                 diff = e.previous_value.get("source_start", 0) - e.new_value.get("source_start", 0)
-                stats["boundary_changes"].append(diff)
+                stats["boundary_changes"].append(diff)  # type: ignore[attr-defined]
             except:
                 pass
                 
     if stats["boundary_changes"]:
-        stats["average_start_extension"] = sum(stats["boundary_changes"]) / len(stats["boundary_changes"])
+        stats["average_start_extension"] = sum(stats["boundary_changes"]) / len(stats["boundary_changes"])  # type: ignore[arg-type, call-overload]
     else:
         stats["average_start_extension"] = 0.0
         

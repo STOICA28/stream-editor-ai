@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime
+from stream_editor.api.models.mixins import JobLeaseMixin
+from stream_editor.api.models.states import JobState
 from sqlalchemy import Column, String, Float, Integer, Boolean, ForeignKey, JSON, DateTime, Enum
 from sqlalchemy.orm import relationship
 from stream_editor.api.database import Base
@@ -24,7 +26,7 @@ class ReferenceVideoPair(Base):
     project_id = Column(String, ForeignKey("reference_projects.id"), nullable=False)
     source_asset_id = Column(String, ForeignKey("media_assets.id"), nullable=False)
     edited_asset_id = Column(String, ForeignKey("media_assets.id"), nullable=False)
-    analysis_status = Column(String, nullable=False, default="pending")
+    analysis_status = Column(String, nullable=False, default=JobState.PENDING.value)
 
     project = relationship("ReferenceProject", back_populates="pairs")
     source_asset = relationship("MediaAsset", foreign_keys=[source_asset_id])
@@ -34,12 +36,12 @@ class ReferenceVideoPair(Base):
     effects = relationship("ObservedEffect", back_populates="pair")
 
 
-class ReferenceAlignmentRun(Base):
+class ReferenceAlignmentRun(JobLeaseMixin, Base):
     __tablename__ = "reference_alignment_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     pair_id = Column(String, ForeignKey("reference_pairs.id"), nullable=False)
     signature = Column(String, nullable=False)
-    status = Column(String, nullable=False, default="completed")
+    status = Column(String, nullable=False, default=JobState.SUCCEEDED.value)
     metrics = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -126,7 +128,7 @@ class ResearchFinding(Base):
     project_id = Column(String, ForeignKey("reference_projects.id"), nullable=False)
     pair_id = Column(String, ForeignKey("reference_pairs.id"), nullable=True)
     finding_type = Column(String, nullable=False)
-    status = Column(String, nullable=False, default="pending")
+    status = Column(String, nullable=False, default=JobState.PENDING.value)
     description = Column(String, nullable=False)
     evidence = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

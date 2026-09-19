@@ -3,7 +3,7 @@ import json
 import os
 import shutil
 import hashlib
-from typing import Dict, Any, Optional, Type, TypeVar
+from typing import Dict, Any, Optional, Type, TypeVar, cast
 from pydantic import BaseModel, ValidationError
 
 T = TypeVar('T', bound=BaseModel)
@@ -17,6 +17,8 @@ class AIProviderCancelled(AIProviderError): pass
 class AIInvalidStructuredOutput(AIProviderError): pass
 class AIProviderExecutionError(AIProviderError): pass
 
+_semaphore = asyncio.Semaphore(int(os.environ.get("ANTIGRAVITY_MAX_CONCURRENCY", "3")))
+
 class AntigravityClient:
     def __init__(self, model: str = "gemini-3.1-pro-high", timeout: float = 60.0):
         self.model = model
@@ -24,7 +26,7 @@ class AntigravityClient:
         self.bin_path = self._discover_bin()
         self.is_available = self.bin_path is not None
         
-        self.telemetry = {
+        self.telemetry: dict[str, Any] = {
             "provider": "antigravity",
             "model": self.model,
             "calls": 0,
@@ -35,12 +37,11 @@ class AntigravityClient:
             "output_tokens": 0,
             "total_tokens": 0
         }
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
 
     def _discover_bin(self) -> Optional[str]:
-        # Try configured bin, then fallback to path
         configured = os.getenv("ANTIGRAVITY_BIN")
-        if configured and shutil.which(configured):
+        if configured is not None:
             return shutil.which(configured)
         
         for name in ["agy", "agy.exe", "agy.cmd"]:
@@ -64,9 +65,8 @@ class AntigravityClient:
             }
             
         try:
-            # We run a quick check to see if agy works
             proc = await asyncio.create_subprocess_exec(
-                self.bin_path, "-p", "Reply with OK", "--output-format", "json",
+                self.bin_path, "-p", "Reply with OK", "--output-format", "json",  # type: ignore[arg-type,arg-type]
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
@@ -105,60 +105,61 @@ class AntigravityClient:
 
         if cache_key in self._cache:
             self.telemetry["cache_hits"] += 1
-            return self._cache[cache_key]
+            return cast(T, self._cache[cache_key])
 
-        self.telemetry["calls"] += 1
-        
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                self.bin_path, 
-                "-p", prompt, 
-                "--output-format", "json", 
-                "--json-schema", schema_str, 
-                "--model", self.model,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-        except Exception as e:
-            self.telemetry["failures"] += 1
-            raise AIProviderExecutionError(f"Failed to start subprocess: {e}")
-
-        try:
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=self.timeout)
-        except asyncio.TimeoutError:
-            proc.kill()
-            self.telemetry["failures"] += 1
-            raise AIProviderTimeout(f"Request timed out after {self.timeout}s")
-        except asyncio.CancelledError:
-            proc.kill()
-            self.telemetry["failures"] += 1
-            raise AIProviderCancelled("Request was cancelled")
-
-        if proc.returncode != 0:
-            self.telemetry["failures"] += 1
-            raise AIProviderExecutionError(f"agy process failed with exit code {proc.returncode}")
-
-        try:
-            data = json.loads(stdout_bytes.decode('utf-8'))
-        except json.JSONDecodeError:
-            self.telemetry["failures"] += 1
-            raise AIInvalidStructuredOutput("Could not parse JSON from CLI output")
-
-        structured_output = data.get("structured_output", data)
-        try:
-            parsed = schema_model.model_validate(structured_output)
-            self._cache[cache_key] = parsed
+        async with _semaphore:
+            self.telemetry["calls"] += 1
             
-            # Record telemetry if agy provides token data, otherwise skip fabricating
-            usage = data.get("usage", {})
-            if "prompt_tokens" in usage:
-                self.telemetry["input_tokens"] += usage["prompt_tokens"]
-            if "completion_tokens" in usage:
-                self.telemetry["output_tokens"] += usage["completion_tokens"]
-            if "total_tokens" in usage:
-                self.telemetry["total_tokens"] += usage["total_tokens"]
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    self.bin_path,  # type: ignore[arg-type]
+                    "-p", prompt, 
+                    "--output-format", "json", 
+                    "--json-schema", schema_str, 
+                    "--model", self.model,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+            except Exception as e:
+                self.telemetry["failures"] += 1
+                raise AIProviderExecutionError(f"Failed to start subprocess: {e}")
+
+            try:
+                stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=self.timeout)
+            except asyncio.TimeoutError:
+                proc.kill()
+                self.telemetry["failures"] += 1
+                raise AIProviderTimeout(f"Request timed out after {self.timeout}s")
+            except asyncio.CancelledError:
+                proc.kill()
+                self.telemetry["failures"] += 1
+                raise AIProviderCancelled("Request was cancelled")
+
+            if proc.returncode != 0:
+                self.telemetry["failures"] += 1
+                raise AIProviderExecutionError(f"agy process failed with exit code {proc.returncode}")
+
+            try:
+                data = json.loads(stdout_bytes.decode('utf-8'))
+            except json.JSONDecodeError:
+                self.telemetry["failures"] += 1
+                raise AIInvalidStructuredOutput("Could not parse JSON from CLI output")
+
+            structured_output = data.get("structured_output", data)
+            try:
+                parsed = schema_model.model_validate(structured_output)
+                self._cache[cache_key] = parsed
                 
-            return parsed
-        except ValidationError as e:
-            self.telemetry["failures"] += 1
-            raise AIInvalidStructuredOutput(f"Pydantic validation failed: {e}")
+                usage = data.get("usage", {})
+                if "prompt_tokens" in usage:
+                    self.telemetry["input_tokens"] += usage["prompt_tokens"]
+                if "completion_tokens" in usage:
+                    self.telemetry["output_tokens"] += usage["completion_tokens"]
+                if "total_tokens" in usage:
+                    self.telemetry["total_tokens"] += usage["total_tokens"]
+                    
+                return parsed
+            except ValidationError as e:
+                self.telemetry["failures"] += 1
+                raise AIInvalidStructuredOutput(f"Pydantic validation failed: {e}")
+

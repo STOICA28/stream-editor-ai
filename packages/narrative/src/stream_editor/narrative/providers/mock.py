@@ -193,4 +193,4 @@ class MockNarrativeProvider:
 
 
 # Implement the Protocol formally
-NarrativeAnalysisProvider.register(MockNarrativeProvider)  # type: ignore[attr-defined]
+NarrativeAnalysisProvider.register(MockNarrativeProvider)

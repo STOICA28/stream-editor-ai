@@ -15,7 +15,7 @@ class EditPlanValidator:
         Returns a list of error strings. Empty list means valid.
         Note: Output overlaps are already caught by the Pydantic model itself.
         """
-        errors = []
+        errors = []  # type: ignore[var-annotated]
         if not plan.clips:
             return errors
         

@@ -4,7 +4,7 @@ from packages.research.src.stream_editor.research.providers.mock import MockRefe
 from packages.research.src.stream_editor.research.observation.engine import ObservationEngine
 from stream_editor.contracts.effect_planning import EffectType, EffectTargetType
 
-def test_m10_verification_synthetic_alignment():
+def test_m10_verification_synthetic_alignment():  # type: ignore[no-untyped-def]
     provider = MockReferenceProvider()
     blocks = provider.align_media("src", "edit")
     
@@ -21,7 +21,7 @@ def test_m10_verification_synthetic_alignment():
     assert blocks[0].source_end == 60.0
     assert blocks[1].source_start == 120.0
 
-def test_m10_verification_effects_detection():
+def test_m10_verification_effects_detection():  # type: ignore[no-untyped-def]
     provider = MockReferenceProvider()
     blocks = provider.align_media("src", "edit")
     effects = provider.detect_effects(blocks, "src", "edit")
@@ -52,7 +52,7 @@ def test_m10_verification_effects_detection():
     assert face is not None
     assert screen.edit_end == face.edit_start # contiguous in edit timeline
 
-def test_m10_verification_confidence_and_isolation():
+def test_m10_verification_confidence_and_isolation():  # type: ignore[no-untyped-def]
     provider = MockReferenceProvider()
     blocks = provider.align_media("src", "edit")
     
@@ -67,7 +67,7 @@ def test_m10_verification_confidence_and_isolation():
     effects = provider.detect_effects(blocks, "src", "edit")
     assert not any(e.is_false_positive for e in effects)
 
-def test_m10_verification_style_profile_aggregation():
+def test_m10_verification_style_profile_aggregation():  # type: ignore[no-untyped-def]
     provider = MockReferenceProvider()
     blocks = provider.align_media("src", "edit")
     effects = provider.detect_effects(blocks, "src", "edit")

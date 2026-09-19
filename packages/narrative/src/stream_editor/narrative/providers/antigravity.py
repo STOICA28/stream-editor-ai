@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 from typing import Any
 
@@ -8,7 +9,6 @@ from stream_editor.contracts.editorial import (
     StoryGraphConfig,
 )
 from stream_editor.narrative.prompts import v1_cross_chapter_link, v1_critic, v1_local_graph
-
 from stream_editor.models.antigravity_client import AntigravityClient, AIProviderUnavailable
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class AntigravityNarrativeProvider:
         self.client = client
         self._call_log: list[dict[str, Any]] = []
 
-    async def build_local_graph(
+    def build_local_graph(
         self,
         chapter_candidates: list[dict[str, object]],
         chapter_summary: str,
@@ -58,7 +58,7 @@ class AntigravityNarrativeProvider:
         )
 
         try:
-            return await self.client.generate_structured(prompt, LocalGraphProposal)
+            return asyncio.run(self.client.generate_structured(prompt, LocalGraphProposal))
         except AIProviderUnavailable as e:
             logger.warning(f"Antigravity unavailable: {e}")
             return LocalGraphProposal(prompt_version=config.prompt_version)
@@ -66,7 +66,7 @@ class AntigravityNarrativeProvider:
             logger.error(f"Failed to generate local graph: {e}")
             return LocalGraphProposal(prompt_version=config.prompt_version)
 
-    async def link_story_elements(
+    def link_story_elements(
         self,
         candidate_pairs: list[tuple[dict[str, object], dict[str, object]]],
         element_index: list[dict[str, object]],
@@ -110,12 +110,12 @@ class AntigravityNarrativeProvider:
         )
 
         try:
-            return await self.client.generate_structured(prompt, LocalGraphProposal)
+            return asyncio.run(self.client.generate_structured(prompt, LocalGraphProposal))
         except Exception as e:
             logger.error(f"Failed to link story elements: {e}")
             return LocalGraphProposal(prompt_version=config.prompt_version)
 
-    async def review_graph(
+    def review_graph(
         self,
         nodes: list[dict[str, object]],
         edges: list[dict[str, object]],
@@ -143,7 +143,9 @@ class AntigravityNarrativeProvider:
         )
         
         try:
-            proposal = await self.client.generate_structured(prompt, LocalGraphProposal)
+            proposal: LocalGraphProposal = asyncio.run(
+                self.client.generate_structured(prompt, LocalGraphProposal)
+            )
             return proposal.relationships
         except Exception as e:
             logger.error(f"Failed to review graph: {e}")

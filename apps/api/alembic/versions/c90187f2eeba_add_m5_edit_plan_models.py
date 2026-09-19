@@ -23,7 +23,7 @@ def upgrade() -> None:
     
     bind = op.get_bind()
     from sqlalchemy.engine.reflection import Inspector
-    inspector = Inspector.from_engine(bind)
+    inspector = Inspector.from_engine(bind)  # type: ignore[arg-type,arg-type]
     tables = inspector.get_table_names()
 
     # We must first drop the empty placeholder tables from any previous schema creation

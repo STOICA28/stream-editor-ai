@@ -15,7 +15,7 @@ class MockEditorialProvider(EditorialAnalysisProvider):
         candidate_id: str,
         transcript_excerpt: str,
         local_features: LocalFeatures,
-        nearby_events: list[dict],
+        nearby_events: list[dict],  # type: ignore[type-arg]
         local_summary: str | None,
         chapter_summary: str | None,
         prompt_version: str
@@ -60,7 +60,7 @@ class MockEditorialProvider(EditorialAnalysisProvider):
         end_time: float,
         level: str,
         prompt_version: str
-    ) -> dict:
+    ) -> dict:  # type: ignore[type-arg]
         return {
             "summary": "Mock summary",
             "key_topics": ["topic 1"]

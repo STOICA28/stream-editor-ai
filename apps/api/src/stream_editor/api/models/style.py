@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from stream_editor.api.models.mixins import JobLeaseMixin
+from stream_editor.api.models.states import JobState
+from sqlalchemy import UniqueConstraint, JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -35,18 +37,27 @@ class StylePolicyVersion(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     
-class StyleApplicationRun(Base):
+class StyleApplicationRun(JobLeaseMixin, Base):
     __tablename__ = "style_application_runs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id"))
+    style_policy_id = Column(String, ForeignKey("editorial_style_policies.id"), nullable=True)
     style_policy_version_id = Column(String, ForeignKey("style_policy_versions.id"))
     
-    candidate_run_id = Column(String, nullable=True)
-    story_graph_run_id = Column(String, nullable=True)
-    visual_analysis_run_id = Column(String, nullable=True)
+    style_application_config = Column(JSON, default=dict)
+    experimental = Column(Boolean, default=False)
+    dry_run = Column(Boolean, default=False)
+
+    input_candidate_run_id = Column(String, nullable=True)
+    input_story_graph_run_id = Column(String, nullable=True)
+    input_visual_analysis_run_id = Column(String, nullable=True)
     
-    status = Column(String, default="completed")
+    output_edit_plan_run_id = Column(String, nullable=True)
+    output_effect_plan_run_id = Column(String, nullable=True)
+    
+    status = Column(String, default=JobState.PENDING.value)
     signature = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
 

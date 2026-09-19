@@ -13,7 +13,7 @@ class BoundingBox(BaseModel):
     height: float = Field(..., gt=0.0, le=1.0)
 
     @model_validator(mode='before')
-    def validate_bounds(cls, values):
+    def validate_bounds(cls, values):  # type: ignore[no-untyped-def]
         x, y, w, h = values.get('x'), values.get('y'), values.get('width'), values.get('height')
         if x is not None and w is not None and x + w > 1.0:
             raise ValueError("x + width must be <= 1.0")

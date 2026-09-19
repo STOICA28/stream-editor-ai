@@ -7,7 +7,7 @@ engine = create_async_engine(settings.DATABASE_URL, echo=False)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
-    pass
+    __allow_unmapped__ = True
 
 from collections.abc import AsyncGenerator
 

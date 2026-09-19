@@ -11,6 +11,7 @@ from stream_editor.api.models.project import Project, RenderJob, EditPlan, EditC
 from stream_editor.contracts.rendering import RenderConfig, RenderMode, CompiledTimeline
 from stream_editor.contracts.effect_planning import EffectInstructionSchema, EffectType, EffectTargetType, EffectPriority
 from stream_editor.rendering.compiler import TimelineCompiler
+from stream_editor.worker.utils.lease import acquire_job_lease
 from stream_editor.rendering.engine import RenderingEngine
 
 router = APIRouter(prefix="/projects/{project_id}/renders", tags=["Rendering"])
@@ -20,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 async def run_render_task(job_id: str, project_id: str, edit_plan_id: str, effect_plan_id: Optional[str], config_dict: Dict[str, Any]) -> None:
     async with SessionLocal() as db:
+        async with acquire_job_lease(db, RenderJob, job_id) as already_done:
+            if already_done:
+                return
+
         job = (await db.execute(select(RenderJob).where(RenderJob.id == job_id))).scalar_one_or_none()
         if not job:
             return
@@ -86,13 +91,24 @@ async def run_render_task(job_id: str, project_id: str, edit_plan_id: str, effec
                 logger.info(f"Render {job_id} progress: {prog}%")
                 
             # M1 multi-source support implies resolving `source_asset_id` to actual paths
-            source_paths = {}
+            source_paths: dict[str, Path] = {}
+            
+            # Fetch the main source video for the project
+            source_asset = (await db.execute(
+                select(MediaAsset).where(MediaAsset.project_id == project_id, MediaAsset.media_type == "source")
+            )).scalars().first()
+            
+            if source_asset and source_asset.path:
+                source_paths[str(source_asset.id)] = Path("data/projects") / str(source_asset.path)
+            
             for seg in timeline.segments:
+                if source_asset:
+                    seg.source_asset_id = str(source_asset.id)
+                
                 if seg.source_asset_id not in source_paths:
                     asset = (await db.execute(select(MediaAsset).where(MediaAsset.id == seg.source_asset_id))).scalar_one_or_none()
                     if asset and asset.path:
-                        # Fallback for synthetic tests
-                        source_paths[seg.source_asset_id] = Path(asset.path)
+                        source_paths[seg.source_asset_id] = Path("data/projects") / str(asset.path)
                     else:
                         # Use a synthetic source for tests
                         source_paths[seg.source_asset_id] = Path("synthetic_test.mp4")
