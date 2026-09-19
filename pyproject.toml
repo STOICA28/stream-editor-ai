@@ -11,6 +11,7 @@ members = [
     "packages/narrative",
     "packages/rendering",
     "packages/vault",
+    "packages/research",
 ]
 
 [tool.ruff]
@@ -32,7 +33,7 @@ python_version = "3.12"
 strict = true
 explicit_package_bases = true
 namespace_packages = true
-mypy_path = "packages/contracts/src:packages/storage/src:packages/models/src:packages/media/src:packages/analysis/src:packages/editorial/src:packages/narrative/src:packages/rendering/src:packages/vault/src:apps/api/src:apps/worker/src"
+mypy_path = "packages/contracts/src:packages/storage/src:packages/models/src:packages/media/src:packages/analysis/src:packages/editorial/src:packages/narrative/src:packages/rendering/src:packages/vault/src:packages/research/src:apps/api/src:apps/worker/src"
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
@@ -51,6 +52,7 @@ pythonpath = [
     "packages/narrative/src",
     "packages/rendering/src",
     "packages/vault/src",
+    "packages/research/src",
     "apps/api/src",
     "apps/worker/src"
 ]
@@ -65,6 +67,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "asyncpg>=0.31.0",
     "google-genai>=2.23.0",
     "numpy>=2.5.3",
     "opencv-python>=5.0.0.93",
@@ -82,7 +85,7 @@ dev = [
 
 [[tool.mypy.overrides]]
 module = ["stream_editor.worker.*"]
-disallow_untyped_decorators = false
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [

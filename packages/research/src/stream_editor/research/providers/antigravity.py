@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 class AntigravityOutputSchema(BaseModel):
     classification: str = Field(...)
     confidence: float = Field(...)
-    effect_type: str = Field(None)
-    target: str = Field(None)
+    effect_type: str = Field(None)  # type: ignore[assignment]
+    target: str = Field(None)  # type: ignore[assignment]
 
 class AntigravityReferenceProvider:
     """

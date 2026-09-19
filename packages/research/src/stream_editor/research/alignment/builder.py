@@ -18,7 +18,7 @@ class MultiSignalAlignmentBuilder:
         print("Builder: Running Continuity Filter on Audio Blocks...")
         a_blocks.sort(key=lambda x: x.edit_start)
         sequences = []
-        current_seq = []
+        current_seq = []  # type: ignore[var-annotated]
         for b in a_blocks:
             if not current_seq:
                 current_seq.append(b)

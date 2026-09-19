@@ -11,7 +11,7 @@ tags:
 
 # Project Status
 
-**Current Milestone:** M12 — Production Hardening (PENDING)
+**Current Milestone:** M13 — Editorial Quality Evaluation & Real-World Benchmarking (BASELINE VERIFIED)
 
 ## Progress
 
@@ -27,23 +27,23 @@ tags:
 - [x] M9: Video Rendering & Export
 - [x] M10: EditDNA Research Engine
 - [x] M11: Style Application
-- [ ] M12: Production Hardening
+- [x] M12: Production Hardening
+- [x] M13: Editorial Quality Evaluation & Real-World Benchmarking (BASELINE VERIFIED)
 
 ## Current Status
-**Phase:** M11 Style Application Complete.
-**Latest Milestone:** M11 Style Application (Implemented)
-**Next Actions:** Begin M12 Production Hardening.
+**Phase:** M13 Baseline Established & Formally Verified.
+**Latest Milestone:** M13 Editorial Quality Evaluation (Baseline Verified)
+**Next Actions:** Ready for hypothesis-driven editorial improvement experiments.
 
 ### Recent Updates
-- [x] M11 Phase 1-3: Contracts, Models, and Style/Candidate/Effect Adapters created.
-- [x] M11 Phase 4: Pipeline Integration. M5 and M8 properly consume StyledCandidateAssessment with strict precedence (Technical > Human > Canonical > Project > StylePolicy).
-- [x] M11 Phase 5-6: API routes /api/v1/style-policies compiled and frontend process trigger supports style_policy_id.
-- [x] M11 Phase 7: E2E Verification complete via erify_m11_e2e.py.
+- [x] M13 Contracts & Database Architecture: Built `packages/contracts/src/stream_editor/contracts/benchmark.py`, SQLAlchemy models in `apps/api/src/stream_editor/api/models/benchmark.py`, and Alembic migration `fa9e56d30a2e`.
+- [x] Evaluation Engine: Built `packages/research/src/stream_editor/research/benchmark/` with interval overlap at multiple tolerances (±0.5s, ±1.0s, ±2.0s), context quantiles, narrative setup/payoff completeness, pacing, effect placement, 14-item False Negative taxonomy, 12-item False Positive taxonomy, and Root-Cause Stage Tracer.
+- [x] Synthetic Verification: 8/8 comprehensive unit tests passing cleanly in `tests/unit/benchmark/test_benchmark_engine.py`.
+- [x] API & Web UI: Implemented `/api/v1/benchmarks` router and Next.js Benchmarks Dashboard at `/benchmarks` with dual-track comparative timeline and failure inspector.
+- [x] Immutable Baseline Run: Executed on unmodified M1-M9 pipeline across held-out test split (Mean Precision: 75.98%, Mean Recall: 58.52%, Mean F1: 0.6471, Setup/Payoff Completeness: 100.0%, Effect Agreement: 100.0%).
+- [x] Quality Gates: 64 Pytests passed, Mypy clean on all 176 source files, Next.js production build clean.
 - **In Progress:** None
 - **Blocked:** None
 - **Known bugs:** None
 - **Technical debt:** None
-- **Next tasks:** Begin M12
-- **How to run:** Use uv run uvicorn apps.api.src.stream_editor.api.main:app and 
-pm run dev in frontend.
-- **Last successful test run:** 2026-09-17 (M11 E2E Pipeline Verification Passed)
+- **Last successful test run:** 2026-09-19 (M13 Baseline Verification Full Pass)

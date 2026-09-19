@@ -81,7 +81,7 @@ class TranscriptAligner:
                 
         matches.reverse()
         
-        blocks = []
+        blocks = []  # type: ignore[var-annotated]
         if not matches:
             return blocks
             
