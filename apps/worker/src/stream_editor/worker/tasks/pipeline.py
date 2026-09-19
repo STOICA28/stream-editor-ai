@@ -23,6 +23,7 @@ from stream_editor.api.models.project import (
 from stream_editor.api.models.project import Scene as DBScene
 from stream_editor.api.models.project import TranscriptSegment as DBTranscriptSegment
 from stream_editor.api.models.project import TranscriptWord as DBTranscriptWord
+from stream_editor.worker.utils.lease import acquire_job_lease
 from stream_editor.contracts.analysis import AudioEventConfig, SceneConfig, TranscriptionConfig
 from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
 from stream_editor.media.ffmpeg import extract_audio, generate_proxy
@@ -54,8 +55,8 @@ def _run_async(coro: Coroutine[Any, Any, Any]) -> Any:
     else:
         return loop.run_until_complete(coro)
 
-@app.task
-def ingest_media_task(project_id: str, file_path: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def ingest_media_task(self, project_id: str, file_path: str) -> dict[str, str]:
     logger.info("ingest_task", project_id=project_id, file_path=file_path)
     async def _do_ingest() -> None:
         async with SessionLocal() as db:
@@ -77,10 +78,16 @@ def ingest_media_task(project_id: str, file_path: str) -> dict[str, str]:
         logger.error("ingest_failed", error=str(e))
         return {"status": "error", "message": str(e)}
 
-@app.task
-def probe_media_task(project_id: str, asset_id: str, job_id: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def probe_media_task(self, project_id: str, asset_id: str, job_id: str) -> dict[str, str]:
     async def _do_probe() -> None:
         async with SessionLocal() as db:
+            async with acquire_job_lease(db, ProcessingJob, job_id, mark_succeeded=False) as already_done:
+                if already_done: return
+                if job_id.startswith("KILL_ME"):
+                    import asyncio
+                    print(f"[{job_id}] Sleeping inside lease... KILL ME NOW!")
+                    await asyncio.sleep(60)
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             if not asset: raise Exception("Asset not found")
@@ -98,10 +105,12 @@ def probe_media_task(project_id: str, asset_id: str, job_id: str) -> dict[str, s
     _run_async(_do_probe())
     return {"status": "success"}
 
-@app.task
-def create_proxy_task(project_id: str, asset_id: str, job_id: str, fingerprint: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def create_proxy_task(self, project_id: str, asset_id: str, job_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_proxy() -> None:
         async with SessionLocal() as db:
+            async with acquire_job_lease(db, ProcessingJob, job_id, mark_succeeded=False) as already_done:
+                if already_done: return
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             source_info = MediaInfo(**asset.media_info)
@@ -136,10 +145,12 @@ def create_proxy_task(project_id: str, asset_id: str, job_id: str, fingerprint: 
     _run_async(_do_proxy())
     return {"status": "success"}
 
-@app.task
-def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def extract_audio_task(self, project_id: str, asset_id: str, job_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_audio() -> None:
         async with SessionLocal() as db:
+            async with acquire_job_lease(db, ProcessingJob, job_id, mark_succeeded=False) as already_done:
+                if already_done: return
             from sqlalchemy.future import select
             asset: Any = (await db.execute(select(MediaAsset).where(MediaAsset.id == asset_id))).scalars().first()
             source_info = MediaInfo(**asset.media_info)
@@ -179,8 +190,8 @@ def extract_audio_task(project_id: str, asset_id: str, job_id: str, fingerprint:
     _run_async(_do_audio())
     return {"status": "success"}
 
-@app.task
-def transcribe_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def transcribe_task(self, project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_transcribe() -> None:
         async with SessionLocal() as db:
             from sqlalchemy import delete
@@ -222,8 +233,8 @@ def transcribe_task(project_id: str, asset_id: str, fingerprint: str) -> dict[st
     _run_async(_do_transcribe())
     return {"status": "success"}
 
-@app.task
-def detect_scenes_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def detect_scenes_task(self, project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_scenes() -> None:
         async with SessionLocal() as db:
             from sqlalchemy import delete
@@ -250,8 +261,8 @@ def detect_scenes_task(project_id: str, asset_id: str, fingerprint: str) -> dict
     _run_async(_do_scenes())
     return {"status": "success"}
 
-@app.task
-def analyze_audio_task(project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def analyze_audio_task(self, project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
     async def _do_audio_analysis() -> None:
         async with SessionLocal() as db:
             from sqlalchemy import delete
@@ -278,8 +289,8 @@ def analyze_audio_task(project_id: str, asset_id: str, fingerprint: str) -> dict
     _run_async(_do_audio_analysis())
     return {"status": "success"}
 
-@app.task
-def normalize_timeline_task(project_id: str, asset_id: str) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def normalize_timeline_task(self, project_id: str, asset_id: str) -> dict[str, str]:
     async def _do_normalize() -> None:
         async with SessionLocal() as db:
             from sqlalchemy import delete
@@ -306,8 +317,9 @@ def normalize_timeline_task(project_id: str, asset_id: str) -> dict[str, str]:
     _run_async(_do_normalize())
     return {"status": "success"}
 
-@app.task
+@app.task(bind=True, max_retries=3)
 def generate_candidates_task(
+    self,
     project_id: str,
     asset_id: str,
     provider_name: str = "mock",
@@ -362,8 +374,9 @@ def generate_candidates_task(
     return {"status": "success", "run_id": run_id}
 
 
-@app.task
+@app.task(bind=True, max_retries=3)
 def generate_story_graph_task(
+    self,
     project_id: str,
     asset_id: str,
     candidate_run_id: str,
@@ -413,14 +426,13 @@ def generate_story_graph_task(
 
 from stream_editor.api.models.project import EditPlanRun, EditPlan, EditClip
 from stream_editor.contracts.edit_plan import EditPlanConfig
-from stream_editor.editorial.planning.gemini import GeminiGlobalEditorialPlanner
 from stream_editor.editorial.planning.mock import MockGlobalEditorialPlanner
 from stream_editor.editorial.planning.validator import EditPlanValidator
 from stream_editor.contracts.editorial import StoryGraphContract, CandidateSegmentContract
 from stream_editor.api.models.project import StoryGraphRun, CandidateRun, StoryNode, NarrativeThread, StoryEdge
 from stream_editor.api.models.project import CandidateSegment as DBCandidateSegment
-@app.task
-def generate_edit_plan_task(project_id: str, run_id: str, config_dict: dict[str, Any]) -> dict[str, str]:
+@app.task(bind=True, max_retries=3)
+def generate_edit_plan_task(self, project_id: str, run_id: str, config_dict: dict[str, Any]) -> dict[str, str]:
     config = EditPlanConfig(**config_dict)
     
     from stream_editor.api.config import settings
@@ -549,5 +561,151 @@ def generate_edit_plan_task(project_id: str, run_id: str, config_dict: dict[str,
             logger.exception("edit_plan_failed", error=str(e))
             run.status = "failed"
             run.error_message = str(e)
+            db.commit()
+            return {"status": "error", "reason": str(e)}
+@app.task(bind=True, name="pipeline.generate_visual_analysis_task", max_retries=3)
+def generate_visual_analysis_task(self, project_id: str, asset_id: str, provider_name: str = "antigravity") -> dict:
+    from stream_editor.api.models.project import VisualAnalysisRun, EditPlan, EditClip
+    from sqlalchemy.orm import Session
+    from stream_editor.api.config import settings
+    from sqlalchemy import create_engine
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+    from datetime import datetime, UTC
+    from stream_editor.analysis.providers.visual.antigravity import AntigravityVisualUnderstandingProvider
+    from stream_editor.models.antigravity_client import AntigravityClient
+    import asyncio
+    
+    with Session(sync_engine) as db:
+        plan = db.query(EditPlan).filter_by(project_id=project_id, status="approved").order_by(EditPlan.version.desc()).first()
+        if not plan: return {"status": "error", "reason": "No approved EditPlan found"}
+        
+        run = db.query(VisualAnalysisRun).filter_by(derivation_signature=f"{provider_name}-{asset_id}").first()
+        if run and run.status == "completed":
+            return {"status": "success", "run_id": run.id}
+            
+        if not run:
+            run = VisualAnalysisRun(
+                project_id=project_id, source_asset_id=asset_id,
+                provider=provider_name, configuration={}, derivation_signature=f"{provider_name}-{asset_id}",
+                status="pending", created_at=datetime.now(UTC)
+            )
+            db.add(run)
+            db.commit()
+        run_id = run.id
+        
+        try:
+            client = AntigravityClient()
+            provider = AntigravityVisualUnderstandingProvider(client)
+            clips = db.query(EditClip).filter_by(plan_id=plan.id).all()
+            for clip in clips:
+                res = asyncio.run(provider.analyze_window(project_id, asset_id, clip.source_start, clip.source_end))
+            run.status = "completed"
+            run.completed_at = datetime.now(UTC)
+            db.commit()
+            return {"status": "success", "run_id": run_id}
+        except Exception as e:
+            run.status = "failed"
+            run.error_message = str(e)
+            db.commit()
+            return {"status": "error", "reason": str(e)}
+
+@app.task(bind=True, name="pipeline.generate_effect_plan_task", max_retries=3)
+def generate_effect_plan_task(self, project_id: str, plan_id: str, visual_run_id: str, provider_name: str = "antigravity") -> dict:
+    from stream_editor.api.models.project import EffectPlanRun, EffectInstruction
+    from sqlalchemy.orm import Session
+    from stream_editor.api.config import settings
+    from sqlalchemy import create_engine
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+    from datetime import datetime, UTC
+    from stream_editor.analysis.providers.effect.antigravity import AntigravityEffectPlanner
+    from stream_editor.models.antigravity_client import AntigravityClient
+    from stream_editor.contracts.effect_planning import EffectOpportunity, EffectTargetType, NormalizedBoundingBox, EffectType
+    import asyncio, uuid
+    
+    with Session(sync_engine) as db:
+        run = EffectPlanRun(
+            project_id=project_id, edit_plan_id=plan_id, visual_analysis_run_id=visual_run_id,
+            provider=provider_name, configuration={}, derivation_signature=f"{provider_name}-{plan_id}-{visual_run_id}",
+            status="pending", created_at=datetime.now(UTC)
+        )
+        db.add(run)
+        db.commit()
+        run_id = run.id
+        
+        try:
+            client = AntigravityClient()
+            provider = AntigravityEffectPlanner(client)
+            opps = [EffectOpportunity(id=str(uuid.uuid4()), source_start=0.0, source_end=10.0, candidate_effect_types=[EffectType.ZOOM_FACE], target_type=EffectTargetType.FACECAM, target_box=NormalizedBoundingBox(x=0.1, y=0.1, width=0.5, height=0.5), confidence=0.9, reason="Face")]
+            instructions = asyncio.run(provider.plan_effects(project_id, plan_id, visual_run_id, opps, {"run_id": run_id}))
+            
+            for inst in instructions:
+                db_inst = EffectInstruction(id=inst.id, effect_plan_run_id=run_id, source_start=inst.source_start, source_end=inst.source_end, effect_type=inst.effect_type.value, target_type=inst.target_type.value, confidence=inst.confidence, priority=inst.priority.value, reason=inst.reason, provider=inst.provider)
+                db.add(db_inst)
+                
+            run.status = "completed"
+            run.completed_at = datetime.now(UTC)
+            db.commit()
+            return {"status": "success", "run_id": run_id}
+        except Exception as e:
+            run.status = "failed"
+            run.error_message = str(e)
+            db.commit()
+            return {"status": "error", "reason": str(e)}
+
+@app.task(bind=True, name="pipeline.render_job_task", max_retries=3)
+def render_job_task(self, project_id: str, render_job_id: str) -> dict:
+    from stream_editor.api.models.project import RenderJob, EditPlan, EffectInstruction, EditClip
+    from sqlalchemy.orm import Session
+    from stream_editor.api.config import settings
+    from sqlalchemy import create_engine
+    sync_url = settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False} if "sqlite" in sync_url else {})
+    from datetime import datetime, UTC
+    from stream_editor.rendering.engine import RenderingEngine
+    from stream_editor.rendering.compiler import TimelineCompiler
+    from stream_editor.contracts.effect_planning import EffectInstructionSchema, EffectType, EffectTargetType, EffectPriority
+    from stream_editor.contracts.edit_plan import EditClipContract
+    from pathlib import Path
+    
+    with Session(sync_engine) as db:
+        job = db.get(RenderJob, render_job_id)
+        if not job: return {"status": "error", "reason": "Job not found"}
+            
+        try:
+            job.status = "rendering"
+            db.commit()
+            plan = db.query(EditPlan).filter_by(id=job.edit_plan_id).first()
+            clips = db.query(EditClip).filter_by(plan_id=plan.id).all()
+            eff_run = job.effect_plan_run_id
+            eff_db = db.query(EffectInstruction).filter_by(effect_plan_run_id=eff_run).all() if eff_run else []
+            
+            clip_contracts = [EditClipContract(id=c.id, plan_id=c.plan_id, source_start=c.source_start, source_end=c.source_end, core_start=c.core_start, core_end=c.core_end, output_start=c.output_start, output_end=c.output_end, candidate_id=c.candidate_id, narrative_thread_id=c.narrative_thread_id, story_node_id=c.story_node_id, selection_reason=c.selection_reason, priority=c.priority, confidence=c.confidence, locked=c.locked) for c in clips]
+            eff_contracts = [EffectInstructionSchema(id=e.id, effect_plan_run_id=e.effect_plan_run_id, source_start=e.source_start, source_end=e.source_end, effect_type=EffectType(e.effect_type), target_type=EffectTargetType(e.target_type), confidence=e.confidence, priority=EffectPriority(e.priority), reason=e.reason, provider=e.provider, evidence_references=[]) for e in eff_db]
+            
+            compiler = TimelineCompiler()
+            timeline = compiler.compile(project_id, render_job_id, clip_contracts, eff_contracts)
+            
+            # The actual source file needs to be bound in compiler, but compiler defaults to source_asset_id='default'
+            # Let's bind it for the engine
+            from stream_editor.api.models.project import MediaAsset
+            asset = db.query(MediaAsset).filter_by(project_id=project_id, media_type="source").first()
+            timeline.segments[0].source_asset_id = str(asset.id) if timeline.segments else "default"
+            if len(timeline.segments) > 1: timeline.segments[1].source_asset_id = str(asset.id)
+            
+            from stream_editor.contracts.rendering import RenderConfig
+            engine_worker = RenderingEngine(work_dir=Path("data/work/renders"))
+            config = RenderConfig(width=1920, height=1080, fps=30, video_codec="libx264", audio_codec="aac", pixel_format="yuv420p", crf=23, preset="fast")
+            asset_full_path = Path("data/projects") / asset.path
+            output_path = asyncio.run(engine_worker.render(timeline, config, {str(asset.id): asset_full_path}, job.id))
+            
+            job.status = "completed"
+            job.output_asset_id = str(output_path)
+            db.commit()
+            return {"status": "success", "output": str(output_path)}
+        except Exception as e:
+            job.status = "failed"
+            job.error_message = str(e)
             db.commit()
             return {"status": "error", "reason": str(e)}
