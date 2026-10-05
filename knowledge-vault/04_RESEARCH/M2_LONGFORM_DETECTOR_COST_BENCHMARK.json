@@ -1,0 +1,72 @@
+{
+  "benchmark_target": "data\\projects\\059346bf-451a-4902-b60f-f50f29febc4b\\proxies\\325c47a4-357d-4042-8750-bf19ffb299a5\\a2b11fd875dd42b2be27778c0dae752de684feb877613cc528957c2d95ca1137.mp4",
+  "proxy_file_size_bytes": 1922157979,
+  "detector": "OpenCVVisualObservationProvider",
+  "detector_version": "visual_observation@1.0.0",
+  "sampling_fps": 4.0,
+  "config_version": "v1",
+  "slice_evaluations": [
+    {
+      "slice_duration_seconds": 300.0,
+      "slice_duration_minutes": 5.0,
+      "full_source_duration_hours": 5.0,
+      "sampling_fps": 4.0,
+      "frames_inspected": 1285,
+      "wall_time_seconds": 176.59,
+      "cpu_time_seconds": 806.52,
+      "cpu_utilization_pct": 456.7,
+      "realtime_speedup": 1.7,
+      "detector_seconds_per_source_hour": 2119.04,
+      "detector_minutes_per_source_hour": 35.32,
+      "start_rss_mb": 49.6,
+      "end_rss_mb": 55.85,
+      "peak_rss_mb": 284.77,
+      "observations_generated": 21,
+      "events_surviving_threshold": 21
+    },
+    {
+      "slice_duration_seconds": 900.0,
+      "slice_duration_minutes": 15.0,
+      "full_source_duration_hours": 5.0,
+      "sampling_fps": 4.0,
+      "frames_inspected": 3857,
+      "wall_time_seconds": 512.14,
+      "cpu_time_seconds": 2370.03,
+      "cpu_utilization_pct": 462.8,
+      "realtime_speedup": 1.8,
+      "detector_seconds_per_source_hour": 2048.54,
+      "detector_minutes_per_source_hour": 34.14,
+      "start_rss_mb": 55.88,
+      "end_rss_mb": 56.65,
+      "peak_rss_mb": 286.8,
+      "observations_generated": 102,
+      "events_surviving_threshold": 102
+    },
+    {
+      "slice_duration_seconds": 1800.0,
+      "slice_duration_minutes": 30.0,
+      "full_source_duration_hours": 5.0,
+      "sampling_fps": 4.0,
+      "frames_inspected": 7714,
+      "wall_time_seconds": 999.92,
+      "cpu_time_seconds": 4651.59,
+      "cpu_utilization_pct": 465.2,
+      "realtime_speedup": 1.8,
+      "detector_seconds_per_source_hour": 1999.84,
+      "detector_minutes_per_source_hour": 33.33,
+      "start_rss_mb": 56.78,
+      "end_rss_mb": 57.66,
+      "peak_rss_mb": 288.07,
+      "observations_generated": 243,
+      "events_surviving_threshold": 243
+    }
+  ],
+  "summary_projections": {
+    "average_detector_seconds_per_source_hour": 2055.81,
+    "average_detector_minutes_per_source_hour": 34.26,
+    "projected_full_5h_vod_wall_seconds": 10279.03,
+    "projected_full_5h_vod_wall_minutes": 171.32,
+    "memory_bounded_o1": true,
+    "peak_rss_mb": 288.07
+  }
+}

@@ -305,14 +305,13 @@ async def run_discriminative_holdout_evaluation():
 
     # 10. Effect Metrics with Explicit Denominators (N)
     print("\n" + "=" * 80)
-    print("EFFECT METRICS (WITH EXPLICIT N)")
+    print("EFFECT METRICS (WITH EXPLICIT N & TAXONOMY)")
     print("=" * 80)
-    # case-test-004 has human effect zoom_face [4.5-6.5]. Baseline misses clip. EXP-001R retains zoom_face [4.5-6.5]
-    print("Effect Agreement on Discriminative Holdout:")
-    print("  Baseline:  Same: 0/1 | Similar: 0/1 | Different: 1/1 (Missed entirely)")
-    print("             Effect Agreement Rate: 0.0% (0/1)")
-    print("  EXP-001R:  Same: 1/1 | Similar: 0/1 | Different: 0/1 (Face zoom applied)")
-    print("             Effect Agreement Rate: 100.0% (1/1)")
+    print("Effect Classification on Discriminative Holdout:")
+    print("  Baseline:  Human-Only: 1/1 | AI Comparable: 0 | AI-Only: 0 | Different: 0")
+    print("             Effect Agreement Rate: NOT APPLICABLE (0 comparable effects; beat omitted by Baseline)")
+    print("  EXP-001R:  Same: 1/1 | Similar: 0/1 | Different: 0/1 | Human-Only: 0 | AI-Only: 0")
+    print("             Effect Agreement Rate: 100.0% (1/1) (Face zoom applied on retained beat)")
 
     # 11. Overselection & Dead Air Check
     print("\n" + "=" * 80)
@@ -329,12 +328,12 @@ async def run_discriminative_holdout_evaluation():
     print("=" * 80)
     print(f"{'Metric':<30} | {'Baseline':<12} | {'EXP-001R':<12} | {'Delta':<12} | {'Verdict'}")
     print("-" * 80)
-    print(f"{'Macro Recall (±1.0s)':<30} | {macro_b_r:<12.4f} | {macro_e_r:<12.4f} | {macro_e_r - macro_b_r:<+12.4f} | STATISTICALLY SIGNIFICANT (+33.33%)")
-    print(f"{'Macro F1 Score (±1.0s)':<30} | {macro_b_f1:<12.4f} | {macro_e_f1:<12.4f} | {macro_e_f1 - macro_b_f1:<+12.4f} | STATISTICALLY SIGNIFICANT (+20.00%)")
-    print(f"{'Micro Recall (weighted)':<30} | {micro_b_r:<12.4f} | {micro_e_r:<12.4f} | {micro_e_r - micro_b_r:<+12.4f} | STATISTICALLY SIGNIFICANT (+33.33%)")
-    print(f"{'Micro F1 Score (weighted)':<30} | {micro_b_f1:<12.4f} | {micro_e_f1:<12.4f} | {micro_e_f1 - micro_b_f1:<+12.4f} | STATISTICALLY SIGNIFICANT (+20.00%)")
-    print(f"{'Real Case Recall (real-003)':<30} | {r_b_res.overlap_at_10s.recall:<12.4f} | {r_e_res.overlap_at_10s.recall:<12.4f} | {r_e_res.overlap_at_10s.recall - r_b_res.overlap_at_10s.recall:<+12.4f} | STATISTICALLY SIGNIFICANT (+33.33%)")
-    print(f"{'Effect Agreement Rate':<30} | {'0.0% (0/1)':<12} | {'100.0% (1/1)':<12} | {'+100.0%':<12} | CRITICAL IMPROVEMENT")
+    print(f"{'Macro Recall (±1.0s)':<30} | {macro_b_r:<12.4f} | {macro_e_r:<12.4f} | {macro_e_r - macro_b_r:<+12.4f} | SUPPORTED ON CURRENT HOLDOUT (N=2)")
+    print(f"{'Macro F1 Score (±1.0s)':<30} | {macro_b_f1:<12.4f} | {macro_e_f1:<12.4f} | {macro_e_f1 - macro_b_f1:<+12.4f} | SUPPORTED ON CURRENT HOLDOUT (N=2)")
+    print(f"{'Micro Recall (weighted)':<30} | {micro_b_r:<12.4f} | {micro_e_r:<12.4f} | {micro_e_r - micro_b_r:<+12.4f} | SUPPORTED ON CURRENT HOLDOUT (N=2)")
+    print(f"{'Micro F1 Score (weighted)':<30} | {micro_b_f1:<12.4f} | {micro_e_f1:<12.4f} | {micro_e_f1 - micro_b_f1:<+12.4f} | SUPPORTED ON CURRENT HOLDOUT (N=2)")
+    print(f"{'Real Case Recall (real-003)':<30} | {r_b_res.overlap_at_10s.recall:<12.4f} | {r_e_res.overlap_at_10s.recall:<12.4f} | {r_e_res.overlap_at_10s.recall - r_b_res.overlap_at_10s.recall:<+12.4f} | OBSERVED POSITIVE HOLDOUT DELTA")
+    print(f"{'Effect Agreement Rate':<30} | {'N/A (0 comp)':<12} | {'100.0% (1/1)':<12} | {'+100.0%':<12} | SUPPORTED ON CURRENT HOLDOUT (N=2)")
     print("=" * 80)
 
     # Persist structured JSON evaluation output

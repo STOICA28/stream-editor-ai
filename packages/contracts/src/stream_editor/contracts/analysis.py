@@ -1,6 +1,6 @@
 import hashlib
 import json
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel
 
@@ -65,11 +65,28 @@ class AudioEvent(BaseModel):
     start_time: float
     end_time: float
 
-class VisualReactionExperimentConfig(BaseModel):
-    confidence_threshold: float = 0.70
+class VisualReactionConfig(BaseModel):
+    configuration_version: str = "v1"
+    reaction_confidence_threshold: float = 0.70
     base_visual_interest: float = 0.60
-    visual_interest_multiplier: float = 0.15
-    generator_version: str = "1.0.0"
+    visual_interest_increment: float = 0.15
+    reaction_score_floor: float = 0.75
+    humor_score_floor: float = 0.75
+    sampling_fps: float = 4.0
+    detector_version: str = "visual_observation@1.0.0"
+
+    # Backward compatibility properties
+    @property
+    def confidence_threshold(self) -> float:
+        return self.reaction_confidence_threshold
+
+    @property
+    def visual_interest_multiplier(self) -> float:
+        return self.visual_interest_increment
+
+    @property
+    def generator_version(self) -> str:
+        return self.detector_version
 
     def get_signature(self, source_fingerprint: str) -> str:
         data = self.model_dump()
@@ -77,25 +94,44 @@ class VisualReactionExperimentConfig(BaseModel):
         serialized = json.dumps(data, sort_keys=True)
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
+
+class VisualReactionExperimentConfig(VisualReactionConfig):
+    """Backward compatibility alias for experiment runs."""
+    pass
+
+
 class VisualObservation(BaseModel):
     event_type: str  # face_reaction, motion_spike
     start_time: float
     end_time: float
     confidence: float
     description: str | None = None
+    detector: str | None = None
+    detector_version: str | None = None
+    configuration_version: str | None = None
+    evidence: dict[str, Any] | None = None
+
 
 class TranscriptionProvider(Protocol):
     def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
         ...
 
+
 class SceneDetectionProvider(Protocol):
     def detect_scenes(self, video_path: str, config: SceneConfig) -> list[Scene]:
         ...
+
 
 class AudioAnalysisProvider(Protocol):
     def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> list[AudioEvent]:
         ...
 
+
 class VisualObservationProvider(Protocol):
-    def analyze_visuals(self, video_path: str, config: VisualReactionExperimentConfig) -> list[VisualObservation]:
+    def analyze_visuals(
+        self,
+        video_path: str,
+        config: VisualReactionConfig | VisualReactionExperimentConfig,
+    ) -> list[VisualObservation]:
         ...
+

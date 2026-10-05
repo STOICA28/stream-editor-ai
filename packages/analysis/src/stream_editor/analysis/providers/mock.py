@@ -10,10 +10,12 @@ from stream_editor.contracts.analysis import (
     TranscriptionProvider,
     TranscriptSegment,
     TranscriptWord,
+    VisualReactionConfig,
     VisualReactionExperimentConfig,
     VisualObservation,
     VisualObservationProvider,
 )
+
 
 
 class MockTranscriptionProvider(TranscriptionProvider):
@@ -64,8 +66,13 @@ class MockAudioAnalysisProvider(AudioAnalysisProvider):
         ]
 
 class MockVisualObservationProvider(VisualObservationProvider):
-    def analyze_visuals(self, video_path: str, config: VisualReactionExperimentConfig) -> list[VisualObservation]:
+    def analyze_visuals(
+        self,
+        video_path: str,
+        config: VisualReactionConfig | VisualReactionExperimentConfig,
+    ) -> list[VisualObservation]:
         return [
             VisualObservation(event_type="face_reaction", start_time=3.0, end_time=5.0, confidence=0.85, description="Laughing"),
             VisualObservation(event_type="motion_spike", start_time=12.0, end_time=14.0, confidence=0.90, description="Rapid movement")
         ]
+

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     API_HOST: str = '0.0.0.0'
     API_PORT: int = 8000
     CORS_ORIGINS: list[str] = []
+    M2_VISUAL_REACTIONS_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

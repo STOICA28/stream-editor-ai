@@ -31,11 +31,13 @@ from stream_editor.api.models.project import (
     VisualAnalysisRun,
     VisualEvent as DBVisualEvent,
 )
+from stream_editor.api.config import settings
 from stream_editor.worker.utils.lease import acquire_job_lease
 from stream_editor.contracts.analysis import (
     AudioEventConfig, 
     SceneConfig, 
     TranscriptionConfig,
+    VisualReactionConfig,
     VisualReactionExperimentConfig,
 )
 from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
@@ -309,14 +311,18 @@ def analyze_visual_observations_task(self, project_id: str, asset_id: str, finge
         async with SessionLocal() as db:
             from sqlalchemy import delete
             from sqlalchemy.future import select
+
+            if not settings.M2_VISUAL_REACTIONS_ENABLED:
+                structlog.get_logger().info("visual_reactions_disabled", project_id=project_id, asset_id=asset_id)
+                await db.execute(delete(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))
+                await db.commit()
+                return
+
             storage = LocalStorageProvider()
-            config = VisualReactionExperimentConfig()
+            config = VisualReactionConfig()
             proxy_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "proxy"))).scalars().first()
             
             if not proxy_asset: return
-            
-            existing = (await db.execute(select(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))).scalars().first()
-            if existing: return # Cache hit
             
             provider_name = os.getenv("VISUAL_OBSERVATION_PROVIDER", "opencv")
             if provider_name == "mock":
@@ -325,8 +331,20 @@ def analyze_visual_observations_task(self, project_id: str, asset_id: str, finge
             else:
                 provider = OpenCVVisualObservationProvider()
                 detector_tag = "visual_observation@1.0.0"
+
+            # Cache check with detector and config signature
+            existing = (await db.execute(select(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))).scalars().first()
+            if existing and existing.detector == detector_tag and existing.detector_config == config.model_dump():
+                return # Cache hit
+            
             proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_asset.name)
-            events = provider.analyze_visuals(str(proxy_path), config)
+            
+            # Safe degraded failure mode (Section 11)
+            try:
+                events = provider.analyze_visuals(str(proxy_path), config)
+            except Exception as e:
+                structlog.get_logger().warning("visual_observation_failed_degraded", error=str(e), project_id=project_id, asset_id=asset_id)
+                events = []
             
             await db.execute(delete(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))
             
@@ -340,7 +358,7 @@ def analyze_visual_observations_task(self, project_id: str, asset_id: str, finge
                     confidence=e.confidence,
                     description=e.description,
                     detector=detector_tag, 
-                    detector_config=config.model_dump()
+                    detector_config=config.model_dump(),
                 )
                 db.add(db_event)
             await db.commit()
@@ -371,37 +389,42 @@ def normalize_timeline_task(self, project_id: str, asset_id: str) -> dict[str, s
             for ae in audio_events:
                 db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type=ae.event_type, start_time=ae.start_time, end_time=ae.end_time, producer="audio_analysis", producer_version="1.0"))
             
-            # Fetch visual observations (EXP-001R: Corrective Validation)
-            visual_observations = (
-                await db.execute(
-                    select(DBVisualObservation)
-                    .where(DBVisualObservation.source_asset_id == asset_id)
-                )
-            ).scalars().all()
-            
-            # Use Config for thresholds
-            config = VisualReactionExperimentConfig()
-            
-            for vo in visual_observations:
-                conf = float(vo.confidence) if vo.confidence is not None else 1.0
-                if conf >= config.confidence_threshold:
-                    db.add(
-                        TimelineEvent(
-                            project_id=project_id,
-                            source_asset_id=asset_id,
-                            event_type=vo.event_type,
-                            start_time=vo.start_time,
-                            end_time=vo.end_time,
-                            confidence=conf,
-                            producer="visual_observation",
-                            producer_version=config.generator_version,
-                            data={"description": vo.description},
-                        )
+            # Fetch visual observations if enabled (Section 15 Feature Flag)
+            if settings.M2_VISUAL_REACTIONS_ENABLED:
+                visual_observations = (
+                    await db.execute(
+                        select(DBVisualObservation)
+                        .where(DBVisualObservation.source_asset_id == asset_id)
                     )
+                ).scalars().all()
+                
+                config = VisualReactionConfig()
+                
+                for vo in visual_observations:
+                    conf = float(vo.confidence) if vo.confidence is not None else 1.0
+                    if conf >= config.reaction_confidence_threshold:
+                        db.add(
+                            TimelineEvent(
+                                project_id=project_id,
+                                source_asset_id=asset_id,
+                                event_type=vo.event_type,
+                                start_time=vo.start_time,
+                                end_time=vo.end_time,
+                                confidence=conf,
+                                producer="visual_observation",
+                                producer_version=config.configuration_version,
+                                data={
+                                    "description": vo.description,
+                                    "detector": vo.detector,
+                                    "detector_version": getattr(vo, "detector", None) or "visual_observation@1.0.0",
+                                },
+                            )
+                        )
             
             await db.commit()
     _run_async(_do_normalize())
     return {"status": "success"}
+
 
 @app.task(bind=True, max_retries=3)
 def generate_candidates_task(

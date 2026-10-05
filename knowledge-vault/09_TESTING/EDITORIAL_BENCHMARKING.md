@@ -100,3 +100,23 @@ Every editorial disagreement (False Negative or False Positive) is programmatica
 | **Segment Counts** | **6 Matched / 2 Missed / 0 AI-Only** | Root cause of 2 misses: `M2:MISSED_IMPORTANT_EVENT` |
 
 All baseline runs are immutably persisted in `benchmark_runs` and `benchmark_results`.
+
+---
+
+## 6. Production Benchmark Anchor M13-P1 (Promoted M2 Lightweight Visual Reactions)
+
+Following the canonical promotion of `PROP-M2-VISUAL-REACTION-EVENTS` (EXP-001R / EXP-001R.1), the system establishes **M13-P1** as the current production benchmark anchor.
+
+### 6.1 Baseline Policy & Evolution Rules
+1. **Immutability of M13 Baseline:** The original pre-EXP baseline (Section 5) remains permanently fixed as the historical ground truth anchor for the project.
+2. **Immediate Production Anchor (M13-P1):** All future experiments (beginning with EXP-002) must benchmark against **M13-P1** as their immediate operational baseline, while also continuing to report deltas against the immutable M13 baseline.
+3. **M13-P1 Metrics on Untouched Discriminative Holdout ($N=2$):**
+
+| Benchmark Metric | Original M13 Baseline | Promoted M13-P1 | Delta | Status |
+|---|---:|---:|---:|---|
+| **Macro Precision** | 1.0000 | 1.0000 | +0.0000 | Stable (Zero FP regressions) |
+| **Macro Recall** | 0.6667 | 1.0000 | **+0.3333 (+33.3%)** | Non-verbal reactions captured |
+| **Macro F1 Score** | 0.8000 | 1.0000 | **+0.2000 (+20.0%)** | Supported on Current Holdout ($N=2$) |
+| **Real Case F1 (`case-test-real-003`)** | 0.8000 | 1.0000 | **+0.2000 (+20.0%)** | Real streamer reaction retained |
+| **Root Cause Resolution** | `M2:MISSED_IMPORTANT_EVENT` | Resolved | Fixed upstream in Stage M2 |
+

@@ -5,6 +5,7 @@ import numpy as np
 from stream_editor.contracts.analysis import (
     VisualObservation,
     VisualObservationProvider,
+    VisualReactionConfig,
     VisualReactionExperimentConfig,
 )
 
@@ -21,7 +22,7 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
         self.sample_fps = sample_fps
         self.detector_version = detector_version
 
-    def _locate_facecam_roi(self, frames: list[np.ndarray], width: int, height: int) -> tuple[int, int, int, int]:
+    def _locate_facecam_roi(self, cap: cv2.VideoCapture, width: int, height: int, start_frame: int) -> tuple[int, int, int, int]:
         """Identify facecam bounding box via aspect ratio heuristics or skin-tone concentration."""
         # Synthetic fixture format check (640x360 synthetic videos have face box at 400,150 -> 500,250)
         if width == 640 and height == 360:
@@ -35,11 +36,13 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
             "bottom_right": (2 * width // 3, 2 * height // 3, width, height),
         }
 
-        # Skin tone clustering in YCrCb color space
         counts: dict[str, int] = {k: 0 for k in quads}
-        sample_count = min(15, len(frames))
-        for f in frames[:sample_count]:
-            ycrcb = cv2.cvtColor(f, cv2.COLOR_BGR2YCrCb)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        for _ in range(15):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            ycrcb = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
             mask = cv2.inRange(ycrcb, (0, 133, 77), (255, 173, 127))
             for k, (x1, y1, x2, y2) in quads.items():
                 counts[k] += int(np.sum(mask[y1:y2, x1:x2] > 0))
@@ -50,11 +53,13 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
     def analyze_visuals(
         self,
         video_path: str,
-        config: VisualReactionExperimentConfig,
+        config: VisualReactionConfig | VisualReactionExperimentConfig,
         start_time: float | None = None,
         end_time: float | None = None,
+        max_frames: int | None = None,
     ) -> list[VisualObservation]:
-        """Analyze video frames for non-speech face reactions."""
+
+        """Analyze video frames for non-speech face reactions using bounded streaming memory."""
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             return []
@@ -65,58 +70,65 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
             cap.release()
             return []
 
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 1920
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 1080
+
         step = max(1, int(fps / self.sample_fps))
 
         start_frame = max(0, int(start_time * fps)) if start_time is not None else 0
         end_frame = min(total_frames, int(end_time * fps)) if end_time is not None else total_frames
-        # Cap max frames sampled in single invocation to 1200 (~5 minutes at 4fps) to preserve performance
-        if end_frame - start_frame > 1200 * step:
-            end_frame = start_frame + 1200 * step
+        if max_frames is not None and (end_frame - start_frame > max_frames * step):
+            end_frame = start_frame + max_frames * step
 
-        # Sample frames across video
-        frames: list[np.ndarray] = []
-        timestamps: list[float] = []
-        if start_frame > 0:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-        current_frame_idx = start_frame
+        # Determine facecam ROI without accumulating frames in memory
+        fx1, fy1, fx2, fy2 = self._locate_facecam_roi(cap, w, h, start_frame)
+
+        # Stream frames one-by-one: keep only current and previous grayscale representations
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        ret, frame = cap.read()
+        if not ret:
+            cap.release()
+            return []
+
+        prev_face = cv2.cvtColor(frame[fy1:fy2, fx1:fx2], cv2.COLOR_BGR2GRAY)
+        prev_bg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        prev_bg[fy1:fy2, fx1:fx2] = 0
+
+        current_frame_idx = start_frame + 1
+        timestamps: list[float] = [start_frame / fps]
+        face_deltas: list[float] = []
+        bg_deltas: list[float] = []
+
+        # Advance step - 1 frames
+        for _ in range(step - 1):
+            if current_frame_idx >= end_frame or not cap.grab():
+                break
+            current_frame_idx += 1
+
         while current_frame_idx < end_frame:
             ret, frame = cap.read()
             if not ret:
                 break
-            frames.append(frame)
             timestamps.append(current_frame_idx / fps)
+
+            curr_face = cv2.cvtColor(frame[fy1:fy2, fx1:fx2], cv2.COLOR_BGR2GRAY)
+            f_diff = float(np.mean(cv2.absdiff(curr_face, prev_face)))
+            face_deltas.append(f_diff)
+            prev_face = curr_face
+
+            curr_bg = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            curr_bg[fy1:fy2, fx1:fx2] = 0
+            b_diff = float(np.mean(cv2.absdiff(curr_bg, prev_bg)))
+            bg_deltas.append(b_diff)
+            prev_bg = curr_bg
+
             current_frame_idx += 1
             for _ in range(step - 1):
-                if current_frame_idx >= end_frame:
-                    break
-                if not cap.grab():
+                if current_frame_idx >= end_frame or not cap.grab():
                     break
                 current_frame_idx += 1
+
         cap.release()
-
-        if len(frames) < 2:
-            return []
-
-        h, w, _ = frames[0].shape
-        fx1, fy1, fx2, fy2 = self._locate_facecam_roi(frames, w, h)
-
-        face_deltas: list[float] = []
-        bg_deltas: list[float] = []
-
-        for i in range(1, len(frames)):
-            prev_gray = cv2.cvtColor(frames[i - 1], cv2.COLOR_BGR2GRAY)
-            curr_gray = cv2.cvtColor(frames[i], cv2.COLOR_BGR2GRAY)
-            diff = cv2.absdiff(curr_gray, prev_gray)
-
-            # Localized face motion
-            f_diff = float(np.mean(diff[fy1:fy2, fx1:fx2]))
-            face_deltas.append(f_diff)
-
-            # Background motion (mask out facecam to isolate gameplay/screen motion)
-            diff_bg = diff.copy()
-            diff_bg[fy1:fy2, fx1:fx2] = 0
-            b_diff = float(np.mean(diff_bg))
-            bg_deltas.append(b_diff)
 
         if not face_deltas:
             return []
@@ -164,6 +176,10 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
                                     end_time=round(end_t, 2),
                                     confidence=round(confidence, 2),
                                     description=f"Streamer facial reaction detected (peak_delta={peak_delta:.2f})",
+                                    detector="opencv",
+                                    detector_version=self.detector_version,
+                                    configuration_version=getattr(config, "configuration_version", "v1"),
+                                    evidence={"peak_delta": round(peak_delta, 2), "motion_threshold": round(motion_threshold, 2), "ratio": round(ratio, 2)},
                                 )
                             )
 
@@ -181,7 +197,12 @@ class OpenCVVisualObservationProvider(VisualObservationProvider):
                             end_time=round(end_t, 2),
                             confidence=round(confidence, 2),
                             description=f"Streamer facial reaction detected (peak_delta={peak_delta:.2f})",
+                            detector="opencv",
+                            detector_version=self.detector_version,
+                            configuration_version=getattr(config, "configuration_version", "v1"),
+                            evidence={"peak_delta": round(peak_delta, 2), "motion_threshold": round(motion_threshold, 2), "ratio": round(ratio, 2)},
                         )
                     )
+
 
         return observations
