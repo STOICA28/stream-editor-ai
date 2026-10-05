@@ -645,6 +645,23 @@ class StreamLayout(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class VisualObservation(Base):
+    __tablename__ = "visual_observations"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_asset_id = Column(String, ForeignKey("media_assets.id"))
+    project_id = Column(String, ForeignKey("projects.id"))
+    
+    event_type = Column(String)  # face_reaction, motion_spike
+    start_time = Column(Float)
+    end_time = Column(Float)
+    
+    confidence = Column(Float)
+    description = Column(String, nullable=True)
+    
+    detector = Column(String)
+    detector_config = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class VisualEvent(Base):
     __tablename__ = "visual_events"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))

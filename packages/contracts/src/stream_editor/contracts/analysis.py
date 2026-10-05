@@ -65,6 +65,25 @@ class AudioEvent(BaseModel):
     start_time: float
     end_time: float
 
+class VisualReactionExperimentConfig(BaseModel):
+    confidence_threshold: float = 0.70
+    base_visual_interest: float = 0.60
+    visual_interest_multiplier: float = 0.15
+    generator_version: str = "1.0.0"
+
+    def get_signature(self, source_fingerprint: str) -> str:
+        data = self.model_dump()
+        data["source_fingerprint"] = source_fingerprint
+        serialized = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+class VisualObservation(BaseModel):
+    event_type: str  # face_reaction, motion_spike
+    start_time: float
+    end_time: float
+    confidence: float
+    description: str | None = None
+
 class TranscriptionProvider(Protocol):
     def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
         ...
@@ -75,4 +94,8 @@ class SceneDetectionProvider(Protocol):
 
 class AudioAnalysisProvider(Protocol):
     def analyze_audio(self, audio_path: str, config: AudioEventConfig) -> list[AudioEvent]:
+        ...
+
+class VisualObservationProvider(Protocol):
+    def analyze_visuals(self, video_path: str, config: VisualReactionExperimentConfig) -> list[VisualObservation]:
         ...

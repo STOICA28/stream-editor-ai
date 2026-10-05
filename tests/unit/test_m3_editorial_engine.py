@@ -1,4 +1,4 @@
-﻿"""
+"""
 M3 Unit Tests - Candidate Generation Engine
 
 Tests all core modules:

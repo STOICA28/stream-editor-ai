@@ -1,4 +1,4 @@
-﻿from enum import Enum
+from enum import Enum
 
 class JobState(str, Enum):
     PENDING = "pending"

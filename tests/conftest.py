@@ -1,4 +1,4 @@
-﻿"""Test conftest.py - M3 compatible."""
+"""Test conftest.py - M3 compatible."""
 import tempfile
 from pathlib import Path
 

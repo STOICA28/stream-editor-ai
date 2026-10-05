@@ -1,4 +1,4 @@
-﻿"""
+"""
 M3 Candidate API endpoints.
 
 All scores are returned as Optional[float]. Never replace null with 0.

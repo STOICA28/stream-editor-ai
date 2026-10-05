@@ -345,8 +345,11 @@ class CandidateGenerator:
                     signals = signals.model_copy(update={"visual_interest": round(vi, 4)})
 
                 if features.visual_reaction_count and features.visual_reaction_count > 0:
+                    from stream_editor.contracts.analysis import VisualReactionExperimentConfig
+                    rx_config = VisualReactionExperimentConfig()
+                    
                     current_vi = signals.visual_interest or 0.0
-                    boosted_vi = min(1.0, max(current_vi, 0.6 + 0.15 * features.visual_reaction_count))
+                    boosted_vi = min(1.0, max(current_vi, rx_config.base_visual_interest + rx_config.visual_interest_multiplier * features.visual_reaction_count))
                     signals = signals.model_copy(update={"visual_interest": round(boosted_vi, 4)})
                     current_rx = signals.reaction or 0.0
                     boosted_rx = min(1.0, max(current_rx, 0.75))

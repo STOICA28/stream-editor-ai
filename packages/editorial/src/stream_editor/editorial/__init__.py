@@ -1,4 +1,4 @@
-﻿"""M3 Editorial Package"""
+"""M3 Editorial Package"""
 from stream_editor.editorial.context import ContextExpander
 from stream_editor.editorial.features import LocalFeatureExtractor
 from stream_editor.editorial.generator import CandidateGenerator

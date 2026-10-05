@@ -6,7 +6,7 @@ from stream_editor.contracts.research import (
     EditorialDecisionType
 )
 from stream_editor.contracts.effect_planning import EffectType, EffectTargetType
-from packages.research.tests.synthetic_oracle.generator import SyntheticOracle
+from .oracle import SyntheticOracle
 
 class MockReferenceProvider:
     """

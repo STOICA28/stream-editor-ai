@@ -6,10 +6,11 @@ from typing import Any
 
 import structlog
 
-from stream_editor.analysis.providers import (
+from stream_editor.analysis.providers.mock import (
     MockAudioAnalysisProvider,
     MockSceneDetectionProvider,
     MockTranscriptionProvider,
+    MockVisualObservationProvider,
 )
 from stream_editor.api.database import SessionLocal
 from stream_editor.api.models.project import AudioEvent as DBAudioEvent
@@ -19,6 +20,7 @@ from stream_editor.api.models.project import (
     ProcessingJob,
     TimelineEvent,
     TranscriptRun,
+    VisualObservation as DBVisualObservation,
 )
 from stream_editor.api.models.project import Scene as DBScene
 from stream_editor.api.models.project import TranscriptSegment as DBTranscriptSegment
@@ -28,7 +30,12 @@ from stream_editor.api.models.project import (
     VisualEvent as DBVisualEvent,
 )
 from stream_editor.worker.utils.lease import acquire_job_lease
-from stream_editor.contracts.analysis import AudioEventConfig, SceneConfig, TranscriptionConfig
+from stream_editor.contracts.analysis import (
+    AudioEventConfig, 
+    SceneConfig, 
+    TranscriptionConfig,
+    VisualReactionExperimentConfig,
+)
 from stream_editor.contracts.media import AudioConfig, MediaInfo, ProxyConfig
 from stream_editor.media.ffmpeg import extract_audio, generate_proxy
 from stream_editor.media.ffprobe import get_media_info
@@ -190,6 +197,7 @@ def extract_audio_task(self, project_id: str, asset_id: str, job_id: str, finger
             transcribe_task.delay(project_id, asset_id, fingerprint)
             detect_scenes_task.delay(project_id, asset_id, fingerprint)
             analyze_audio_task.delay(project_id, asset_id, fingerprint)
+            analyze_visual_observations_task.delay(project_id, asset_id, fingerprint)
             normalize_timeline_task.apply_async(args=[project_id, asset_id], countdown=1) # In a real system, use celery primitives like chord
     _run_async(_do_audio())
     return {"status": "success"}
@@ -294,6 +302,44 @@ def analyze_audio_task(self, project_id: str, asset_id: str, fingerprint: str) -
     return {"status": "success"}
 
 @app.task(bind=True, max_retries=3)
+def analyze_visual_observations_task(self, project_id: str, asset_id: str, fingerprint: str) -> dict[str, str]:
+    async def _do_visual_obs() -> None:
+        async with SessionLocal() as db:
+            from sqlalchemy import delete
+            from sqlalchemy.future import select
+            storage = LocalStorageProvider()
+            config = VisualReactionExperimentConfig()
+            proxy_asset = (await db.execute(select(MediaAsset).where(MediaAsset.parent_asset_id == asset_id, MediaAsset.media_type == "proxy"))).scalars().first()
+            
+            if not proxy_asset: return
+            
+            existing = (await db.execute(select(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))).scalars().first()
+            if existing: return # Cache hit
+            
+            provider = MockVisualObservationProvider()
+            proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_asset.name)
+            events = provider.analyze_visuals(str(proxy_path), config)
+            
+            await db.execute(delete(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))
+            
+            for e in events:
+                db_event = DBVisualObservation(
+                    project_id=project_id, 
+                    source_asset_id=asset_id, 
+                    start_time=e.start_time, 
+                    end_time=e.end_time, 
+                    event_type=e.event_type, 
+                    confidence=e.confidence,
+                    description=e.description,
+                    detector="mock", 
+                    detector_config=config.model_dump()
+                )
+                db.add(db_event)
+            await db.commit()
+    _run_async(_do_visual_obs())
+    return {"status": "success"}
+
+@app.task(bind=True, max_retries=3)
 def normalize_timeline_task(self, project_id: str, asset_id: str) -> dict[str, str]:
     async def _do_normalize() -> None:
         async with SessionLocal() as db:
@@ -317,29 +363,31 @@ def normalize_timeline_task(self, project_id: str, asset_id: str) -> dict[str, s
             for ae in audio_events:
                 db.add(TimelineEvent(project_id=project_id, source_asset_id=asset_id, event_type=ae.event_type, start_time=ae.start_time, end_time=ae.end_time, producer="audio_analysis", producer_version="1.0"))
             
-            # Fetch visual events (EXP-001: Stage M2 Visual Reaction Elevation)
-            visual_events = (
+            # Fetch visual observations (EXP-001R: Corrective Validation)
+            visual_observations = (
                 await db.execute(
-                    select(DBVisualEvent)
-                    .join(VisualAnalysisRun, VisualAnalysisRun.id == DBVisualEvent.visual_analysis_run_id)
-                    .where(VisualAnalysisRun.source_asset_id == asset_id)
+                    select(DBVisualObservation)
+                    .where(DBVisualObservation.source_asset_id == asset_id)
                 )
             ).scalars().all()
-            for ve in visual_events:
-                conf = float(ve.confidence) if ve.confidence is not None else 1.0
-                if conf >= 0.70:
-                    evt_type = "face_reaction" if ve.event_type in ("strong_face_reaction", "face_reaction") else ve.event_type
+            
+            # Use Config for thresholds
+            config = VisualReactionExperimentConfig()
+            
+            for vo in visual_observations:
+                conf = float(vo.confidence) if vo.confidence is not None else 1.0
+                if conf >= config.confidence_threshold:
                     db.add(
                         TimelineEvent(
                             project_id=project_id,
                             source_asset_id=asset_id,
-                            event_type=evt_type,
-                            start_time=ve.start_time,
-                            end_time=ve.end_time,
+                            event_type=vo.event_type,
+                            start_time=vo.start_time,
+                            end_time=vo.end_time,
                             confidence=conf,
-                            producer="visual_analysis",
-                            producer_version="1.0",
-                            data={"description": ve.description, "original_event_type": ve.event_type},
+                            producer="visual_observation",
+                            producer_version=config.generator_version,
+                            data={"description": vo.description},
                         )
                     )
             

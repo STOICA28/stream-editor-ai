@@ -1,7 +1,6 @@
 import pytest
-from packages.research.tests.synthetic_oracle.generator import SyntheticOracle
-from packages.research.src.stream_editor.research.providers.mock import MockReferenceProvider
-from packages.research.src.stream_editor.research.observation.engine import ObservationEngine
+from stream_editor.research.providers.mock import MockReferenceProvider
+from stream_editor.research.observation.engine import ObservationEngine
 from stream_editor.contracts.effect_planning import EffectType, EffectTargetType
 
 def test_m10_verification_synthetic_alignment():  # type: ignore[no-untyped-def]

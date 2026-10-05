@@ -1,4 +1,4 @@
-﻿"""
+"""
 TranscriptWindowSummarizer: hierarchical transcript summarization.
 
 Creates local (5-15min) and chapter-level summaries for efficient

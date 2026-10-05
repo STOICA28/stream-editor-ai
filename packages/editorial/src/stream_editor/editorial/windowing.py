@@ -1,4 +1,4 @@
-﻿"""
+"""
 Temporal windowing: EventClusterer and CandidateWindowBuilder.
 
 Groups TimelineEvents into candidate windows respecting CandidateWindowConfig.

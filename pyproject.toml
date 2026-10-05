@@ -33,8 +33,22 @@ python_version = "3.12"
 strict = true
 explicit_package_bases = true
 namespace_packages = true
-mypy_path = "packages/contracts/src:packages/storage/src:packages/models/src:packages/media/src:packages/analysis/src:packages/editorial/src:packages/narrative/src:packages/rendering/src:packages/vault/src:packages/research/src:apps/api/src:apps/worker/src"
+mypy_path = [
+    "packages/contracts/src",
+    "packages/storage/src",
+    "packages/models/src",
+    "packages/media/src",
+    "packages/analysis/src",
+    "packages/editorial/src",
+    "packages/narrative/src",
+    "packages/rendering/src",
+    "packages/vault/src",
+    "packages/research/src",
+    "apps/api/src",
+    "apps/worker/src",
+]
 plugins = ["pydantic.mypy"]
+exclude = ["tests/", "alembic/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -91,6 +105,8 @@ ignore_errors = true
 module = [
     "celery.*",
     "sqlalchemy.*",
-    "alembic.*"
+    "alembic.*",
+    "torch.*",
+    "whisperx.*",
 ]
 ignore_missing_imports = true

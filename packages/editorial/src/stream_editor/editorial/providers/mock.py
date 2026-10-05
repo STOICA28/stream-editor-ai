@@ -1,4 +1,4 @@
-﻿from stream_editor.contracts.editorial import (
+from stream_editor.contracts.editorial import (
     CandidateAnalysisResult,
     EditorialAnalysisProvider,
     LocalFeatures,

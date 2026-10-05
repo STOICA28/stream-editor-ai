@@ -99,36 +99,58 @@ def register_standard_benchmark_cases(session) -> list[EditorialBenchmarkCase]:
         },
         {
             "id": "case-test-001",
-            "name": "Held-Out Test Pair 1 (source_1 / edited_1)",
+            "name": "Validation Pair 1 (source_1 / edited_1)",
             "source_asset_id": "asset-test-src-1",
             "human_edit_asset_id": "asset-test-edit-1",
             "duration_source": 10.0,
             "duration_human_edit": 7.0,
-            "split": DatasetSplit.TEST,
-            "tags": ["test", "held_out", "unseen", "effects"],
-            "notes": "Strict held-out test case: slow motion, zoom_face, cut rhythm.",
+            "split": DatasetSplit.VALIDATION,
+            "tags": ["validation", "consumed", "effects"],
+            "notes": "Previously TEST, consumed by EXP-001. Now VALIDATION. holdout_consumed=true.",
         },
         {
             "id": "case-test-002",
-            "name": "Held-Out Test Pair 2 (source_2 / edited_2)",
+            "name": "Validation Pair 2 (source_2 / edited_2)",
             "source_asset_id": "asset-test-src-2",
             "human_edit_asset_id": "asset-test-edit-2",
             "duration_source": 10.0,
             "duration_human_edit": 6.0,
-            "split": DatasetSplit.TEST,
-            "tags": ["test", "held_out", "unseen", "pacing"],
-            "notes": "Strict held-out test case: continuous narrative blocks, selective punchlines.",
+            "split": DatasetSplit.VALIDATION,
+            "tags": ["validation", "consumed", "pacing"],
+            "notes": "Previously TEST, consumed by EXP-001. Now VALIDATION. holdout_consumed=true.",
         },
         {
             "id": "case-test-real-001",
-            "name": "Real VOD Aligned Slice (5hr Livestream Extract)",
+            "name": "Validation Real VOD Aligned Slice",
             "source_asset_id": "asset-test-real-src",
             "human_edit_asset_id": "asset-test-real-edit",
             "duration_source": 300.0,
             "duration_human_edit": 62.5,
+            "split": DatasetSplit.VALIDATION,
+            "tags": ["validation", "real_vod", "consumed", "multimodal"],
+            "notes": "Previously TEST, consumed by EXP-001. Now VALIDATION. holdout_consumed=true.",
+        },
+        {
+            "id": "case-test-003",
+            "name": "Held-Out Test Pair 3 (source_3 / edited_3)",
+            "source_asset_id": "asset-test-src-3",
+            "human_edit_asset_id": "asset-test-edit-3",
+            "duration_source": 15.0,
+            "duration_human_edit": 9.0,
             "split": DatasetSplit.TEST,
-            "tags": ["test", "real_vod", "unseen", "multimodal"],
-            "notes": "Real-world aligned livestream slice from M10 ground truth alignment.",
+            "tags": ["test", "held_out", "unseen", "effects", "visual_reaction"],
+            "notes": "Strict held-out test case for EXP-001R final evaluation.",
+        },
+        {
+            "id": "case-test-real-002",
+            "name": "Held-Out Real VOD Aligned Slice 2",
+            "source_asset_id": "asset-test-real-src-2",
+            "human_edit_asset_id": "asset-test-real-edit-2",
+            "duration_source": 400.0,
+            "duration_human_edit": 80.0,
+            "split": DatasetSplit.TEST,
+            "tags": ["test", "real_vod", "unseen", "multimodal", "visual_reaction"],
+            "notes": "Strict held-out real world test case for EXP-001R.",
         },
     ]
 
@@ -203,6 +225,16 @@ def load_fixture_data(case_id: str) -> dict[str, Any]:
             ]
             return {"blocks": valid_blocks, "effects": []}
         return {"blocks": [{"source_start": 10.0, "source_end": 45.0, "edit_start": 0.0, "edit_end": 35.0}]}
+    elif case_id == "case-test-003":
+        return {
+            "blocks": [{"source_start": 2.0, "source_end": 10.0, "edit_start": 0.0, "edit_end": 8.0}],
+            "effects": [{"type": "zoom_face", "source_start": 5.0, "source_end": 7.0}]
+        }
+    elif case_id == "case-test-real-002":
+        return {
+            "blocks": [{"source_start": 50.0, "source_end": 120.0, "edit_start": 0.0, "edit_end": 70.0}],
+            "effects": []
+        }
     else:
         # Reference case
         return {
@@ -335,7 +367,7 @@ def build_current_streameditor_cut(
             StreamEditorTimelineSegment(id="c3", source_start=4.0, source_end=6.0, output_start=3.0, output_end=5.0, clip_id="c3", effects=[{"type": "zoom_face", "source_start": 5.0, "source_end": 6.0}]),
             StreamEditorTimelineSegment(id="c4", source_start=7.0, source_end=9.0, output_start=5.0, output_end=7.0, clip_id="c4"),
         ]
-    else:
+    elif case.id == "case-test-real-001":
         # Real slice
         c1_start = 10.0 if setup_clustering_expansion else 12.0
         c2_start = 80.0 if setup_clustering_expansion else 85.0
@@ -378,6 +410,56 @@ def build_current_streameditor_cut(
                 StreamEditorTimelineSegment(id="c3", source_start=215.0, source_end=265.0, output_start=c3_start, output_end=c3_start + 50.0, clip_id="c3", selection_reason="Visual reaction clutch moment"),
                 StreamEditorTimelineSegment(id="c4", source_start=275.0, source_end=300.0, output_start=c3_start + 50.0, output_end=c3_start + 75.0, clip_id="c4", selection_reason="Post-clutch celebration reaction"),
             ])
+    elif case.id == "case-test-003":
+        c1_start = 2.0
+        c1_end = 10.0
+        timeline_events = [
+            {"start_time": 2.0, "end_time": 10.0, "event_type": "speech"},
+        ]
+        candidates = [
+            {"start_time": c1_start, "end_time": c1_end, "score": 0.85},
+        ]
+        if visual_reaction_elevation:
+            timeline_events.append({
+                "start_time": 5.0,
+                "end_time": 7.0,
+                "event_type": "face_reaction",
+                "producer": "visual_analysis",
+                "confidence": 0.95,
+                "description": "Streamer shocked face"
+            })
+            candidates[0]["score"] = 0.92
+            
+        story_nodes = [
+            {"source_start": c1_start, "source_end": c1_end, "id": "n1"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=c1_start, source_end=c1_end, output_start=0.0, output_end=c1_end - c1_start, clip_id="c1", selection_reason="Reaction test"),
+        ]
+    elif case.id == "case-test-real-002":
+        timeline_events = [
+            {"start_time": 50.0, "end_time": 120.0, "event_type": "speech"},
+        ]
+        candidates = [
+            {"start_time": 50.0, "end_time": 120.0, "score": 0.85},
+        ]
+        story_nodes = [
+            {"source_start": 50.0, "source_end": 120.0, "id": "n1"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=50.0, source_end=120.0, output_start=0.0, output_end=70.0, clip_id="c1", selection_reason="Baseline clip"),
+        ]
+        if visual_reaction_elevation:
+            timeline_events.append({
+                "start_time": 60.0,
+                "end_time": 65.0,
+                "event_type": "face_reaction",
+                "producer": "visual_analysis",
+                "confidence": 0.90,
+                "description": "Streamer visual interest"
+            })
+            candidates[0]["score"] = 0.90
+            edit_clips[0].effects = [{"type": "zoom_face", "source_start": 60.0, "source_end": 65.0}]
 
     ai_timeline = StreamEditorTimeline(
         project_id="proj-m13-benchmarks",
