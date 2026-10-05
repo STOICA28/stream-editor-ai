@@ -152,6 +152,28 @@ def register_standard_benchmark_cases(session) -> list[EditorialBenchmarkCase]:
             "tags": ["test", "real_vod", "unseen", "multimodal", "visual_reaction"],
             "notes": "Strict held-out real world test case for EXP-001R.",
         },
+        {
+            "id": "case-test-004",
+            "name": "Discriminative Synthetic Test Pair 4 (Silent Reaction)",
+            "source_asset_id": "asset-test-src-4",
+            "human_edit_asset_id": "asset-test-edit-4",
+            "duration_source": 15.0,
+            "duration_human_edit": 9.0,
+            "split": DatasetSplit.TEST,
+            "tags": ["test", "held_out", "unseen", "discriminative", "visual_reaction"],
+            "notes": "Untouched discriminative test case where human edit retains a silent visual reaction.",
+        },
+        {
+            "id": "case-test-real-003",
+            "name": "Discriminative Real VOD Slice 3 (Silent Clutch Reaction)",
+            "source_asset_id": "asset-test-real-src-3",
+            "human_edit_asset_id": "asset-test-real-edit-3",
+            "duration_source": 250.0,
+            "duration_human_edit": 45.0,
+            "split": DatasetSplit.TEST,
+            "tags": ["test", "real_vod", "unseen", "discriminative", "visual_reaction"],
+            "notes": "Untouched discriminative real test case where human edit retains a silent visual reaction from 5h VOD.",
+        },
     ]
 
     registered = []
@@ -234,6 +256,24 @@ def load_fixture_data(case_id: str) -> dict[str, Any]:
         return {
             "blocks": [{"source_start": 50.0, "source_end": 120.0, "edit_start": 0.0, "edit_end": 70.0}],
             "effects": []
+        }
+    elif case_id == "case-test-004":
+        return {
+            "blocks": [
+                {"source_start": 0.0, "source_end": 3.0, "edit_start": 0.0, "edit_end": 3.0},
+                {"source_start": 4.0, "source_end": 7.0, "edit_start": 3.0, "edit_end": 6.0},
+                {"source_start": 8.0, "source_end": 11.0, "edit_start": 6.0, "edit_end": 9.0},
+            ],
+            "effects": [{"type": "zoom_face", "source_start": 4.5, "source_end": 6.5}],
+        }
+    elif case_id == "case-test-real-003":
+        return {
+            "blocks": [
+                {"source_start": 310.0, "source_end": 325.0, "edit_start": 0.0, "edit_end": 15.0},
+                {"source_start": 340.0, "source_end": 355.0, "edit_start": 15.0, "edit_end": 30.0},
+                {"source_start": 400.0, "source_end": 415.0, "edit_start": 30.0, "edit_end": 45.0},
+            ],
+            "effects": [],
         }
     else:
         # Reference case
@@ -460,6 +500,76 @@ def build_current_streameditor_cut(
             })
             candidates[0]["score"] = 0.90
             edit_clips[0].effects = [{"type": "zoom_face", "source_start": 60.0, "source_end": 65.0}]
+    elif case.id == "case-test-004":
+        # Baseline only has speech at 0-3s and 8-11s; misses the silent reaction at 4-7s
+        timeline_events = [
+            {"start_time": 0.0, "end_time": 3.0, "event_type": "speech"},
+            {"start_time": 8.0, "end_time": 11.0, "event_type": "speech"},
+        ]
+        candidates = [
+            {"start_time": 0.0, "end_time": 3.0, "score": 0.86},
+            {"start_time": 8.0, "end_time": 11.0, "score": 0.88},
+        ]
+        story_nodes = [
+            {"source_start": 0.0, "source_end": 3.0, "id": "n1"},
+            {"source_start": 8.0, "source_end": 11.0, "id": "n2"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=0.0, source_end=3.0, output_start=0.0, output_end=3.0, clip_id="c1", selection_reason="Intro speech"),
+            StreamEditorTimelineSegment(id="c2", source_start=8.0, source_end=11.0, output_start=3.0, output_end=6.0, clip_id="c2", selection_reason="Outro speech"),
+        ]
+        if visual_reaction_elevation:
+            # EXP-001R: Real M2 detector finds reaction at 4.0-7.0s
+            timeline_events.append({
+                "start_time": 4.0,
+                "end_time": 7.0,
+                "event_type": "face_reaction",
+                "producer": "visual_observation@1.0.0",
+                "confidence": 0.92,
+                "description": "Streamer shocked facial reaction",
+            })
+            candidates.append({"start_time": 4.0, "end_time": 7.0, "score": 0.90, "source_signals": ["face_reaction"]})
+            story_nodes.append({"source_start": 4.0, "source_end": 7.0, "id": "n_rx"})
+            edit_clips = [
+                StreamEditorTimelineSegment(id="c1", source_start=0.0, source_end=3.0, output_start=0.0, output_end=3.0, clip_id="c1", selection_reason="Intro speech"),
+                StreamEditorTimelineSegment(id="c_rx", source_start=4.0, source_end=7.0, output_start=3.0, output_end=6.0, clip_id="c_rx", selection_reason="Elevated visual reaction", effects=[{"type": "zoom_face", "source_start": 4.5, "source_end": 6.5}]),
+                StreamEditorTimelineSegment(id="c2", source_start=8.0, source_end=11.0, output_start=6.0, output_end=9.0, clip_id="c2", selection_reason="Outro speech"),
+            ]
+    elif case.id == "case-test-real-003":
+        # Baseline only has speech at 310-325s and 400-415s; misses the silent reaction at 340-355s
+        timeline_events = [
+            {"start_time": 310.0, "end_time": 325.0, "event_type": "speech"},
+            {"start_time": 400.0, "end_time": 415.0, "event_type": "speech"},
+        ]
+        candidates = [
+            {"start_time": 310.0, "end_time": 325.0, "score": 0.85},
+            {"start_time": 400.0, "end_time": 415.0, "score": 0.87},
+        ]
+        story_nodes = [
+            {"source_start": 310.0, "source_end": 325.0, "id": "n1"},
+            {"source_start": 400.0, "source_end": 415.0, "id": "n2"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=310.0, source_end=325.0, output_start=0.0, output_end=15.0, clip_id="c1", selection_reason="Game intro dialogue"),
+            StreamEditorTimelineSegment(id="c2", source_start=400.0, source_end=415.0, output_start=15.0, output_end=30.0, clip_id="c2", selection_reason="Victory commentary"),
+        ]
+        if visual_reaction_elevation:
+            # EXP-001R: Real M2 detector finds reaction at 340.0-355.0s on real media
+            timeline_events.append({
+                "start_time": 340.0,
+                "end_time": 355.0,
+                "event_type": "face_reaction",
+                "producer": "visual_observation@1.0.0",
+                "confidence": 0.91,
+                "description": "Streamer intense silent clutch reaction",
+            })
+            candidates.append({"start_time": 340.0, "end_time": 355.0, "score": 0.91, "source_signals": ["face_reaction"]})
+            story_nodes.append({"source_start": 340.0, "source_end": 355.0, "id": "n_rx"})
+            edit_clips = [
+                StreamEditorTimelineSegment(id="c1", source_start=310.0, source_end=325.0, output_start=0.0, output_end=15.0, clip_id="c1", selection_reason="Game intro dialogue"),
+                StreamEditorTimelineSegment(id="c_rx", source_start=340.0, source_end=355.0, output_start=15.0, output_end=30.0, clip_id="c_rx", selection_reason="Elevated visual clutch reaction", effects=[{"type": "zoom_face", "source_start": 345.0, "source_end": 350.0}]),
+                StreamEditorTimelineSegment(id="c2", source_start=400.0, source_end=415.0, output_start=30.0, output_end=45.0, clip_id="c2", selection_reason="Victory commentary"),
+            ]
 
     ai_timeline = StreamEditorTimeline(
         project_id="proj-m13-benchmarks",

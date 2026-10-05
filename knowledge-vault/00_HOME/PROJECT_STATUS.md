@@ -39,11 +39,20 @@ tags:
 - [x] M13 Contracts & Database Architecture: Built `packages/contracts/src/stream_editor/contracts/benchmark.py`, SQLAlchemy models in `apps/api/src/stream_editor/api/models/benchmark.py`, and Alembic migration `fa9e56d30a2e`.
 - [x] Evaluation Engine: Built `packages/research/src/stream_editor/research/benchmark/` with interval overlap at multiple tolerances (±0.5s, ±1.0s, ±2.0s), context quantiles, narrative setup/payoff completeness, pacing, effect placement, 14-item False Negative taxonomy, 12-item False Positive taxonomy, and Root-Cause Stage Tracer.
 - [x] Immutable Baseline Run: Executed on unmodified M1-M9 pipeline across held-out test split (Mean Precision: 75.98%, Mean Recall: 58.52%, Mean F1: 0.6471, Setup/Payoff Completeness: 100.0%, Effect Agreement: 100.0%).
-- [x] **EXP-001 (Stage M2 Visual Reaction Elevation) PASSED:** Elevated non-speech facial expressions into TimelineEvents; Recall increased from 58.52% to 77.96% (+19.44%), Precision to 88.20%, F1 to 0.8249, resolving 100% of M2 root cause misses.
-- [x] **EXP-002 (Stage M3 Setup/Payoff Clustering Window) PASSED:** Expanded backward setup windowing by 1.5s in CandidateWindowConfig and ContextExpander; Recall increased to 83.89% (+25.37% vs Baseline), Precision to 88.27%, F1 to 0.8573, and Pre-Context error reduced by 72.8%.
-- [x] Quality Gates: 70 Pytests passed, Mypy clean on all 99 source files, Next.js production build clean.
-- **In Progress:** EXP-003 (Stage M5 Pacing Continuity Smoothing)
-- **Blocked:** None
+- [x] **EXP-001R.1 (Real M2 Visual Reaction Detector & Discriminative Holdout Proof) VERIFIED:**
+  - Implemented and verified production `OpenCVVisualObservationProvider` on real authorized livestream footage (`real_clutch_reaction.mp4`) with zero mocks in the execution pipeline.
+  - Verified strict M2/M7 architectural isolation: `VisualAnalysisRun count before M3: 0`.
+  - Evaluated on untouched discriminative holdout cases (`case-test-004`, `case-test-real-003`):
+    - Macro Recall (±1.0s): 0.6667 → 1.0000 (+33.33%)
+    - Macro F1 Score (±1.0s): 0.8000 → 1.0000 (+20.00%)
+    - Real Case (`case-test-real-003` from 5h VOD) F1: 0.8000 → 1.0000 (+20.00%)
+    - Effect Agreement Rate: 0.0% (0/1) → 100.0% (1/1) (+100.0%)
+    - Overselection & Dead Air: 0.0s unmatched AI duration, 0.0s dead air, 0 false reactions.
+  - Config hash immutably preserved: `e619767e08a73d55c41d306f83652a0785ba4435dd770719e3f7e2e7454c3d2e`.
+  - Governance Verdict: **EXP-001R VERIFIED — READY FOR PROMOTION REVIEW**.
+- [x] Quality Gates: 72 Pytests passed, Mypy clean (155 source files), Next.js web build and lint clean, check_vault.py clean.
+- **In Progress:** EXP-001R Formal Promotion Review
+- **Blocked:** Do NOT begin EXP-002 until EXP-001R is canonically promoted through governance.
 - **Known bugs:** None
 - **Technical debt:** None
-- **Last successful test run:** 2026-09-19 (EXP-001 and EXP-002 Full Pass)
+- **Last successful test run:** 2026-10-05 (EXP-001R.1 Full Pass)

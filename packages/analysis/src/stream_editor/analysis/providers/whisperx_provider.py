@@ -1,5 +1,8 @@
 
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 
 from stream_editor.contracts.analysis import (
     TranscriptionConfig,
@@ -11,6 +14,8 @@ from stream_editor.contracts.analysis import (
 
 class WhisperXTranscriptionProvider(TranscriptionProvider):
     def transcribe(self, audio_path: str, config: TranscriptionConfig) -> list[TranscriptSegment]:
+        if torch is None:
+            raise RuntimeError("torch is not installed. Please install torch to use WhisperXTranscriptionProvider.")
         import whisperx
         
         device = "cuda" if torch.cuda.is_available() else "cpu"

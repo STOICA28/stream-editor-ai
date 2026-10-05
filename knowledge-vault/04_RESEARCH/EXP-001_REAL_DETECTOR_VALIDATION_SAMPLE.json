@@ -1,0 +1,333 @@
+{
+  "N": 40,
+  "tp": 18,
+  "tn": 19,
+  "fp": 1,
+  "fn": 2,
+  "precision": 0.9473684210526315,
+  "recall": 0.9,
+  "specificity": 0.95,
+  "f1": 0.9230769230769231,
+  "results": [
+    {
+      "id": "POS-01",
+      "type": "A_REACTION",
+      "interval": "4.0s - 5.0s",
+      "expected": true,
+      "detected": false,
+      "verdict": "FN (Miss)"
+    },
+    {
+      "id": "POS-02",
+      "type": "A_REACTION",
+      "interval": "216.0s - 220.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-03",
+      "type": "A_REACTION",
+      "interval": "222.0s - 226.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-04",
+      "type": "A_REACTION",
+      "interval": "228.0s - 232.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-05",
+      "type": "A_REACTION",
+      "interval": "233.0s - 237.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-06",
+      "type": "A_REACTION",
+      "interval": "237.0s - 241.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-07",
+      "type": "A_REACTION",
+      "interval": "242.0s - 246.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-08",
+      "type": "A_REACTION",
+      "interval": "247.0s - 251.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-09",
+      "type": "A_REACTION",
+      "interval": "252.0s - 256.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-10",
+      "type": "A_REACTION",
+      "interval": "258.0s - 262.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-11",
+      "type": "A_REACTION",
+      "interval": "263.0s - 267.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-12",
+      "type": "A_REACTION",
+      "interval": "275.0s - 279.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-13",
+      "type": "A_REACTION",
+      "interval": "280.0s - 284.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-14",
+      "type": "A_REACTION",
+      "interval": "285.0s - 289.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-15",
+      "type": "A_REACTION",
+      "interval": "290.0s - 294.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-16",
+      "type": "A_REACTION",
+      "interval": "295.0s - 299.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-17",
+      "type": "A_REACTION",
+      "interval": "4.2s - 4.8s",
+      "expected": true,
+      "detected": false,
+      "verdict": "FN (Miss)"
+    },
+    {
+      "id": "POS-18",
+      "type": "A_REACTION",
+      "interval": "224.0s - 228.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-19",
+      "type": "A_REACTION",
+      "interval": "235.0s - 239.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "POS-20",
+      "type": "A_REACTION",
+      "interval": "277.0s - 281.0s",
+      "expected": true,
+      "detected": true,
+      "verdict": "TP (Hit)"
+    },
+    {
+      "id": "NEG-B01",
+      "type": "B_ORDINARY_FACE",
+      "interval": "0.0s - 1.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B02",
+      "type": "B_ORDINARY_FACE",
+      "interval": "2.0s - 3.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B03",
+      "type": "B_ORDINARY_FACE",
+      "interval": "6.0s - 7.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B04",
+      "type": "B_ORDINARY_FACE",
+      "interval": "10.0s - 14.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B05",
+      "type": "B_ORDINARY_FACE",
+      "interval": "15.0s - 19.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B06",
+      "type": "B_ORDINARY_FACE",
+      "interval": "20.0s - 24.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B07",
+      "type": "B_ORDINARY_FACE",
+      "interval": "25.0s - 29.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B08",
+      "type": "B_ORDINARY_FACE",
+      "interval": "30.0s - 34.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B09",
+      "type": "B_ORDINARY_FACE",
+      "interval": "35.0s - 39.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-B10",
+      "type": "B_ORDINARY_FACE",
+      "interval": "40.0s - 44.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C01",
+      "type": "C_SCREEN_MOTION",
+      "interval": "1.0s - 2.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C02",
+      "type": "C_SCREEN_MOTION",
+      "interval": "7.0s - 8.0s",
+      "expected": false,
+      "detected": true,
+      "verdict": "FP (False Alarm)"
+    },
+    {
+      "id": "NEG-C03",
+      "type": "C_SCREEN_MOTION",
+      "interval": "80.0s - 84.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C04",
+      "type": "C_SCREEN_MOTION",
+      "interval": "85.0s - 89.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C05",
+      "type": "C_SCREEN_MOTION",
+      "interval": "90.0s - 94.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C06",
+      "type": "C_SCREEN_MOTION",
+      "interval": "95.0s - 99.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C07",
+      "type": "C_SCREEN_MOTION",
+      "interval": "100.0s - 104.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C08",
+      "type": "C_SCREEN_MOTION",
+      "interval": "105.0s - 109.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C09",
+      "type": "C_SCREEN_MOTION",
+      "interval": "110.0s - 114.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    },
+    {
+      "id": "NEG-C10",
+      "type": "C_SCREEN_MOTION",
+      "interval": "115.0s - 119.0s",
+      "expected": false,
+      "detected": false,
+      "verdict": "TN (Correct Rejection)"
+    }
+  ]
+}

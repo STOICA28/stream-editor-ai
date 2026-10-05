@@ -13,8 +13,21 @@ tags:
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [2026-10-05] (EXP-001R.1 Verification)
 ### Added
-- Planning for M2 (Transcript and Scene Analysis)
+- **EXP-001R.1 Real Detector & Discriminative Holdout Proof:**
+  - Implemented and verified production `OpenCVVisualObservationProvider` on real authorized media (`real_clutch_reaction.mp4`) with zero mocks in the execution pipeline.
+  - Verified strict M2/M7 architectural isolation (`VisualAnalysisRun count before M3 = 0`).
+  - Added untouched discriminative holdout cases `case-test-004` (synthetic) and `case-test-real-003` (real 5h VOD slice).
+  - Evaluated Baseline vs EXP-001R:
+    - Macro Recall: 0.6667 -> 1.0000 (+33.33%)
+    - Macro F1: 0.8000 -> 1.0000 (+20.00%)
+    - Real Case (`case-test-real-003`) F1: 0.8000 -> 1.0000 (+20.00%)
+    - Effect Agreement Rate: 0.0% (0/1) -> 100.0% (1/1)
+    - 0.0s dead air, 0.0s overselection, 0 false reactions.
+  - Preserved immutable config hash `e619767e08a73d55c41d306f83652a0785ba4435dd770719e3f7e2e7454c3d2e`.
+  - Governance Verdict: **EXP-001R VERIFIED — READY FOR PROMOTION REVIEW**.
 
 ## [2026-09-14] (M1 Completion)
 ### Added

@@ -6,6 +6,8 @@ from typing import Any
 
 import structlog
 
+import os
+from stream_editor.analysis.providers import OpenCVVisualObservationProvider
 from stream_editor.analysis.providers.mock import (
     MockAudioAnalysisProvider,
     MockSceneDetectionProvider,
@@ -316,7 +318,13 @@ def analyze_visual_observations_task(self, project_id: str, asset_id: str, finge
             existing = (await db.execute(select(DBVisualObservation).where(DBVisualObservation.source_asset_id == asset_id))).scalars().first()
             if existing: return # Cache hit
             
-            provider = MockVisualObservationProvider()
+            provider_name = os.getenv("VISUAL_OBSERVATION_PROVIDER", "opencv")
+            if provider_name == "mock":
+                provider = MockVisualObservationProvider()
+                detector_tag = "mock"
+            else:
+                provider = OpenCVVisualObservationProvider()
+                detector_tag = "visual_observation@1.0.0"
             proxy_path = await storage.get_path(project_id, StorageCategory.proxies.value, proxy_asset.name)
             events = provider.analyze_visuals(str(proxy_path), config)
             
@@ -331,7 +339,7 @@ def analyze_visual_observations_task(self, project_id: str, asset_id: str, finge
                     event_type=e.event_type, 
                     confidence=e.confidence,
                     description=e.description,
-                    detector="mock", 
+                    detector=detector_tag, 
                     detector_config=config.model_dump()
                 )
                 db.add(db_event)
