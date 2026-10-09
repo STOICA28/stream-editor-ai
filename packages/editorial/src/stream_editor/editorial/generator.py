@@ -54,6 +54,7 @@ def _candidate_sig(
     core_start: float,
     core_end: float,
     generator_version: str,
+    clustering_version: str = "default",
 ) -> str:
     data = {
         "project_id": project_id,
@@ -63,6 +64,7 @@ def _candidate_sig(
         "core_start": round(core_start, 3),
         "core_end": round(core_end, 3),
         "generator_version": generator_version,
+        "clustering_version": clustering_version,
     }
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
@@ -227,7 +229,13 @@ class CandidateGenerator:
             ranker = ExperimentalRanker()
             cache = ModelResultCache()
 
-            clusters = clusterer.cluster(timeline_events, config.merge_gap)
+            scene_dicts: list[dict[str, object]] = [{"start_time": sc.start_time, "end_time": sc.end_time} for sc in scenes]
+            clusters = clusterer.cluster(
+                timeline_events,
+                config.merge_gap,
+                clustering_config=config.clustering_config,
+                scenes=scene_dicts,
+            )
             raw_windows = builder.build(clusters, config)
             expanded = [expander.expand(w, transcript_segments, scenes, config) for w in raw_windows]
             merged_windows = merger.merge(expanded, config.overlap_threshold)
@@ -241,6 +249,7 @@ class CandidateGenerator:
                     mw.start_time, mw.end_time,
                     mw.core_start, mw.core_end,
                     GENERATOR_VERSION,
+                    clustering_version=mw.config_version,
                 )
 
                 # Idempotency: skip if already exists
@@ -394,7 +403,12 @@ class CandidateGenerator:
                     score_story_value=signals.story_value,
                     score_repetition=signals.repetition,
                     confidence=confidence,
-                    reasoning_summary=list(raw_result.get("reasoning_summary", [])),
+                    reasoning_summary=[
+                        *list(raw_result.get("reasoning_summary", [])),
+                        *( [f"relations:{','.join(mw.relation_types)}"] if getattr(mw, "relation_types", None) else [] ),
+                        *( [f"boundary:{mw.boundary_reason}"] if getattr(mw, "boundary_reason", None) else [] ),
+                        *( [f"clustering_version:{mw.config_version}"] if getattr(mw, "config_version", None) and mw.config_version != "default" else [] ),
+                    ],
                     experimental_rank=exp_rank,
                     ranking_profile=ranking_profile_name,
                     analysis_provider=provider_name,

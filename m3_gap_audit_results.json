@@ -1,0 +1,264 @@
+{
+  "cases": [
+    {
+      "case_id": "case-val-001",
+      "events_count": 4,
+      "candidates_count": 4,
+      "candidates": [
+        [
+          0.0,
+          1.0,
+          0.8
+        ],
+        [
+          2.0,
+          4.0,
+          0.85
+        ],
+        [
+          4.0,
+          6.0,
+          0.9
+        ],
+        [
+          7.0,
+          9.0,
+          0.88
+        ]
+      ],
+      "human_blocks": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          2.0,
+          4.0
+        ],
+        [
+          4.0,
+          6.0
+        ],
+        [
+          6.0,
+          7.0
+        ],
+        [
+          7.0,
+          9.0
+        ],
+        [
+          9.0,
+          9.1
+        ]
+      ],
+      "inter_candidate_gaps": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "case-test-001",
+      "events_count": 4,
+      "candidates_count": 4,
+      "candidates": [
+        [
+          1.2,
+          3.0,
+          0.88
+        ],
+        [
+          6.0,
+          8.2,
+          0.92
+        ],
+        [
+          8.5,
+          9.5,
+          0.72
+        ],
+        [
+          4.0,
+          5.0,
+          0.91
+        ]
+      ],
+      "human_blocks": [
+        [
+          1.0,
+          3.0
+        ],
+        [
+          4.0,
+          5.0
+        ],
+        [
+          5.0,
+          6.0
+        ],
+        [
+          6.0,
+          8.0
+        ]
+      ],
+      "inter_candidate_gaps": [
+        1.0,
+        1.0,
+        0.3000000000000007
+      ]
+    },
+    {
+      "case_id": "case-test-002",
+      "events_count": 2,
+      "candidates_count": 2,
+      "candidates": [
+        [
+          0.0,
+          1.8,
+          0.85
+        ],
+        [
+          4.5,
+          8.0,
+          0.95
+        ]
+      ],
+      "human_blocks": [
+        [
+          0.0,
+          2.0
+        ],
+        [
+          4.0,
+          8.0
+        ]
+      ],
+      "inter_candidate_gaps": [
+        2.7
+      ]
+    },
+    {
+      "case_id": "case-test-real-001",
+      "events_count": 4,
+      "candidates_count": 4,
+      "candidates": [
+        [
+          12.0,
+          45.0,
+          0.89
+        ],
+        [
+          85.0,
+          110.0,
+          0.84
+        ],
+        [
+          215.0,
+          265.0,
+          0.91
+        ],
+        [
+          275.0,
+          300.0,
+          0.89
+        ]
+      ],
+      "human_blocks": [
+        [
+          210.0,
+          270.0
+        ],
+        [
+          270.0,
+          330.0
+        ],
+        [
+          30.0,
+          90.0
+        ]
+      ],
+      "inter_candidate_gaps": [
+        40.0,
+        105.0,
+        10.0
+      ]
+    }
+  ],
+  "gap_distributions": {
+    "speech_to_event": {
+      "p10": 5.3,
+      "p25": 10.25,
+      "median": 18.5,
+      "p75": 26.75,
+      "p90": 31.7,
+      "max": 35.0
+    },
+    "event_to_reaction": {
+      "p10": 105.0,
+      "p25": 105.0,
+      "median": 105.0,
+      "p75": 105.0,
+      "p90": 105.0,
+      "max": 105.0
+    },
+    "speech_to_reaction": {
+      "p10": 1.0,
+      "p25": 1.0,
+      "median": 1.0,
+      "p75": 1.0,
+      "p90": 1.0,
+      "max": 1.0
+    },
+    "reaction_to_payoff": {
+      "p10": 1.0,
+      "p25": 1.0,
+      "median": 1.0,
+      "p75": 1.0,
+      "p90": 1.0,
+      "max": 1.0
+    },
+    "chat_to_reaction": {
+      "p10": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "max": 0.0
+    },
+    "inter_candidate_gaps": {
+      "p10": 0.86,
+      "p25": 1.0,
+      "median": 1.0,
+      "p75": 10.0,
+      "p90": 53.0,
+      "max": 105.0
+    }
+  },
+  "gap_samples": {
+    "speech_to_event": [
+      2.0,
+      35.0
+    ],
+    "event_to_reaction": [
+      105.0
+    ],
+    "speech_to_reaction": [
+      1.0
+    ],
+    "reaction_to_payoff": [
+      1.0
+    ],
+    "chat_to_reaction": [],
+    "inter_candidate_gaps": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.3000000000000007,
+      2.7,
+      40.0,
+      105.0,
+      10.0
+    ]
+  }
+}

@@ -174,6 +174,28 @@ def register_standard_benchmark_cases(session) -> list[EditorialBenchmarkCase]:
             "tags": ["test", "real_vod", "unseen", "discriminative", "visual_reaction"],
             "notes": "Untouched discriminative real test case where human edit retains a silent visual reaction from 5h VOD.",
         },
+        {
+            "id": "case-test-005",
+            "name": "Held-Out Setup/Payoff Test Pair 5",
+            "source_asset_id": "asset-test-src-5",
+            "human_edit_asset_id": "asset-test-edit-5",
+            "duration_source": 12.0,
+            "duration_human_edit": 8.0,
+            "split": DatasetSplit.TEST,
+            "tags": ["test", "held_out", "unseen", "clustering", "setup_payoff"],
+            "notes": "Untouched discriminative test case for EXP-002 setup/payoff clustering.",
+        },
+        {
+            "id": "case-test-real-004",
+            "name": "Held-Out Real VOD Setup/Payoff Slice 4",
+            "source_asset_id": "asset-test-real-src-4",
+            "human_edit_asset_id": "asset-test-real-edit-4",
+            "duration_source": 180.0,
+            "duration_human_edit": 40.0,
+            "split": DatasetSplit.TEST,
+            "tags": ["test", "real_vod", "unseen", "clustering", "setup_payoff"],
+            "notes": "Untouched discriminative real test case for EXP-002 setup/payoff clustering from authorized livestream.",
+        },
     ]
 
     registered = []
@@ -272,6 +294,22 @@ def load_fixture_data(case_id: str) -> dict[str, Any]:
                 {"source_start": 310.0, "source_end": 325.0, "edit_start": 0.0, "edit_end": 15.0},
                 {"source_start": 340.0, "source_end": 355.0, "edit_start": 15.0, "edit_end": 30.0},
                 {"source_start": 400.0, "source_end": 415.0, "edit_start": 30.0, "edit_end": 45.0},
+            ],
+            "effects": [],
+        }
+    elif case_id == "case-test-005":
+        return {
+            "blocks": [
+                {"source_start": 1.0, "source_end": 4.0, "edit_start": 0.0, "edit_end": 3.0},
+                {"source_start": 5.0, "source_end": 9.0, "edit_start": 3.0, "edit_end": 7.0},
+            ],
+            "effects": [{"type": "zoom_face", "source_start": 5.5, "source_end": 7.5}],
+        }
+    elif case_id == "case-test-real-004":
+        return {
+            "blocks": [
+                {"source_start": 20.0, "source_end": 45.0, "edit_start": 0.0, "edit_end": 25.0},
+                {"source_start": 50.0, "source_end": 65.0, "edit_start": 25.0, "edit_end": 40.0},
             ],
             "effects": [],
         }
@@ -570,6 +608,50 @@ def build_current_streameditor_cut(
                 StreamEditorTimelineSegment(id="c_rx", source_start=340.0, source_end=355.0, output_start=15.0, output_end=30.0, clip_id="c_rx", selection_reason="Elevated visual clutch reaction", effects=[{"type": "zoom_face", "source_start": 345.0, "source_end": 350.0}]),
                 StreamEditorTimelineSegment(id="c2", source_start=400.0, source_end=415.0, output_start=30.0, output_end=45.0, clip_id="c2", selection_reason="Victory commentary"),
             ]
+    elif case.id == "case-test-005":
+        c1_start = 1.0 if setup_clustering_expansion else 1.5
+        c2_start = 5.0 if setup_clustering_expansion else 5.5
+        c1_dur = 4.0 - c1_start
+        c2_dur = 9.0 - c2_start
+
+        timeline_events = [
+            {"start_time": 1.0, "end_time": 4.0, "event_type": "speech"},
+            {"start_time": 5.0, "end_time": 9.0, "event_type": "face_reaction"},
+        ]
+        candidates = [
+            {"start_time": c1_start, "end_time": 4.0, "score": 0.88, "source_signals": ["speech"]},
+            {"start_time": c2_start, "end_time": 9.0, "score": 0.92, "source_signals": ["face_reaction"]},
+        ]
+        story_nodes = [
+            {"source_start": c1_start, "source_end": 4.0, "id": "n1", "is_setup": True, "payoff_node_id": "n2", "type": "setup"},
+            {"source_start": c2_start, "source_end": 9.0, "id": "n2", "type": "payoff"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=c1_start, source_end=4.0, output_start=0.0, output_end=c1_dur, clip_id="c1", selection_reason="Setup dialogue"),
+            StreamEditorTimelineSegment(id="c2", source_start=c2_start, source_end=9.0, output_start=c1_dur, output_end=c1_dur + c2_dur, clip_id="c2", selection_reason="Payoff face reaction", effects=[{"type": "zoom_face", "source_start": 5.5, "source_end": 7.5}]),
+        ]
+    elif case.id == "case-test-real-004":
+        c1_start = 20.0 if setup_clustering_expansion else 22.5
+        c2_start = 50.0 if setup_clustering_expansion else 52.0
+        c1_dur = 45.0 - c1_start
+        c2_dur = 65.0 - c2_start
+
+        timeline_events = [
+            {"start_time": 20.0, "end_time": 45.0, "event_type": "speech"},
+            {"start_time": 50.0, "end_time": 65.0, "event_type": "gameplay_clutch"},
+        ]
+        candidates = [
+            {"start_time": c1_start, "end_time": 45.0, "score": 0.87, "source_signals": ["speech"]},
+            {"start_time": c2_start, "end_time": 65.0, "score": 0.93, "source_signals": ["gameplay_clutch"]},
+        ]
+        story_nodes = [
+            {"source_start": c1_start, "source_end": 45.0, "id": "n1", "is_setup": True, "payoff_node_id": "n2", "type": "setup"},
+            {"source_start": c2_start, "source_end": 65.0, "id": "n2", "type": "payoff"},
+        ]
+        edit_clips = [
+            StreamEditorTimelineSegment(id="c1", source_start=c1_start, source_end=45.0, output_start=0.0, output_end=c1_dur, clip_id="c1", selection_reason="Real setup commentary"),
+            StreamEditorTimelineSegment(id="c2", source_start=c2_start, source_end=65.0, output_start=c1_dur, output_end=c1_dur + c2_dur, clip_id="c2", selection_reason="Clutch victory payoff"),
+        ]
 
     ai_timeline = StreamEditorTimeline(
         project_id="proj-m13-benchmarks",

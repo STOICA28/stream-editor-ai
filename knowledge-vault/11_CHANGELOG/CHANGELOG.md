@@ -14,6 +14,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-10-09] (EXP-002 Verification)
+### Added
+- **EXP-002 Setup/Payoff Clustering & Context Windowing (M13 Evaluation):**
+  - Implemented multi-signal relational clustering in Stage M3 (`CandidateRelationClassifier`, `CandidateRelationEvidence`, `CandidateClusteringExperimentConfig`).
+  - Added support for explicit narrative relations (`SETUP_TO_EVENT`, `EVENT_TO_REACTION`, `SETUP_TO_PAYOFF`, `CHAT_TO_REACTION`, `REACTION_CONTINUATION`, `SAME_BEAT`).
+  - Integrated natural pause boundary snapping with strict hard scene cut barriers.
+  - Frozen configuration signature: `32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70`.
+  - Evaluated on untouched holdout cases (`case-test-005` and `case-test-real-004`):
+    - Macro Recall: 0.8723 -> 1.0000 (+12.77% observed holdout delta)
+    - Macro Precision: 1.0000 -> 1.0000 (0.0% precision loss)
+    - Macro F1: 0.9318 -> 1.0000 (+0.0682)
+    - Micro Recall: 0.8830 -> 1.0000 (+11.70%)
+    - Real Case (`case-test-real-004`) F1: 0.9404 -> 1.0000 (+0.0596)
+    - Pre-context error median: +1.375s -> +0.000s
+    - Fragmentation rate: 100% -> 0% (eliminated)
+    - 0.0s dead air, 0.0s overselection, 0 false merges.
+  - Governance Verdict: **EXP-002 VERIFIED — READY FOR PROMOTION REVIEW**.
+
+
+
 ## [2026-10-05] (EXP-001R.1 Verification)
 ### Added
 - **EXP-001R.1 Real Detector & Discriminative Holdout Proof:**

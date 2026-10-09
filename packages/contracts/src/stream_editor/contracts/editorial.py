@@ -24,6 +24,54 @@ from pydantic import BaseModel, Field
 # Configuration models
 # ---------------------------------------------------------------------------
 
+class CandidateRelationType(str, Enum):
+    """
+    EXP-002: Candidate relation types for Stage M3 bounded evidence-based clustering.
+    Local to M3 clustering - does NOT replace M4 Story Graph.
+    """
+    SETUP_TO_EVENT = "setup_to_event"
+    EVENT_TO_REACTION = "event_to_reaction"
+    SETUP_TO_PAYOFF = "setup_to_payoff"
+    CHAT_TO_REACTION = "chat_to_reaction"
+    REACTION_CONTINUATION = "reaction_continuation"
+    SAME_BEAT = "same_beat"
+    UNRELATED = "unrelated"
+    UNKNOWN = "unknown"
+
+
+class CandidateRelationEvidence(BaseModel):
+    """Structured evidence for joining or separating adjacent events in M3."""
+    source_event_id: str
+    target_event_id: str
+    relation_type: CandidateRelationType
+    confidence: float = Field(ge=0.0, le=1.0)
+    temporal_gap: float
+    same_scene: bool = True
+    speaker_continuity: bool = True
+    evidence_notes: str = ""
+
+
+class CandidateClusteringExperimentConfig(BaseModel):
+    """
+    EXP-002: Bounded relational clustering & context windowing configuration.
+    Controlled, versioned parameters for Stage M3 candidate generation.
+    """
+    max_backward_context: float = 3.0       # max backward expansion in seconds
+    max_forward_context: float = 3.0        # max forward expansion in seconds
+    max_related_event_gap: float = 4.0      # max gap (seconds) between related events to cluster
+    reaction_link_window: float = 2.0       # max delay (seconds) between trigger event and reaction
+    speech_continuity_gap: float = 1.5      # max pause between related speech utterances
+    pause_snap_threshold: float = 0.3       # window to snap to natural speech/audio pause
+    scene_boundary_hard_stop: bool = True   # never expand across visual scene boundary
+    minimum_relation_confidence: float = 0.6 # confidence threshold to accept relation link
+    version: str = "exp002_v1"
+
+    def get_signature(self) -> str:
+        data = self.model_dump()
+        serialized = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
 class CandidateWindowConfig(BaseModel):
     """
     Infrastructure parameters for temporal windowing.
@@ -36,6 +84,7 @@ class CandidateWindowConfig(BaseModel):
     merge_gap: float = 3.0             # seconds - merge clusters closer than this
     overlap_threshold: float = 0.5     # fraction - merge if overlap > this
     backward_setup_window: float = 1.5 # seconds - scan backward for narrative/speech setup
+    clustering_config: CandidateClusteringExperimentConfig | None = None
     generator_version: str = "1.0.0"
 
     def get_signature(self, source_fingerprint: str) -> str:

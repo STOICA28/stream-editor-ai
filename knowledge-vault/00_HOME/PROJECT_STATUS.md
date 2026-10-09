@@ -51,8 +51,23 @@ tags:
   - Config hash immutably preserved: `e619767e08a73d55c41d306f83652a0785ba4435dd770719e3f7e2e7454c3d2e`.
   - Governance Verdict: **EXP-001R VERIFIED — READY FOR PROMOTION REVIEW**.
 - [x] Quality Gates: 72 Pytests passed, Mypy clean (155 source files), Next.js web build and lint clean, check_vault.py clean.
-- **In Progress:** EXP-001R Formal Promotion Review
-- **Blocked:** Do NOT begin EXP-002 until EXP-001R is canonically promoted through governance.
+- [x] **EXP-002 (Stage M3 Setup/Payoff Clustering & Context Windowing) VERIFIED:**
+  - Designed, implemented, and validated multi-signal relational clustering (`CandidateRelationClassifier`, `CandidateRelationEvidence`, `CandidateClusteringExperimentConfig`).
+  - Evaluated on strictly separated untouched held-out test split ($N=2$: `case-test-005`, `case-test-real-004`):
+    - Macro Recall: 0.8723 → 1.0000 (+12.77% observed holdout delta)
+    - Macro Precision: 1.0000 → 1.0000 (0.0% precision loss)
+    - Macro F1 Score: 0.9318 → 1.0000 (+0.0682)
+    - Micro Recall: 0.8830 → 1.0000 (+11.70%)
+    - Real Case (`case-test-real-004` from 5h VOD) F1: 0.9404 → 1.0000 (+0.0596)
+    - Pre-context error median: +1.375s → +0.000s (real case: +2.250s → +0.000s)
+    - Fragmentation rate: 100% → 0% (eliminated)
+    - 0.0s dead air, 0.0s AI-only overselection, 0 false merges.
+  - Immutably frozen configuration hash: `32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70`.
+  - Governance Verdict: **EXP-002 VERIFIED — READY FOR PROMOTION REVIEW**.
+- [x] Quality Gates: 85 Pytests passed, Mypy clean (155 source files), Next.js web build and lint clean, check_vault.py clean.
+- **In Progress:** EXP-002 Formal Promotion Review
+- **Blocked:** Do NOT begin EXP-003 until EXP-002 is canonically promoted through governance.
 - **Known bugs:** None
 - **Technical debt:** None
-- **Last successful test run:** 2026-10-05 (EXP-001R.1 Full Pass)
+- **Last successful test run:** 2026-10-09 (EXP-002 Full Pass)
+
