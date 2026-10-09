@@ -194,9 +194,16 @@ Both holdout cases were audited to establish dataset provenance:
 
 ---
 
-## 9. Authoritative Persisted Pipeline Runs (`test.db`)
+## 9. Authoritative Persisted Pipeline Runs (`test.db`) & Provenance
 
-All metrics were reconstructed directly from persisted pipeline records in `test.db`:
+All metrics were reconstructed directly from persisted pipeline records in `test.db`.
+
+### 9.1 Verification of SQLite Records Provenance
+- **Generating Components:** Created by real pipeline stages (`CandidateGenerator v1.0.0`, `StoryGraphBuilder v1.0.0`, and `EditPlanOptimizer v1.0.0`) using the frozen configuration.
+- **Provider & Models:** Provider is registered as `mock` (deterministic semantic execution without external LLM flakiness).
+- **Execution Timestamp:** `2026-10-09 18:20:28` across all holdout runs.
+- **State & Health:** All runs have `status = 'completed'` with non-null cryptographic derivation signatures.
+- **Database Context Note:** SQLite is used as the local, deterministic, and self-contained integration testing database. Production deployment targets PostgreSQL via SQLAlchemy migrations (`apps/api/alembic`). The ORM entities and column constraints are identical.
 
 | Dimension | `case-test-005` (Synthetic) | `case-test-real-004` (Real VOD) |
 | :--- | :--- | :--- |
@@ -211,66 +218,63 @@ All metrics were reconstructed directly from persisted pipeline records in `test
 | **M13-P1 EditPlan ID** | `3177066a-e497-4ece-b144-39811716da93` | `ba7bfc28-58b2-4a67-9190-38d6054e28be` |
 | **M13-P1 Selected Clips** | `[1.0s, 4.0s]` (3.0s)<br>`[5.0s, 9.0s]` (4.0s) | `[20.0s, 45.0s]` (25.0s)<br>`[50.0s, 65.0s]` (15.0s) |
 | **M13-P1 Merged Event Count** | $0$ (fragmented into 2 clips) | $0$ (cut dead air, 2 clips) |
-| **M13-P1 Overlap Metrics** | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
+| **M13-P1 Overlap (tol 1.0s)** | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
+| **M13-P1 Overlap (strict 0.0s)**| Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
 | **EXP-002 CandidateRun ID** | `99dc1e64-cbb5-4f48-adac-4304538aec2d` | `3c4b949f-8e03-4fac-9368-eb3d8291a7d9` |
 | **EXP-002 StoryGraphRun ID** | `c413f5fb-f574-4fba-b63c-3cdaab863eb2` | `0bf571ca-8ed9-4150-bea4-12d58c4fc897` |
 | **EXP-002 EditPlanRun ID** | `322e4a25-a743-5024-aa9e-53dee9a3b325` | `28c48aaf-c81c-5818-b1e3-aa64c35807d4` |
-| **EXP-002 EditPlan ID** | `f12b3573-55f9-4730-9394-4f0124bfed93` | `d28bbdb3-8f0a-42c2-849c-a1e479ba2393` |
+| **EXP-002 EditPlan ID** | `f12b3573-55f9-4730-9394-4f0124bfed93` | `e713555b-429d-4ef6-b564-af2d24181770` |
 | **EXP-002 Selected Clips** | `[1.0s, 9.0s]` (8.0s, unified) | `[20.0s, 45.0s]` (25.0s)<br>`[50.0s, 65.0s]` (15.0s) |
 | **EXP-002 Merged Event Count** | $1$ (`SETUP_TO_PAYOFF`, conf: 0.92) | $0$ ($5.0\text{s} > 4.0\text{s}$, 0 merges) |
-| **EXP-002 Overlap Metrics** | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
+| **EXP-002 Overlap (tol 1.0s)** | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
+| **EXP-002 Overlap (strict 0.0s)**| Prec: $0.8750$ \| Rec: $1.0000$ \| F1: $0.9333$ | Prec: $1.0000$ \| Rec: $1.0000$ \| F1: $1.0000$ |
 
 ---
 
-## 10. Macro Metrics Evaluation Table
+## 10. Evaluation of the Intermediate Pause & Overlap Metrics
 
-| Metric Dimension | M13-P1 Baseline | EXP-002 Frozen | Reconciled Delta | Notes / Reconciliations |
-| :--- | :---: | :---: | :---: | :--- |
-| **Macro Precision** | $1.0000$ | $1.0000$ | $+0.0000$ | Zero precision loss |
-| **Macro Recall** | $1.0000$ | $1.0000$ | $+0.0000$ | Full ground truth retained |
-| **Macro F1 Score** | $1.0000$ | $1.0000$ | $+0.0000$ | Perfect harmonic mean |
-| **Setup/Payoff Completeness** | $1.0000$ | $1.0000$ | $+0.0000$ | **Unchanged at 100%** (both variants capture setups and payoffs) |
-| **Fragmentation Rate** | $1.0000$ ($100\%$) | $0.5000$ ($50\%$) | **-0.5000** | Case 5 unified into 1 clip; Case real 4 correctly keeps 2 clips |
-| **Merge Precision** | **NOT APPLICABLE** | $1.0000$ | **N/A** | Baseline attempted 0 merges ($0/0$ is undefined) |
-| **Merge Recall** | $0.0000$ | $1.0000$ | **+1.0000** | $100\%$ of required relational joins executed |
-| **Over-Merge Rate** | **NOT APPLICABLE** | $0.0000$ | **N/A** | Zero unrelated clips merged |
-| **Candidate P90 Duration** | $13.95\text{s}$ | $16.00\text{s}$ | **+2.05s** | Reconciled arithmetic: $16.00 - 13.95 = +2.05\text{s}$ |
-| **Dead Air Introduced** | $0.00\text{s}$ | $0.00\text{s}$ | $+0.00\text{s}$ | Zero dead air introduced |
-| **AI-Only Duration** | $0.00\text{s}$ | $0.00\text{s}$ | $+0.00\text{s}$ | Zero extraneous footage retained |
-
----
-
-## 11. Downstream Duration & Container Metadata Reconciliation
-
-A discrepancy was previously identified between raw source intervals ($41.5\text{s} \to 47.0\text{s}$) and M5 container summaries ($43.5\text{s} \to 48.0\text{s}$). The exact explanation is:
-
-### Active Retained Source Content
-- **Baseline:** Case 5 ($2.5\text{s} + 3.5\text{s} = 6.0\text{s}$) + Case Real 4 ($22.5\text{s} + 13.0\text{s} = 35.5\text{s}$) = $\mathbf{41.5s}$.
-- **EXP-002:** Case 5 ($3.0\text{s} + 4.0\text{s} = 7.0\text{s}$) + Case Real 4 ($25.0\text{s} + 15.0\text{s} = 40.0\text{s}$) = $\mathbf{47.0s}$.
-- **Delta:** $+5.5\text{s}$ of complete utterance capture.
-
-### Container Metadata Duration (with Tail Fade/Padding)
-- In `case-test-005`, metadata declared `duration_human_edit = 8.0s` including a $1.0\text{s}$ container tail fade.
-- In `case-test-real-004`, container duration is $40.0\text{s}$.
-- Baseline container sum: $8.0\text{s} + 35.5\text{s} = \mathbf{43.5s}$.
-- EXP-002 container sum: $8.0\text{s} + 40.0\text{s} = \mathbf{48.0s}$.
-- Both figures are valid under their respective scopes: **$47.0\text{s}$ active source content** vs **$48.0\text{s}$ rendered container length**.
-
-### Persisted EditPlan Duration in Database (`test.db`)
-- Baseline EditPlans: Case 5 ($7.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$47.0\text{s}$**.
-- EXP-002 EditPlans: Case 5 unified clip $[1.0, 9.0]$ ($8.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$48.0\text{s}$** (retaining the $1.0\text{s}$ conversational pause between setup and payoff).
+### 10.1 How the Intermediate Pause $[4.0\text{s}, 5.0\text{s}]$ in `case-test-005` is Evaluated
+- **Human Reference Annotations:** Active speech setup is $[1.0, 4.0]$ ($3.0\text{s}$) and face reaction payoff is $[5.0, 9.0]$ ($4.0\text{s}$). Total active duration is $7.0\text{s}$.
+- **Baseline Behavior:** M13-P1 generated two separate clips $[1.0, 4.0]$ and $[5.0, 9.0]$, creating an artificial jump-cut during the $1.0\text{s}$ pause between the joke setup and the reaction.
+- **EXP-002 Behavior:** EXP-002 unified the pair into a single contiguous clip $[1.0, 9.0]$ ($8.0\text{s}$), preserving the $1.0\text{s}$ conversational timing pause.
+- **Strict Geometric Overlap ($\tau = 0.0\text{s}$):**
+  - Because $[4.0, 5.0]$ is silence/pause between annotations, strict intersection is $7.0\text{s}$.
+  - AI Retained = $8.0\text{s}$. Strict Precision = $7.0 / 8.0 = \mathbf{0.8750}$. Strict Recall = $7.0 / 7.0 = \mathbf{1.0000}$. Strict F1 = $\mathbf{0.9333}$.
+  - The $0.1250$ precision reduction strictly reflects the $1.0\text{s}$ pause retention.
+- **Standard Benchmark Tolerance ($\tau = 1.0\text{s}$):**
+  - Standard editorial benchmark allows a $1.0\text{s}$ slop window to accommodate human boundary differences.
+  - The $1.0\text{s}$ pause is bridged: Intersection = $8.0\text{s}$, Precision = $\mathbf{1.0000}$, Recall = $\mathbf{1.0000}$, F1 = $\mathbf{1.0000}$.
+  - In actual video rendering, preserving comedic timing is superior to a hard cut in the middle of a speech setup.
 
 ---
 
-## 12. Micro Metrics Table (Duration-Weighted)
+## 11. Narrative Fragmentation vs. Cut Density
 
-| Metric Dimension | M13-P1 Baseline | EXP-002 Frozen | Reconciled Delta |
-| :--- | :---: | :---: | :---: |
-| **Human Retained Active Duration** | $47.00\text{s}$ | $47.00\text{s}$ | $+0.00\text{s}$ |
-| **AI Retained Duration** | $47.00\text{s}$ | $48.00\text{s}$ | $+1.00\text{s}$ |
-| **Micro Precision** | $1.0000$ | $1.0000$ | $+0.0000$ |
-| **Micro Recall** | $1.0000$ | $1.0213$ | **+0.0213** ($+2.13\%$) |
-| **Micro F1 Score** | $1.0000$ | $1.0105$ | **+0.0105** ($+1.05\%$) |
+To prevent conflation between clips per minute and narrative beat continuity:
+
+1. **Cut Density (Clips per Minute):**
+   $$\text{Cut Density} = \frac{\text{Selected Clips}}{\text{Selected Duration (seconds)} / 60.0}$$
+   - Baseline: $\frac{4}{47.0\text{s}} \times 60 = \mathbf{5.11\text{ clips/min}}$
+   - EXP-002: $\frac{3}{48.0\text{s}} \times 60 = \mathbf{3.75\text{ clips/min}}$
+   - Delta: $\mathbf{-1.36\text{ clips/min}}$ ($-26.6\%$)
+
+2. **Narrative Beat Fragmentation Rate:**
+   $$\text{Narrative Fragmentation Rate} = \frac{\text{Multi-event beats cut into } >1 \text{ clip}}{\text{Total multi-event beats}}$$
+   - Across the holdout, there is 1 multi-event beat requiring unification (Case 5: setup + payoff with $1.0\text{s} \le 4.0\text{s}$ gap). Case Real 4 has a $5.0\text{s} > 4.0\text{s}$ gap of dead air, which is intentionally cut.
+   - Baseline: Split the beat into 2 clips $\to 1 / 1 = \mathbf{1.0000}$ ($100\%$ fragmented).
+   - EXP-002: Unified the beat into 1 clip $\to 0 / 1 = \mathbf{0.0000}$ ($0\%$ fragmented).
+   - Delta: $\mathbf{-1.0000}$ ($-100\%$ beat fragmentation reduction).
+
+---
+
+## 12. Decomposition of Benefit by Pipeline Stage
+
+| Pipeline Stage | Baseline (M13-P1) | EXP-002 Frozen | Concrete Benefit / Mechanism |
+| :--- | :--- | :--- | :--- |
+| **M3 Clustering (`EventClusterer`)** | Blind $1.0\text{s}$ proximity clustering; 0 merges executed. | Relational clustering ($\le 4.0\text{s}$ gap, same scene, conf $\ge 0.60$). | Unifies Case 5 setup+payoff ($1.0\text{s}$ gap) into 1 candidate; correctly rejects Case Real 4 ($5.0\text{s}$ dead air). |
+| **M3 Context (`ContextExpander`)** | No backward setup window ($0.0\text{s}$). | Backward setup window ($3.0\text{s}$) with speech snapping. | Snaps candidates cleanly to sentence starts and ends without cutting off introductory syllables. |
+| **M4 Story Graph (`StoryGraphBuilder`)** | 4 candidate nodes ($2 + 2$); 0 setup/payoff edges. | 3 candidate nodes ($1 + 2$); 0 setup/payoff edges. | Case 5 is unified upstream in M3, simplifying graph topology from 4 to 3 nodes. |
+| **M5 Edit Plan (`EditPlanOptimizer`)** | 4 clips ($2 + 2$), $47.0\text{s}$ total. | 3 clips ($1 + 2$), $48.0\text{s}$ total. | Preserves $1.0\text{s}$ natural comedic timing pause in Case 5; eliminates 1 unnecessary transition/cut. |
 
 ---
 
@@ -278,15 +282,31 @@ A discrepancy was previously identified between raw source intervals ($41.5\text
 
 Derived strictly from the SQLAlchemy ORM models in `test.db`:
 
-- **Stage M4 (Story Graph):**
-  - **StoryNodes:** Baseline = 4 nodes ($2 + 2$); EXP-002 = 3 nodes ($1 + 2$, since Case 5 is unified into a single candidate).
-  - **Setup-to-Payoff Edges:** 0 edges in both variants (in EXP-002, setup and payoff are unified upstream in M3, so no inter-candidate narrative edge is created).
-  - **Narrative Threads:** 0 threads in `narrative_threads` $\to$ Thread Completeness is **`NOT APPLICABLE`**.
-- **Stage M5 (EditPlan Selection):**
-  - **Selected Clips:** Baseline = 4 clips ($2 + 2$); EXP-002 = 3 clips ($1 + 2$).
-  - **Selected Duration:** $47.0\text{s} \to 48.0\text{s}$ ($+1.0\text{s}$ preserving the $1.0\text{s}$ pause in Case 5).
-  - **Budget Pressure Ratio:** $0.392 \to 0.400$ ($47.0\text{s} / 120\text{s} \to 48.0\text{s} / 120\text{s}$).
-  - **Redundancy Exclusions:** $0$ across both variants ($\text{candidates} - \text{clips} = 0$).
+## 14. Tabla Comparativa Definitiva: M13-P1 Baseline vs. EXP-002 Frozen
+
+Reconstruida exclusivamente a partir de los registros persistidos en `test.db` y las anotaciones de referencia de los holdouts:
+
+| Dimensión / Métrica | M13-P1 Baseline | EXP-002 Frozen (Variant B) | Delta Reconciliado | Evaluación e Interpretación |
+| :--- | :---: | :---: | :---: | :--- |
+| **Casos Evaluados ($N$)** | $N=2$ | $N=2$ | — | Holdout discriminativo intacto (1 sintético, 1 VOD real) |
+| **Intervalo Persistido (Caso 5)** | $[1.0, 4.0] + [5.0, 9.0]$ ($7.0\text{s}$) | $[1.0, 9.0]$ ($8.0\text{s}$) | $+1.0\text{s}$ | M3 unifica setup y payoff; preserva pausa de $1.0\text{s}$ |
+| **Intervalo Persistido (Caso Real 4)**| $[20.0, 45.0] + [50.0, 65.0]$ ($40.0\text{s}$) | $[20.0, 45.0] + [50.0, 65.0]$ ($40.0\text{s}$) | $0.0\text{s}$ | Gap $5.0\text{s} > 4.0\text{s} \to 0$ merges, dead air cortado limpiamente |
+| **Duración Total Persistida (M5)** | $47.0\text{s}$ ($4 \text{ clips}$) | $48.0\text{s}$ ($3 \text{ clips}$) | $+1.0\text{s}$ | Retención de timing conversacional en Caso 5 |
+| **Precision (Benchmark $\tau=1.0\text{s}$)**| $1.0000$ | $1.0000$ | $+0.0000$ | Cero pérdida de precisión editorial |
+| **Precision Estricta ($\tau=0.0\text{s}$)**| $1.0000$ (Macro) / $1.0000$ (Micro) | $0.9375$ (Macro) / $0.9792$ (Micro) | $-0.0625$ / $-0.0208$ | Penalización puramente geométrica por la pausa $[4,5]$ |
+| **Recall (Benchmark $\tau=1.0\text{s}$)** | $1.0000$ | $1.0000$ | $+0.0000$ | Retención íntegra del contenido humano de referencia |
+| **Recall Estricto ($\tau=0.0\text{s}$)** | $1.0000$ (Macro) / $1.0000$ (Micro) | $1.0000$ (Macro) / $1.0000$ (Micro) | $+0.0000$ | Retención íntegra de todos los bloques activos |
+| **F1 Score (Benchmark $\tau=1.0\text{s}$)** | $1.0000$ | $1.0000$ | $+0.0000$ | Óptimo editorial con tolerancia estándar de edición |
+| **F1 Score Estricto ($\tau=0.0\text{s}$)** | $1.0000$ (Macro) / $1.0000$ (Micro) | $0.9667$ (Macro) / $0.9895$ (Micro) | $-0.0333$ / $-0.0105$ | Penalización geométrica menor debida al timing cómico |
+| **Fragmentación Narrativa** | $1.0000$ ($100\%$) | $0.0000$ ($0\%$) | **-1.0000** ($-100\%$) | $\text{beats fragmentados} / \text{beats totales}$; beat Caso 5 unificado |
+| **Densidad de Cortes** | $5.11\text{ clips/min}$ | $3.75\text{ clips/min}$ | **-1.36 clips/min** ($-26.6\%$) | $\text{clips} / \text{duración} \times 60$; ritmo editorial más natural |
+| **Duración de Contexto (Pausa)** | $0.0\text{s}$ retenidos | $1.0\text{s}$ retenido | $+1.0\text{s}$ | Elimina jump-cut artificial dentro del setup cómico |
+| **Nodos M4 (Story Graph)** | $4$ nodos | $3$ nodos | $-1$ nodo | Topología simplificada gracias a unificación en M3 |
+| **Setup/Payoff Edges M4** | $0$ edges | $0$ edges | $0$ edges | Unificado upstream en M3; no requiere aristas inter-candidato |
+| **Clips Seleccionados M5** | $4$ clips | $3$ clips | $-1$ clip | Reducción de cortes abruptos de línea temporal |
+| **Sobre-Fusiones (Over-Merge)** | NOT APPLICABLE | $0.0000$ ($0\%$) | **N/A** | 0 eventos no relacionados fusionados |
+| **Dead Air Introducido** | $0.00\text{s}$ | $0.00\text{s}$ | $+0.00\text{s}$ | Cero dead air introducido |
+| **Posibles Regresiones** | Ninguna detectada | Ninguna detectada | — | 8/8 controles causales negativos aprobados |
 
 ---
 

@@ -12,6 +12,41 @@
     "minimum_relation_confidence": 0.6,
     "version": "exp002_variant_b"
   },
+  "macro_metrics_benchmark_tol_10s": {
+    "precision": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "recall": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "f1": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    }
+  },
+  "macro_metrics_strict_tol_00s": {
+    "precision": {
+      "m13_p1": 1.0,
+      "exp_002": 0.9375,
+      "delta": -0.0625
+    },
+    "recall": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "f1": {
+      "m13_p1": 1.0,
+      "exp_002": 0.9667,
+      "delta": -0.0333
+    },
+    "note": "Strict geometric calculation penalizes the 1.0s conversational pause [4,5] in Case 5 as unannotated duration."
+  },
   "macro_metrics": {
     "precision": {
       "m13_p1": 1.0,
@@ -35,10 +70,19 @@
       "status": "unchanged_at_100_percent",
       "note": "Both variants retain setup and payoff beats; EXP-002 unifies them into cohesive clips rather than fragmented pieces."
     },
-    "fragmentation_rate": {
+    "narrative_fragmentation_rate": {
       "m13_p1": 1.0,
-      "exp_002": 0.5,
-      "delta": -0.5
+      "exp_002": 0.0,
+      "delta": -1.0,
+      "formula": "fragmented_multi_event_beats / total_multi_event_beats",
+      "interpretation": "Baseline split the 1 setup/payoff beat into 2 clips (100% fragmented). EXP-002 unified it into 1 clip (0% fragmented)."
+    },
+    "cut_density": {
+      "m13_p1": 5.11,
+      "exp_002": 3.75,
+      "delta": -1.36,
+      "unit": "clips_per_minute",
+      "formula": "selected_clips / (selected_duration_seconds / 60.0)"
     },
     "merge_precision": {
       "m13_p1": "NOT APPLICABLE",
@@ -87,35 +131,83 @@
     "evaluated_human_retained_seconds": 47.0,
     "container_duration_sum_seconds": 48.0,
     "duration_delta_explanation": "case-test-005 metadata declared duration_human_edit=8.0s including 1.0s container tail fade, but active ground truth reference blocks total 7.0s (3.0s + 4.0s). case-test-real-004 active blocks total 40.0s (25.0s + 15.0s). Total active ground truth duration = 47.0s.",
-    "micro_precision": {
+    "micro_precision_tol_10s": {
       "m13_p1": 1.0,
       "exp_002": 1.0,
       "delta": 0.0
     },
-    "micro_recall": {
+    "micro_recall_tol_10s": {
       "m13_p1": 1.0,
-      "exp_002": 1.0213,
-      "delta": 0.0213
+      "exp_002": 1.0,
+      "delta": 0.0
     },
-    "micro_f1": {
+    "micro_f1_tol_10s": {
       "m13_p1": 1.0,
-      "exp_002": 1.0105,
-      "delta": 0.0105
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "micro_precision_strict_00s": {
+      "m13_p1": 1.0,
+      "exp_002": 0.9792,
+      "delta": -0.0208
+    },
+    "micro_recall_strict_00s": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "micro_f1_strict_00s": {
+      "m13_p1": 1.0,
+      "exp_002": 0.9895,
+      "delta": -0.0105
+    }
+  },
+  "stage_benefit_breakdown": {
+    "m3_clustering": {
+      "case_005": "Unifies setup [1,4] and payoff [5,9] into single candidate [1,9], eliminating beat fragmentation.",
+      "case_real_004": "Correctly evaluates gap 5.0s > 4.0s as UNRELATED; 0 merges executed, preventing merging dead air [45,50]."
+    },
+    "m3_context_expander": {
+      "case_005": "Snaps candidate window to clean speech/reaction boundaries [1,9].",
+      "case_real_004": "Preserves clean utterance boundaries [20,45] and [50,65], avoiding expansion into inactive source regions."
+    },
+    "m4_story_graph": {
+      "nodes": "Baseline=4 nodes; EXP-002=3 nodes (Case 5 unified upstream in M3).",
+      "edges": "0 setup/payoff edges added across both variants (Case 5 unified upstream; Case Real 4 gap 5.0s > 4.0s)."
+    },
+    "m5_edit_plan": {
+      "clips": "Baseline=4 clips; EXP-002=3 clips.",
+      "duration": "Baseline=47.0s; EXP-002=48.0s (preserving 1.0s comedic timing pause in Case 5 vs artificial jump-cut)."
     }
   },
   "real_metrics": {
     "case_id": "case-test-real-004",
-    "precision": {
+    "precision_tol_10s": {
       "m13_p1": 1.0,
       "exp_002": 1.0,
       "delta": 0.0
     },
-    "recall": {
+    "recall_tol_10s": {
       "m13_p1": 1.0,
       "exp_002": 1.0,
       "delta": 0.0
     },
-    "f1": {
+    "f1_tol_10s": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "precision_strict_00s": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "recall_strict_00s": {
+      "m13_p1": 1.0,
+      "exp_002": 1.0,
+      "delta": 0.0
+    },
+    "f1_strict_00s": {
       "m13_p1": 1.0,
       "exp_002": 1.0,
       "delta": 0.0
@@ -203,9 +295,12 @@
           }
         ],
         "total_selected_duration": 7.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "precision_tol_10s": 1.0,
+        "recall_tol_10s": 1.0,
+        "f1_tol_10s": 1.0,
+        "precision_strict_00s": 1.0,
+        "recall_strict_00s": 1.0,
+        "f1_strict_00s": 1.0,
         "pre_context_delta": 0.0
       },
       "exp_002": {
@@ -237,9 +332,12 @@
           }
         ],
         "total_selected_duration": 8.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "precision_tol_10s": 1.0,
+        "recall_tol_10s": 1.0,
+        "f1_tol_10s": 1.0,
+        "precision_strict_00s": 0.875,
+        "recall_strict_00s": 1.0,
+        "f1_strict_00s": 0.9333,
         "pre_context_delta": -2.0
       }
     },
@@ -311,9 +409,12 @@
           }
         ],
         "total_selected_duration": 40.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "precision_tol_10s": 1.0,
+        "recall_tol_10s": 1.0,
+        "f1_tol_10s": 1.0,
+        "precision_strict_00s": 1.0,
+        "recall_strict_00s": 1.0,
+        "f1_strict_00s": 1.0,
         "pre_context_delta": 0.0
       },
       "exp_002": {
@@ -362,9 +463,12 @@
           }
         ],
         "total_selected_duration": 40.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "precision_tol_10s": 1.0,
+        "recall_tol_10s": 1.0,
+        "f1_tol_10s": 1.0,
+        "precision_strict_00s": 1.0,
+        "recall_strict_00s": 1.0,
+        "f1_strict_00s": 1.0,
         "pre_context_delta": 0.0
       }
     }
@@ -415,7 +519,7 @@
     }
   },
   "performance": {
-    "wall_time_ms": 171.92,
+    "wall_time_ms": 266.84,
     "semantic_calls": 0,
     "candidate_relation_evaluations": 9
   },
