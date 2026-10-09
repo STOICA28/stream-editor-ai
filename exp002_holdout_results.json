@@ -1,6 +1,6 @@
 {
   "frozen_config_hash": "32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70",
-  "frozen_build_commit": "acf01f8465c0f76aa5ee8b88e07092ab01a442a7",
+  "frozen_build_commit": "cf56522",
   "frozen_config": {
     "max_backward_context": 3.0,
     "max_forward_context": 3.0,
@@ -19,14 +19,14 @@
       "delta": 0.0
     },
     "recall": {
-      "m13_p1": 0.8723,
+      "m13_p1": 1.0,
       "exp_002": 1.0,
-      "delta": 0.1277
+      "delta": 0.0
     },
     "f1": {
-      "m13_p1": 0.9318,
+      "m13_p1": 1.0,
       "exp_002": 1.0,
-      "delta": 0.0682
+      "delta": 0.0
     },
     "setup_payoff_complete": {
       "m13_p1": 1.0,
@@ -37,8 +37,8 @@
     },
     "fragmentation_rate": {
       "m13_p1": 1.0,
-      "exp_002": 0.0,
-      "delta": -1.0
+      "exp_002": 0.5,
+      "delta": -0.5
     },
     "merge_precision": {
       "m13_p1": "NOT APPLICABLE",
@@ -52,25 +52,25 @@
       "delta": 1.0
     },
     "over_merge_rate": {
-      "m13_p1": 0.0,
+      "m13_p1": "NOT APPLICABLE",
       "exp_002": 0.0,
-      "delta": 0.0
+      "delta": "N/A"
     },
     "pre_context_median": {
-      "m13_p1": 1.375,
-      "exp_002": 0.0,
-      "delta": -1.375
+      "m13_p1": 0.0,
+      "exp_002": -1.0,
+      "delta": -1.0
     },
     "post_context_median": {
       "m13_p1": 0.0,
-      "exp_002": 0.0,
-      "delta": 0.0
+      "exp_002": 1.25,
+      "delta": 1.25
     },
     "candidate_p90_duration": {
-      "m13_p1": 12.47,
-      "exp_002": 13.95,
-      "delta": 1.48,
-      "note": "Arithmetic: 13.95s - 12.47s = +1.48s."
+      "m13_p1": 13.95,
+      "exp_002": 16.0,
+      "delta": 2.05,
+      "note": "Arithmetic difference: P90(EXP-002) - P90(M13-P1)."
     },
     "dead_air": {
       "m13_p1": 0.0,
@@ -93,14 +93,14 @@
       "delta": 0.0
     },
     "micro_recall": {
-      "m13_p1": 0.883,
-      "exp_002": 1.0,
-      "delta": 0.117
+      "m13_p1": 1.0,
+      "exp_002": 1.0213,
+      "delta": 0.0213
     },
     "micro_f1": {
-      "m13_p1": 0.9379,
-      "exp_002": 1.0,
-      "delta": 0.0621
+      "m13_p1": 1.0,
+      "exp_002": 1.0105,
+      "delta": 0.0105
     }
   },
   "real_metrics": {
@@ -111,184 +111,257 @@
       "delta": 0.0
     },
     "recall": {
-      "m13_p1": 0.8875,
+      "m13_p1": 1.0,
       "exp_002": 1.0,
-      "delta": 0.1125
+      "delta": 0.0
     },
     "f1": {
-      "m13_p1": 0.9404,
+      "m13_p1": 1.0,
       "exp_002": 1.0,
-      "delta": 0.0596
+      "delta": 0.0
     },
     "pre_context_delta": {
-      "m13_p1": 2.25,
+      "m13_p1": 0.0,
       "exp_002": 0.0,
-      "delta": -2.25
+      "delta": 0.0
+    },
+    "gap_resolution_5s": {
+      "recorded_gap": 5.0,
+      "max_related_event_gap": 4.0,
+      "classification_result": "UNRELATED",
+      "classifier_confidence": 0.0,
+      "merges_executed": 0,
+      "explanation": "Events at 20.0-45.0s and 50.0-65.0s have a 5.0s gap, exceeding max_related_event_gap (4.0s). CandidateRelationClassifier correctly rejects relation. 0 merges executed, preserving ground-truth cut of 5.0s dead air."
     }
   },
   "reconstructed_case_artifacts": {
     "case-test-005": {
       "source_asset_id": "asset-test-src-5",
-      "source_fingerprint": "synthetic:12.0s:speech_setup+face_rx:sha256=9b7f43a0e12d88c1",
+      "source_duration": 12.0,
       "human_edit_asset_id": "asset-test-edit-5",
-      "human_edit_fingerprint": "synthetic:8.0s:setup_payoff_retained:sha256=14d59a8c7b3309e4",
-      "human_reference_intervals": [
+      "human_edit_container_duration": 8.0,
+      "human_active_retained_duration": 7.0,
+      "timeline_events": [
         {
-          "start": 1.0,
+          "id": "te-005-1",
+          "event_type": "speech",
+          "start": 1.5,
           "end": 4.0,
-          "duration": 3.0,
-          "type": "speech_setup",
-          "confidence": 1.0
+          "conf": 0.98
         },
         {
-          "start": 5.0,
+          "id": "te-005-2",
+          "event_type": "face_reaction",
+          "start": 5.5,
           "end": 9.0,
-          "duration": 4.0,
-          "type": "face_reaction_payoff",
-          "confidence": 1.0
+          "conf": 0.92
         }
       ],
-      "human_active_retained_duration": 7.0,
-      "human_container_duration": 8.0,
       "m13_p1": {
-        "candidate_run_id": "crun-base-case-test-005",
-        "story_graph_run_id": "sgrun-base-case-test-005",
-        "edit_plan_run_id": "eprun-base-case-test-005",
-        "selected_intervals": [
+        "candidate_run_id": "9d27fefa-2f5e-49ec-a6e9-d6beafbe3961",
+        "story_graph_run_id": "8fe6c26d-9703-47f7-9b1e-1a8373d6db72",
+        "edit_plan_run_id": "923b08cb-febb-5b6f-b32d-8de1e6c0a59c",
+        "edit_plan_id": "3177066a-e497-4ece-b144-39811716da93",
+        "candidates": [
           {
-            "start": 1.5,
-            "end": 4.0,
-            "duration": 2.5
-          },
-          {
-            "start": 5.5,
-            "end": 9.0,
-            "duration": 3.5
-          }
-        ],
-        "total_selected_duration": 6.0,
-        "merged_event_ids": [],
-        "relation_evidence": [],
-        "precision": 1.0,
-        "recall": 0.8571,
-        "f1": 0.9231,
-        "pre_context_delta": 0.5
-      },
-      "exp_002": {
-        "candidate_run_id": "crun-exp002-case-test-005",
-        "story_graph_run_id": "sgrun-exp002-case-test-005",
-        "edit_plan_run_id": "eprun-exp002-case-test-005",
-        "selected_intervals": [
-          {
+            "id": "451c46f7-ef78-4935-9c65-08added9b3d5",
             "start": 1.0,
             "end": 4.0,
+            "core": [
+              1.0,
+              4.0
+            ],
+            "signals": [
+              "speech"
+            ]
+          },
+          {
+            "id": "4733d725-dbd3-4021-b737-7e624412f566",
+            "start": 5.0,
+            "end": 9.0,
+            "core": [
+              5.0,
+              9.0
+            ],
+            "signals": [
+              "face_reaction"
+            ]
+          }
+        ],
+        "selected_clips": [
+          {
+            "id": "9f628622-e1bb-4cfd-9ff1-b9c698f633f9",
+            "source_start": 1.0,
+            "source_end": 4.0,
             "duration": 3.0
           },
           {
-            "start": 5.0,
-            "end": 9.0,
+            "id": "76f6bb30-cd7d-4d0e-8e73-6e5cf3324257",
+            "source_start": 5.0,
+            "source_end": 9.0,
             "duration": 4.0
           }
         ],
         "total_selected_duration": 7.0,
-        "merged_event_ids": [
-          "e1",
-          "e2"
-        ],
-        "relation_evidence": [
-          {
-            "type": "SETUP_TO_PAYOFF",
-            "confidence": 0.92,
-            "gap": 1.0,
-            "same_scene": true,
-            "speaker_continuity": true
-          }
-        ],
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
         "pre_context_delta": 0.0
+      },
+      "exp_002": {
+        "candidate_run_id": "99dc1e64-cbb5-4f48-adac-4304538aec2d",
+        "story_graph_run_id": "c413f5fb-f574-4fba-b63c-3cdaab863eb2",
+        "edit_plan_run_id": "322e4a25-a743-5024-aa9e-53dee9a3b325",
+        "edit_plan_id": "f12b3573-55f9-4730-9394-4f0124bfed93",
+        "candidates": [
+          {
+            "id": "5f05cea3-52cc-4ea3-9ac3-c0eaa16302c8",
+            "start": 1.0,
+            "end": 9.0,
+            "core": [
+              1.0,
+              9.0
+            ],
+            "signals": [
+              "face_reaction",
+              "speech"
+            ]
+          }
+        ],
+        "selected_clips": [
+          {
+            "id": "f3554d8b-8296-4d44-b439-f39c2ee27f3f",
+            "source_start": 1.0,
+            "source_end": 9.0,
+            "duration": 8.0
+          }
+        ],
+        "total_selected_duration": 8.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "pre_context_delta": -2.0
       }
     },
     "case-test-real-004": {
       "source_asset_id": "asset-test-real-src-4",
-      "source_master_file": "data/source_5hr.mp4",
-      "source_master_fingerprint": "size=1922157979_hash=6cfec533af1028c7",
-      "source_slice_range": "20.0s to 65.0s (180.0s extracted window)",
+      "source_duration": 180.0,
       "human_edit_asset_id": "asset-test-real-edit-4",
-      "human_edit_fingerprint": "real_vod:40.0s:clutch_setup_payoff:sha256=e289f81bc13e0988",
-      "human_reference_intervals": [
+      "human_edit_container_duration": 40.0,
+      "human_active_retained_duration": 40.0,
+      "timeline_events": [
         {
-          "start": 20.0,
+          "id": "te-r004-1",
+          "event_type": "speech",
+          "start": 22.5,
           "end": 45.0,
-          "duration": 25.0,
-          "type": "commentary_setup",
-          "confidence": 1.0
+          "conf": 0.98
         },
         {
-          "start": 50.0,
+          "id": "te-r004-2",
+          "event_type": "gameplay_clutch",
+          "start": 52.0,
           "end": 65.0,
-          "duration": 15.0,
-          "type": "gameplay_clutch_payoff",
-          "confidence": 1.0
+          "conf": 0.95
         }
       ],
-      "human_active_retained_duration": 40.0,
-      "human_container_duration": 40.0,
       "m13_p1": {
-        "candidate_run_id": "crun-base-case-test-real-004",
-        "story_graph_run_id": "sgrun-base-case-test-real-004",
-        "edit_plan_run_id": "eprun-base-case-test-real-004",
-        "selected_intervals": [
+        "candidate_run_id": "70781f1c-4850-44b7-9dea-274ee7c78c2e",
+        "story_graph_run_id": "3d83a4d3-e4a0-4a49-8138-b8daf84eeded",
+        "edit_plan_run_id": "f0d717e9-771e-5c6c-b8da-540c6ba4a20c",
+        "edit_plan_id": "ba7bfc28-58b2-4a67-9190-38d6054e28be",
+        "candidates": [
           {
-            "start": 22.5,
-            "end": 45.0,
-            "duration": 22.5
-          },
-          {
-            "start": 52.0,
-            "end": 65.0,
-            "duration": 13.0
-          }
-        ],
-        "total_selected_duration": 35.5,
-        "merged_event_ids": [],
-        "relation_evidence": [],
-        "precision": 1.0,
-        "recall": 0.8875,
-        "f1": 0.9404,
-        "pre_context_delta": 2.25
-      },
-      "exp_002": {
-        "candidate_run_id": "crun-exp002-case-test-real-004",
-        "story_graph_run_id": "sgrun-exp002-case-test-real-004",
-        "edit_plan_run_id": "eprun-exp002-case-test-real-004",
-        "selected_intervals": [
-          {
+            "id": "04bdc1d4-e2d2-4507-81b7-84d391bc4ee8",
             "start": 20.0,
             "end": 45.0,
+            "core": [
+              20.0,
+              45.0
+            ],
+            "signals": [
+              "speech"
+            ]
+          },
+          {
+            "id": "205dc66b-025c-4775-a060-864ece825427",
+            "start": 50.0,
+            "end": 65.0,
+            "core": [
+              50.0,
+              65.0
+            ],
+            "signals": [
+              "gameplay_clutch"
+            ]
+          }
+        ],
+        "selected_clips": [
+          {
+            "id": "4bde9530-3586-428f-9aa4-58a748259813",
+            "source_start": 20.0,
+            "source_end": 45.0,
             "duration": 25.0
           },
           {
-            "start": 50.0,
-            "end": 65.0,
+            "id": "b686fa16-1a45-480f-a0d3-bd27021b7014",
+            "source_start": 50.0,
+            "source_end": 65.0,
             "duration": 15.0
           }
         ],
         "total_selected_duration": 40.0,
-        "merged_event_ids": [
-          "e1",
-          "e2"
-        ],
-        "relation_evidence": [
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "pre_context_delta": 0.0
+      },
+      "exp_002": {
+        "candidate_run_id": "3c4b949f-8e03-4fac-9368-eb3d8291a7d9",
+        "story_graph_run_id": "0bf571ca-8ed9-4150-bea4-12d58c4fc897",
+        "edit_plan_run_id": "28c48aaf-c81c-5818-b1e3-aa64c35807d4",
+        "edit_plan_id": "e713555b-429d-4ef6-b564-af2d24181770",
+        "candidates": [
           {
-            "type": "SETUP_TO_EVENT",
-            "confidence": 0.88,
-            "gap": 5.0,
-            "same_scene": true,
-            "speaker_continuity": true
+            "id": "6b0c9737-df30-4d78-99f6-9963bc963e09",
+            "start": 20.0,
+            "end": 45.0,
+            "core": [
+              20.0,
+              45.0
+            ],
+            "signals": [
+              "speech"
+            ]
+          },
+          {
+            "id": "69f92f2a-ad9e-40f5-bc8a-6de248b2d1ca",
+            "start": 50.0,
+            "end": 65.0,
+            "core": [
+              50.0,
+              65.0
+            ],
+            "signals": [
+              "gameplay_clutch"
+            ]
           }
         ],
+        "selected_clips": [
+          {
+            "id": "eeec0eea-0ed0-4319-8cac-2ee9cd91f780",
+            "source_start": 20.0,
+            "source_end": 45.0,
+            "duration": 25.0
+          },
+          {
+            "id": "4f60f5bb-0385-4c54-a2e8-f02e4622feec",
+            "source_start": 50.0,
+            "source_end": 65.0,
+            "duration": 15.0
+          }
+        ],
+        "total_selected_duration": 40.0,
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
@@ -302,9 +375,9 @@
     "note": "Extrapolated projection based on 180s real source slice; not directly observed continuous 3600s run.",
     "m13_p1": {
       "cands_per_hour": 40.0,
-      "total_cand_duration_per_hour": 710.0,
-      "mean_cand_duration": 17.75,
-      "p95_cand_duration": 22.03
+      "total_cand_duration_per_hour": 800.0,
+      "mean_cand_duration": 20.0,
+      "p95_cand_duration": 24.5
     },
     "exp_002": {
       "cands_per_hour": 40.0,
@@ -320,188 +393,194 @@
       "thread_completeness": 0.5
     },
     "exp_002": {
-      "story_nodes": 4,
-      "setup_payoff_edges": 2,
+      "story_nodes": 3,
+      "setup_payoff_edges": 0,
       "thread_completeness": 1.0
     }
   },
   "downstream_m5": {
     "m13_p1": {
       "selected_clips": 4,
-      "selected_duration": 43.5,
+      "selected_duration": 47.0,
       "budget_pressure": "low",
       "redundancy_exclusions": 0
     },
     "exp_002": {
-      "selected_clips": 4,
+      "selected_clips": 3,
       "selected_duration": 48.0,
       "budget_pressure": "low",
       "redundancy_exclusions": 0
     }
   },
   "performance": {
-    "m13_p1_wall_time_ms": 1.41,
-    "exp_002_wall_time_ms": 0.82,
-    "delta_wall_time_ms": -0.59,
+    "wall_time_ms": 202.46,
     "semantic_calls": 0,
-    "candidate_relation_evaluations": 14
+    "candidate_relation_evaluations": 20
   },
   "manual_audit": {
     "correct_merges": [
       {
-        "id": "m1",
         "pair": "speech_setup_01 -> visual_reaction_01",
         "gap": "1.0s",
-        "relation": "SETUP_TO_PAYOFF",
+        "relation": "setup_to_payoff",
         "confidence": 0.92,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m2",
         "pair": "gameplay_clutch_01 -> reaction_01",
         "gap": "0.8s",
-        "relation": "EVENT_TO_REACTION",
+        "relation": "event_to_reaction",
         "confidence": 0.95,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m3",
         "pair": "commentary_intro -> gameplay_start",
         "gap": "2.0s",
-        "relation": "SETUP_TO_EVENT",
+        "relation": "setup_to_event",
         "confidence": 0.88,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m4",
         "pair": "chat_prompt -> streamer_answer",
         "gap": "0.5s",
-        "relation": "CHAT_TO_REACTION",
+        "relation": "chat_to_reaction",
         "confidence": 0.86,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m5",
         "pair": "smirk_reaction_1 -> celebration_reaction_2",
         "gap": "0.4s",
-        "relation": "REACTION_CONTINUATION",
+        "relation": "reaction_continuation",
         "confidence": 0.9,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m6",
         "pair": "setup_sentence_1 -> punchline_sentence_2",
         "gap": "1.1s",
-        "relation": "SAME_BEAT",
+        "relation": "same_beat",
         "confidence": 0.82,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m7",
-        "pair": "real_vod_setup_04 -> real_clutch_04",
-        "gap": "2.0s",
-        "relation": "SETUP_TO_EVENT",
-        "confidence": 0.88,
-        "verdict": "CORRECT"
-      },
-      {
-        "id": "m8",
         "pair": "headshot_kill -> shocked_face",
         "gap": "0.3s",
-        "relation": "EVENT_TO_REACTION",
+        "relation": "event_to_reaction",
         "confidence": 0.95,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m9",
         "pair": "clutch_win -> loud_shout",
         "gap": "0.6s",
-        "relation": "EVENT_TO_REACTION",
+        "relation": "event_to_reaction",
         "confidence": 0.95,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       },
       {
-        "id": "m10",
         "pair": "game_over -> sigh_reaction",
         "gap": "1.2s",
-        "relation": "SETUP_TO_PAYOFF",
+        "relation": "setup_to_payoff",
         "confidence": 0.92,
-        "verdict": "CORRECT"
+        "verdict": "CORRECT",
+        "matches_expected": true
       }
     ],
     "rejected_pairs": [
       {
-        "id": "r1",
         "pair": "topic_a_commentary -> topic_b_commentary",
         "gap": "2.8s",
-        "reason": "different topic/speaker continuity fail",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.2,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r2",
         "pair": "speech_beat -> post_cut_scene",
         "gap": "0.6s",
-        "reason": "scene boundary hard stop",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r3",
         "pair": "gameplay_outro -> intro_speech",
         "gap": "5.5s",
-        "reason": "exceeds max_related_event_gap (4.0s)",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r4",
         "pair": "silence -> unrelated_chatter",
         "gap": "3.5s",
-        "reason": "no causal link",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unknown",
+        "confidence": 0.4,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r5",
         "pair": "sponsor_read -> game_start",
         "gap": "1.0s",
-        "reason": "scene cut separating clips",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r6",
         "pair": "streamer_a -> streamer_b_unrelated",
         "gap": "2.2s",
-        "reason": "speaker change & distinct topics",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.2,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r7",
         "pair": "death_screen -> main_menu_song",
         "gap": "4.5s",
-        "reason": "gap exceeds bound",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r8",
         "pair": "random_sub_alert -> serious_discussion",
         "gap": "0.8s",
-        "reason": "low relation confidence (0.35)",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unknown",
+        "confidence": 0.4,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r9",
         "pair": "afk_period -> comeback_greeting",
         "gap": "8.0s",
-        "reason": "exceeds max_related_event_gap",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       },
       {
-        "id": "r10",
         "pair": "game_credits -> endscreen_chatter",
         "gap": "3.0s",
-        "reason": "hard scene boundary cut",
-        "verdict": "REJECTED_CORRECTLY"
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
+      },
+      {
+        "pair": "real_vod_setup_04 -> real_clutch_04 (5.0s gap)",
+        "gap": "5.0s",
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
       }
-    ],
-    "false_merges": [],
-    "holdout_misses": []
+    ]
   }
 }

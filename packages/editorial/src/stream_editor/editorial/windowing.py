@@ -91,6 +91,7 @@ class CandidateRelationClassifier:
 
         # 4. Reaction following trigger / event
         is_trigger_a = type_a in ("game_event", "gameplay", "gameplay_clutch", "visual_event", "action")
+        is_trigger_b = type_b in ("game_event", "gameplay", "gameplay_clutch", "visual_event", "action")
         is_reaction_b = type_b in ("face_reaction", "laughter", "shout", "pause_with_reaction", "reaction")
         if is_trigger_a and is_reaction_b and gap <= clustering_config.reaction_link_window:
             return CandidateRelationEvidence(
@@ -118,7 +119,7 @@ class CandidateRelationClassifier:
             )
 
         # Speech setup followed by game event
-        if type_a == "speech" and is_trigger_a and gap <= clustering_config.max_related_event_gap:
+        if type_a == "speech" and is_trigger_b and gap <= clustering_config.max_related_event_gap:
             return CandidateRelationEvidence(
                 source_event_id=id_a,
                 target_event_id=id_b,
