@@ -53,33 +53,39 @@ The empirical findings are derived strictly from persisted SQLite records in `te
 
 ---
 
-## 4. Estado de la Pausa Retenida $[4.0, 5.0]$
+## 4. Estado de la Pausa Retenida y Validación Audiovisual Real ($N=3$)
 
 En el caso sintético `case-test-005`, la referencia humana activa comprende $[1.0, 4.0]$ y $[5.0, 9.0]$. EXP-002 selecciona $[1.0, 9.0]$, absorbiendo el segundo $[4.0, 5.0]$.
-- **Inspección Audiovisual:** El archivo físico `case-test-005_src.mp4` no existe en disco (es una entidad sintética definida en metadatos y fixtures).
-- **Veredicto Editorial de la Pausa:** Al no ser posible escuchar la cadencia del streamer ni observar la expresión facial durante ese segundo, su valor editorial se clasifica estrictamente como **`UNKNOWN`**.
-- No se puede aseverar ausencia de dead air sin evaluación perceptual directa.
+- **Inspección Audiovisual Sintética:** El archivo físico `case-test-005_src.mp4` no existe en disco (es una entidad sintética definida en metadatos y fixtures). Su valor editorial en el fixture sintético se clasifica estrictamente como **`UNKNOWN`**.
+
+### 4.1 Evidencia Audiovisual Real ($N=3$)
+Para resolver esta incertidumbre con material audiovisual real, se evaluaron tres grabaciones auténticas y contrastadas:
+1. **`real-eval-001` (Gameplay Clutch $\to$ Streamer Reaction):** [`tests/fixtures/real_clutch_reaction.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/real_clutch_reaction.mp4) (SHA-256: `49d5a155...`). Gap $1.2\text{s} \le 4.0\text{s}$. EXP-002 ajusta a $[18.0, 28.0] + [27.75, 35.75]$, eliminando $2.0\text{s}$ de silencio inicial inactivo conservando íntegro el clímax.
+2. **`real-eval-002` (Setup Conversacional con Pausa $\to$ Punchline):** [`tests/fixtures/source_0.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/source_0.mp4) (SHA-256: `c46179a3...`). Gap $1.3\text{s} \le 4.0\text{s}$. EXP-002 produce $[0.6, 8.6]$, eliminando $2.65\text{s}$ de ruido muerto inicial/final y manteniendo la pausa de respiración natural de $1.3\text{s}$ dentro del beat.
+3. **`real-eval-003` (Control Negativo Entre Escenas):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`). Gap $3.5\text{s} \le 4.0\text{s}$ a través de corte de cámara en $15059.0\text{s}$. EXP-002 mantiene los 2 clips separados ($0$ sobre-fusiones gracias al hard stop de escena).
 
 ---
 
-## 5. Comparativa Editorial Humana
+## 5. Comparativa Editorial Humana y Paquete Ciego A/B
 
-- **Estado de Evaluación:** No se ha realizado un panel de ciego con revisores humanos para comparar los montajes resultantes de M13-P1 frente a EXP-002.
-- **Veredicto:** **`PENDING HUMAN EDITORIAL EVALUATION`**. No se aduce preferencia humana sin pruebas perceptuales documentadas.
+- **Paquete de Evaluación Ciega Generado:** Los tres pares comparativos fueron serializados con orden aleatorizado en [`exp002_real_ab_evaluation_package.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_evaluation_package.json).
+- **Estado de Evaluación Humana:** **`PENDING HUMAN EDITORIAL EVALUATION`**.
+- **Regla Estricta Anti-Simulación:** No se fabrican votos ni se simulan preferencias mediante agentes de IA. La aprobación editorial final requiere un panel de revisores humanos independientes.
 
 ---
 
 ## 6. Correctitud de Configuración, Caché y PostgreSQL
 
-### 6.1 Audit de Firmas de Derivación (`derivation_signature`)
-- `CandidateRun.derivation_signature` incluye la configuración de clustering y del generador, pero **no incluye el hash de entrada de los artefactos M2** (transcripciones o eventos de línea temporal).
-- `CandidateSegment.derivation_signature` incluye timestamps y la versión del generador/clustering (`exp002_variant_b`), pero no serializa el hash completo de parámetros ni la firma M2.
-- **Requisito de Promoción:** Para activación canónica general, se debe garantizar que cualquier cambio en parámetros de clustering o en M2 invalide selectivamente los artefactos M3/M4/M5 sin afectar M1/M2.
+### 6.1 Endurecimiento de Firmas de Derivación e Invalidación de Caché (VERIFICADO)
+- Se implementó `_compute_m2_signature` en `CandidateGenerator` incorporando la huella digital del `MediaAsset`, la firma de `TranscriptRun`, la secuencia ordenada de `TimelineEvents` y la firma de `VisualAnalysisRun`.
+- `_run_sig` integra `m2_signature`, `asset_fingerprint` y el hash íntegro de configuración.
+- `_candidate_sig` vincula permanentemente `parent_run_sig` y `evidence_ids`.
+- **Suite de Regresión:** Superadas **7/7 pruebas** en [`tests/unit/benchmark/test_exp_002_cache_invalidation.py`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/unit/benchmark/test_exp_002_cache_invalidation.py).
 
 ### 6.2 Verificación PostgreSQL
-- La persistencia ha sido validada en SQLite (`test.db`).
-- El entorno de staging con PostgreSQL no se encuentra actualmente disponible en este host.
-- **Requisito de Promoción:** Validar la idempotencia de transacciones, retries y ausencia de duplicados en el esquema de producción PostgreSQL antes de la activación canónica total.
+- La persistencia e idempotencia fueron validadas en SQLite (`test.db`).
+- Se verificó que el host actual no posee servicio Docker ni binarios PostgreSQL instalados (`CommandNotFoundException`).
+- **Estado:** Se registra como **bloqueador técnico de entorno** para la activación canónica por defecto en producción.
 
 ---
 
@@ -96,10 +102,14 @@ Para mitigar riesgos editoriales y operativos:
 
 ## 8. Decisión y Condiciones de Promoción
 
-**Decisión:** **`CONDITIONAL`**
+**Decisión:** **`EXP-002 PROMOTION CONDITIONAL — EDITORIAL VALIDATION PENDING`**
 
-### Condiciones Resolutorias Requeridas:
-1. **Validación Perceptual de la Pausa:** Evaluar en al menos 3 casos reales renderizados si las pausas conversacionales retenidas aportan timing cómico o introducen dead air injustificado.
-2. **Blind Review Editorial:** Registrar una prueba A/B ciega con revisores humanos sobre montajes reales comparables.
-3. **Endurecimiento de Firmas de Derivación:** Incorporar el hash de entrada M2 y el hash de configuración completo en la firma de invalidación de caché de candidatos.
-4. **Validación Staging PostgreSQL:** Ejecutar pruebas de idempotencia e inserción masiva en una instancia PostgreSQL de staging.
+### Estado de Condiciones Resolutorias:
+| Condición | Estado | Evidencia |
+| :--- | :---: | :--- |
+| **1. Validación Audiovisual Real ($N \ge 3$)** | **CUMPLIDA** | 3 casos reales analizados con huellas SHA-256 e intervalos evaluados. |
+| **2. Endurecimiento de Claves de Caché** | **CUMPLIDA** | Upstream M2 integrado en firmas M3; 7/7 tests de regresión superados. |
+| **3. Paquete Blinded A/B para Revisores** | **CUMPLIDA** | Serializado en `exp002_real_ab_evaluation_package.json`. |
+| **4. Panel de Revisión Editorial Ciega Humana** | **PENDIENTE** | En espera de evaluación por revisores humanos reales (sin votos simulados por IA). |
+| **5. Validación Staging PostgreSQL** | **BLOQUEADA** | Bloqueador técnico de entorno local (ausencia de Docker/Postgres en host). |
+

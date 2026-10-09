@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import Any
 import uuid
 from datetime import datetime
 
@@ -46,6 +47,75 @@ EDITORIAL_RULES_VERSION = "1.2"   # matches KEEP_VS_CUT.md version
 FLASH_CONFIDENCE_THRESHOLD = 0.55  # below this -> mark as eligible for escalation
 
 
+def _compute_m2_signature(
+    source_asset_id: str,
+    db: Any,
+) -> tuple[str, str]:
+    """Compute (m2_signature, asset_fingerprint) from upstream M2 artifacts."""
+    from stream_editor.api.models.project import (
+        MediaAsset,
+        TimelineEvent as DBTimelineEvent,
+        TranscriptRun,
+        VisualAnalysisRun,
+    )
+
+    asset_fp = source_asset_id
+    if hasattr(db, "query"):
+        try:
+            asset = db.query(MediaAsset).filter(MediaAsset.id == source_asset_id).first()
+            if asset:
+                asset_fp = (
+                    (asset.media_info.get("fingerprint") or asset.path or str(asset.id))
+                    if getattr(asset, "media_info", None) and isinstance(asset.media_info, dict)
+                    else (asset.path or str(asset.id))
+                )
+
+            transcript_run = (
+                db.query(TranscriptRun)
+                .filter(TranscriptRun.source_asset_id == source_asset_id)
+                .order_by(TranscriptRun.created_at.desc())
+                .first()
+            )
+            t_sig = str(transcript_run.derivation_signature or transcript_run.id) if transcript_run else "no_transcript"
+
+            events = (
+                db.query(DBTimelineEvent)
+                .filter(DBTimelineEvent.source_asset_id == source_asset_id)
+                .order_by(DBTimelineEvent.start_time, DBTimelineEvent.id)
+                .all()
+            )
+            events_summary = [
+                (str(e.id), e.event_type, round(float(e.start_time or 0.0), 3), round(float(e.end_time or 0.0), 3), round(float(e.confidence or 0.0), 3))
+                for e in events
+            ]
+            events_hash = hashlib.sha256(json.dumps(events_summary).encode()).hexdigest()
+
+            visual_run = (
+                db.query(VisualAnalysisRun)
+                .filter(VisualAnalysisRun.source_asset_id == source_asset_id)
+                .order_by(VisualAnalysisRun.created_at.desc())
+                .first()
+            )
+            v_sig = str(visual_run.derivation_signature or visual_run.id) if visual_run else "no_visual"
+        except Exception:
+            t_sig = "no_transcript"
+            events_hash = "no_events"
+            v_sig = "no_visual"
+    else:
+        t_sig = "no_transcript"
+        events_hash = "no_events"
+        v_sig = "no_visual"
+
+    m2_payload = {
+        "asset_fingerprint": asset_fp,
+        "transcript_sig": t_sig,
+        "events_hash": events_hash,
+        "visual_sig": v_sig,
+    }
+    m2_sig = hashlib.sha256(json.dumps(m2_payload, sort_keys=True).encode()).hexdigest()
+    return m2_sig, asset_fp
+
+
 def _candidate_sig(
     project_id: str,
     source_asset_id: str,
@@ -55,6 +125,8 @@ def _candidate_sig(
     core_end: float,
     generator_version: str,
     clustering_version: str = "default",
+    parent_run_sig: str | None = None,
+    evidence_ids: list[str] | None = None,
 ) -> str:
     data = {
         "project_id": project_id,
@@ -65,6 +137,8 @@ def _candidate_sig(
         "core_end": round(core_end, 3),
         "generator_version": generator_version,
         "clustering_version": clustering_version,
+        "parent_run_sig": parent_run_sig or "legacy",
+        "evidence_ids": sorted(evidence_ids or []),
     }
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
@@ -76,15 +150,31 @@ def _run_sig(
     provider_name: str,
     prompt_version: str,
     ranking_profile_name: str,
+    m2_signature: str | None = None,
+    asset_fingerprint: str | None = None,
+    feature_flags: dict[str, Any] | None = None,
 ) -> str:
+    clustering_dict = config.clustering_config.model_dump() if config.clustering_config else None
+    clustering_hash = (
+        hashlib.sha256(json.dumps(clustering_dict, sort_keys=True).encode()).hexdigest()
+        if clustering_dict else "none"
+    )
+    effective_flags = feature_flags or {
+        "relational_clustering": config.clustering_config is not None,
+        "variant": config.clustering_config.version if config.clustering_config else "default",
+    }
     data = {
         "project_id": project_id,
         "source_asset_id": source_asset_id,
         "config": config.model_dump(),
+        "clustering_config_hash": clustering_hash,
         "provider": provider_name,
         "prompt_version": prompt_version,
         "ranking_profile": ranking_profile_name,
         "generator_version": GENERATOR_VERSION,
+        "m2_signature": m2_signature or "m2_default",
+        "asset_fingerprint": asset_fingerprint or source_asset_id,
+        "feature_flags": effective_flags,
     }
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
@@ -102,6 +192,7 @@ class CandidateGenerator:
         prompt_version: str = "v1",
         ranking_profile_name: str = "balanced",
         provider_name: str = "mock",
+        feature_flags: dict[str, Any] | None = None,
     ) -> str:
         """
         Run the full candidate generation pipeline.
@@ -121,7 +212,18 @@ class CandidateGenerator:
             config = CandidateWindowConfig()
 
         ranking_profile = RANKING_PROFILES.get(ranking_profile_name, RANKING_PROFILES["balanced"])
-        run_sig = _run_sig(project_id, source_asset_id, config, provider_name, prompt_version, ranking_profile_name)
+        m2_sig, asset_fp = _compute_m2_signature(source_asset_id, db)
+        run_sig = _run_sig(
+            project_id=project_id,
+            source_asset_id=source_asset_id,
+            config=config,
+            provider_name=provider_name,
+            prompt_version=prompt_version,
+            ranking_profile_name=ranking_profile_name,
+            m2_signature=m2_sig,
+            asset_fingerprint=asset_fp,
+            feature_flags=feature_flags,
+        )
 
         # Idempotency check
         existing_run = (
@@ -250,6 +352,8 @@ class CandidateGenerator:
                     mw.core_start, mw.core_end,
                     GENERATOR_VERSION,
                     clustering_version=mw.config_version,
+                    parent_run_sig=run_sig,
+                    evidence_ids=mw.evidence_ids,
                 )
 
                 # Idempotency: skip if already exists

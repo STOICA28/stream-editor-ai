@@ -1,0 +1,167 @@
+[
+  {
+    "example_id": "real-eval-001",
+    "name": "Gameplay Clutch Trigger to Streamer Reaction",
+    "source_file": "tests/fixtures/real_clutch_reaction.mp4",
+    "fingerprint": "49d5a1558555adc288a69a831edbd2ad9f916e429aa13488cf02fee2eeac7c28",
+    "source_duration_s": 35.007,
+    "relation_type_tested": "EVENT_TO_REACTION (gap=1.2s <= 4.0s)",
+    "baseline": {
+      "clips_count": 1,
+      "selected_intervals": [
+        [
+          16.0,
+          35.75
+        ]
+      ],
+      "selected_duration_s": 19.75,
+      "runtime_ms": 0.182
+    },
+    "exp002": {
+      "clips_count": 2,
+      "selected_intervals": [
+        [
+          18.0,
+          28.0
+        ],
+        [
+          27.75,
+          35.75
+        ]
+      ],
+      "selected_duration_s": 18.0,
+      "runtime_ms": 0.251
+    },
+    "blinded_presentation": {
+      "A_intervals": [
+        [
+          18.0,
+          28.0
+        ],
+        [
+          27.75,
+          35.75
+        ]
+      ],
+      "B_intervals": [
+        [
+          16.0,
+          35.75
+        ]
+      ],
+      "truth_A": "EXP-002",
+      "truth_B": "M13-P1 Baseline"
+    },
+    "pauses_retained": []
+  },
+  {
+    "example_id": "real-eval-002",
+    "name": "Conversational Setup with Breath Pause to Punchline",
+    "source_file": "tests/fixtures/source_0.mp4",
+    "fingerprint": "c46179a3e96d1e13218ef22486e8626e35735b41f9df3771c0735a7fff989523",
+    "source_duration_s": 10.0,
+    "relation_type_tested": "SETUP_TO_EVENT / SPEECH CONTINUITY (gap=1.3s <= 4.0s)",
+    "baseline": {
+      "clips_count": 1,
+      "selected_intervals": [
+        [
+          0.0,
+          10.65
+        ]
+      ],
+      "selected_duration_s": 10.65,
+      "runtime_ms": 0.072
+    },
+    "exp002": {
+      "clips_count": 1,
+      "selected_intervals": [
+        [
+          0.6,
+          8.6
+        ]
+      ],
+      "selected_duration_s": 8.0,
+      "runtime_ms": 0.085
+    },
+    "blinded_presentation": {
+      "A_intervals": [
+        [
+          0.6,
+          8.6
+        ]
+      ],
+      "B_intervals": [
+        [
+          0.0,
+          10.65
+        ]
+      ],
+      "truth_A": "EXP-002",
+      "truth_B": "M13-P1 Baseline"
+    },
+    "pauses_retained": []
+  },
+  {
+    "example_id": "real-eval-003",
+    "name": "Unrelated Streamer Moments Across Scene Cut (Negative Control)",
+    "source_file": "data/projects/real-5h-65655576/source/source_5hr.mp4",
+    "fingerprint": "99e00ebfd81016769add13f4f08575e89b3bd35ed1f619c6eb52cd00f3f470ad",
+    "source_duration_s": 18000.427,
+    "relation_type_tested": "SCENE_BOUNDARY_HARD_STOP (gap=3.5s <= 4.0s but across scene cut)",
+    "baseline": {
+      "clips_count": 2,
+      "selected_intervals": [
+        [
+          15052.5,
+          15060.5
+        ],
+        [
+          15059.0,
+          15067.0
+        ]
+      ],
+      "selected_duration_s": 16.0,
+      "runtime_ms": 0.064
+    },
+    "exp002": {
+      "clips_count": 2,
+      "selected_intervals": [
+        [
+          15052.5,
+          15060.5
+        ],
+        [
+          15059.0,
+          15067.0
+        ]
+      ],
+      "selected_duration_s": 16.0,
+      "runtime_ms": 0.083
+    },
+    "blinded_presentation": {
+      "A_intervals": [
+        [
+          15052.5,
+          15060.5
+        ],
+        [
+          15059.0,
+          15067.0
+        ]
+      ],
+      "B_intervals": [
+        [
+          15052.5,
+          15060.5
+        ],
+        [
+          15059.0,
+          15067.0
+        ]
+      ],
+      "truth_A": "M13-P1 Baseline",
+      "truth_B": "EXP-002"
+    },
+    "pauses_retained": []
+  }
+]
