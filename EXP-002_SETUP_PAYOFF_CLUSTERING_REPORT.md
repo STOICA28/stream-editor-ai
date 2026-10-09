@@ -33,7 +33,7 @@ Across the untouched held-out test split ($N=2$, including authorized livestream
 - **Over-Merge Rate:** $0.0000$ ($0\%$, zero unrelated events merged).
 - **Dead Air & AI-Only Content:** $0.00\text{s}$ dead air introduced; $0.00\text{s}$ extraneous content.
 
-All 85 pytests pass, 8/8 automated causal and negative-control assertions pass, mypy is clean (155 source files), the Next.js web application compiles cleanly, and the knowledge vault maintains 100% integrity.
+All 86 pytests pass (including `test_exp_002_causal_controls.py`), 8/8 automated causal and negative-control assertions pass, mypy is clean (155 source files), the Next.js web application compiles cleanly, and the knowledge vault maintains 100% integrity.
 
 ---
 
@@ -46,7 +46,7 @@ Prior to viewing holdout data or executing evaluation runs, the operational base
   - Stage M2 Understanding Layer: `WhisperXTranscriptionProvider`, `ScenedetectProvider`, `OpenCVVisualObservationProvider` (`VisualReactionConfig v1`, threshold $0.70$)
   - Stage M3 Baseline Windowing: Unmodified `CandidateWindowConfig` (legacy `merge_gap = 1.0s`, `backward_setup_window = 0.0s`, no relational classifier)
   - Stage M4 Story Graph: Unmodified greedy story graph builder
-  - Stage M5 EditPlan Generator: Unmodified dynamic programming optimizer (60s budget)
+  - Stage M5 EditPlan Generator: Unmodified dynamic programming optimizer (60s budget per case)
 - **Baseline Cryptographic Signature:**
   ```text
   EXP-002_BASELINE_SIGNATURE: 2149973cf710d1c32887f3de6e9a4c742d0c9a99ba14ab0bfeb1fa3e4d0dee04
@@ -132,7 +132,7 @@ Tracing the real events through `CandidateRelationClassifier.classify_relation`:
 
 ## 6. Automated Causal & Negative-Control Validation
 
-All 8 causal and negative controls are automated executable assertions in `scripts/test_causal_controls.py`:
+All 8 causal and negative controls are automated executable assertions in `scripts/test_causal_controls.py` and run via pytest (`tests/unit/benchmark/test_exp_002_causal_controls.py`):
 
 | Control Test | Event A | Event B | Gap | Intervening Factor | Classifier Output | Clusters | Verdict |
 | :--- | :--- | :--- | :---: | :---: | :--- | :---: | :---: |
@@ -145,7 +145,7 @@ All 8 causal and negative controls are automated executable assertions in `scrip
 | **Control 7: Non-Reaction Speech**| Gameplay action | Ordinary speech | $1.0\text{s}$ | Non-reaction type | `UNKNOWN` (conf: 0.40) | 2 | **REJECTED (Pass)** |
 | **Control 8: Positive Setup/Payoff**| Speech setup | Face reaction | $1.0\text{s}$ | Same scene, within $2.0\text{s}$ | `SETUP_TO_PAYOFF` (conf: 0.92) | 1 | **MERGED (Pass)** |
 
-All 8 assertions pass deterministically on every test run.
+All 8 assertions pass deterministically on every test run. If any negative control merges, the assertion raises an `AssertionError`.
 
 ---
 
@@ -256,6 +256,10 @@ A discrepancy was previously identified between raw source intervals ($41.5\text
 - EXP-002 container sum: $8.0\text{s} + 40.0\text{s} = \mathbf{48.0s}$.
 - Both figures are valid under their respective scopes: **$47.0\text{s}$ active source content** vs **$48.0\text{s}$ rendered container length**.
 
+### Persisted EditPlan Duration in Database (`test.db`)
+- Baseline EditPlans: Case 5 ($7.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$47.0\text{s}$**.
+- EXP-002 EditPlans: Case 5 unified clip $[1.0, 9.0]$ ($8.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$48.0\text{s}$** (retaining the $1.0\text{s}$ conversational pause between setup and payoff).
+
 ---
 
 ## 12. Micro Metrics Table (Duration-Weighted)
@@ -270,7 +274,23 @@ A discrepancy was previously identified between raw source intervals ($41.5\text
 
 ---
 
-## 13. Extrapolated 1-Hour Long-Form Projection vs Observed Metrics
+## 13. Downstream M4 Story Graph & M5 EditPlan Inspection
+
+Derived strictly from the SQLAlchemy ORM models in `test.db`:
+
+- **Stage M4 (Story Graph):**
+  - **StoryNodes:** Baseline = 4 nodes ($2 + 2$); EXP-002 = 3 nodes ($1 + 2$, since Case 5 is unified into a single candidate).
+  - **Setup-to-Payoff Edges:** 0 edges in both variants (in EXP-002, setup and payoff are unified upstream in M3, so no inter-candidate narrative edge is created).
+  - **Narrative Threads:** 0 threads in `narrative_threads` $\to$ Thread Completeness is **`NOT APPLICABLE`**.
+- **Stage M5 (EditPlan Selection):**
+  - **Selected Clips:** Baseline = 4 clips ($2 + 2$); EXP-002 = 3 clips ($1 + 2$).
+  - **Selected Duration:** $47.0\text{s} \to 48.0\text{s}$ ($+1.0\text{s}$ preserving the $1.0\text{s}$ pause in Case 5).
+  - **Budget Pressure Ratio:** $0.392 \to 0.400$ ($47.0\text{s} / 120\text{s} \to 48.0\text{s} / 120\text{s}$).
+  - **Redundancy Exclusions:** $0$ across both variants ($\text{candidates} - \text{clips} = 0$).
+
+---
+
+## 14. Extrapolated 1-Hour Long-Form Projection vs Observed Metrics
 
 To clearly distinguish observed results from long-form estimates:
 - **Observed Holdout Content:** Evaluated over $192.0\text{s}$ of media across $N=2$ cases.
@@ -285,17 +305,17 @@ To clearly distinguish observed results from long-form estimates:
 
 ---
 
-## 14. Verification Gates Sign-Off & Formal Verdict
+## 15. Verification Gates Sign-Off & Formal Verdict
 
 | Gate | Criterion | Status | Result / Notes |
 | :--- | :--- | :---: | :---: |
-| **Gate 1** | Pytest Test Suite | **PASS** | 85/85 tests passing |
+| **Gate 1** | Pytest Test Suite | **PASS** | 86/86 tests passing |
 | **Gate 2** | Mypy Type Checking | **PASS** | 0 errors across 155 source files |
 | **Gate 3** | Next.js Frontend Linter | **PASS** | 0 errors |
 | **Gate 4** | Next.js TypeScript Check | **PASS** | `tsc --noEmit` clean |
 | **Gate 5** | Next.js Production Build | **PASS** | Optimized production build clean |
 | **Gate 6** | Knowledge Vault Consistency | **PASS** | 16/16 required documents valid, 0 broken links |
-| **Gate 7** | Causal Negative Controls | **PASS** | 8/8 automated assertions passed |
+| **Gate 7** | Causal Negative Controls | **PASS** | 8/8 automated assertions passed under pytest |
 | **Gate 8** | Holdout Micro Recall Delta | **PASS** | $+2.13\%$ observed positive holdout delta |
 | **Gate 9** | 5s Gap Contradiction Resolved | **PASS** | 5.0s > 4.0s strictly rejected; 0 merges in real case |
 | **Gate 10** | Database Persistence Verified | **PASS** | All run IDs queried from authoritative `test.db` |

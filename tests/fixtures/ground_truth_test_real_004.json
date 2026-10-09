@@ -1,0 +1,31 @@
+{
+  "case_id": "case-test-real-004",
+  "name": "Held-Out Real VOD Setup/Payoff Slice 4",
+  "source_duration": 180.0,
+  "human_edit_duration": 40.0,
+  "blocks": [
+    {
+      "source_start": 20.0,
+      "source_end": 45.0,
+      "edit_start": 0.0,
+      "edit_end": 25.0,
+      "label": "clutch_setup_speech"
+    },
+    {
+      "source_start": 50.0,
+      "source_end": 65.0,
+      "edit_start": 25.0,
+      "edit_end": 40.0,
+      "label": "clutch_action_defuse"
+    }
+  ],
+  "effects": [],
+  "metadata": {
+    "split": "TEST",
+    "master_media_file": "data/source_5hr.mp4",
+    "master_sha256": "6cfec533af1028c7",
+    "continuous_source_slice_seconds": 180.0,
+    "narrative_window_seconds": 45.0,
+    "notes": "Untouched discriminative real test case for EXP-002 setup/payoff clustering from authorized livestream. In-distribution temporal holdout."
+  }
+}

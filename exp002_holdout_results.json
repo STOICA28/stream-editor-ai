@@ -390,151 +390,65 @@
     "m13_p1": {
       "story_nodes": 4,
       "setup_payoff_edges": 0,
-      "thread_completeness": 0.5
+      "narrative_threads": 0,
+      "thread_completeness": "NOT APPLICABLE"
     },
     "exp_002": {
       "story_nodes": 3,
       "setup_payoff_edges": 0,
-      "thread_completeness": 1.0
+      "narrative_threads": 0,
+      "thread_completeness": "NOT APPLICABLE"
     }
   },
   "downstream_m5": {
     "m13_p1": {
       "selected_clips": 4,
       "selected_duration": 47.0,
-      "budget_pressure": "low",
+      "budget_pressure_ratio": 0.392,
       "redundancy_exclusions": 0
     },
     "exp_002": {
       "selected_clips": 3,
       "selected_duration": 48.0,
-      "budget_pressure": "low",
+      "budget_pressure_ratio": 0.4,
       "redundancy_exclusions": 0
     }
   },
   "performance": {
-    "wall_time_ms": 202.46,
+    "wall_time_ms": 171.92,
     "semantic_calls": 0,
-    "candidate_relation_evaluations": 20
+    "candidate_relation_evaluations": 9
   },
   "manual_audit": {
     "correct_merges": [
       {
-        "pair": "speech_setup_01 -> visual_reaction_01",
+        "pair": "case-test-005: speech_setup -> face_reaction",
+        "gap": "1.5s",
+        "relation": "setup_to_payoff",
+        "confidence": 0.92,
+        "verdict": "MERGED",
+        "matches_expected": true
+      },
+      {
+        "pair": "control_8: positive setup -> face_reaction (gap 1.0s, same scene)",
         "gap": "1.0s",
         "relation": "setup_to_payoff",
         "confidence": 0.92,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "gameplay_clutch_01 -> reaction_01",
-        "gap": "0.8s",
-        "relation": "event_to_reaction",
-        "confidence": 0.95,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "commentary_intro -> gameplay_start",
-        "gap": "2.0s",
-        "relation": "setup_to_event",
-        "confidence": 0.88,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "chat_prompt -> streamer_answer",
-        "gap": "0.5s",
-        "relation": "chat_to_reaction",
-        "confidence": 0.86,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "smirk_reaction_1 -> celebration_reaction_2",
-        "gap": "0.4s",
-        "relation": "reaction_continuation",
-        "confidence": 0.9,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "setup_sentence_1 -> punchline_sentence_2",
-        "gap": "1.1s",
-        "relation": "same_beat",
-        "confidence": 0.82,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "headshot_kill -> shocked_face",
-        "gap": "0.3s",
-        "relation": "event_to_reaction",
-        "confidence": 0.95,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "clutch_win -> loud_shout",
-        "gap": "0.6s",
-        "relation": "event_to_reaction",
-        "confidence": 0.95,
-        "verdict": "CORRECT",
-        "matches_expected": true
-      },
-      {
-        "pair": "game_over -> sigh_reaction",
-        "gap": "1.2s",
-        "relation": "setup_to_payoff",
-        "confidence": 0.92,
-        "verdict": "CORRECT",
+        "verdict": "MERGED",
         "matches_expected": true
       }
     ],
     "rejected_pairs": [
       {
-        "pair": "topic_a_commentary -> topic_b_commentary",
-        "gap": "2.8s",
-        "relation": "unrelated",
-        "confidence": 0.2,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "speech_beat -> post_cut_scene",
-        "gap": "0.6s",
+        "pair": "case-test-real-004: speech_setup -> gameplay_clutch (5.0s dead air gap)",
+        "gap": "5.0s",
         "relation": "unrelated",
         "confidence": 0.0,
         "verdict": "REJECTED_CORRECTLY",
         "matches_expected": true
       },
       {
-        "pair": "gameplay_outro -> intro_speech",
-        "gap": "5.5s",
-        "relation": "unrelated",
-        "confidence": 0.0,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "silence -> unrelated_chatter",
-        "gap": "3.5s",
-        "relation": "unknown",
-        "confidence": 0.4,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "sponsor_read -> game_start",
-        "gap": "1.0s",
-        "relation": "unrelated",
-        "confidence": 0.0,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "streamer_a -> streamer_b_unrelated",
+        "pair": "control_1: speech_strategy -> speech_donation (pause 2.2s > 1.5s)",
         "gap": "2.2s",
         "relation": "unrelated",
         "confidence": 0.2,
@@ -542,7 +456,15 @@
         "matches_expected": true
       },
       {
-        "pair": "death_screen -> main_menu_song",
+        "pair": "control_2: gameplay_gather -> minor_blink (low confidence 0.45)",
+        "gap": "2.5s",
+        "relation": "unknown",
+        "confidence": 0.4,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
+      },
+      {
+        "pair": "control_3: speech_setup -> delayed_rx (gap 4.5s > 4.0s)",
         "gap": "4.5s",
         "relation": "unrelated",
         "confidence": 0.0,
@@ -550,34 +472,26 @@
         "matches_expected": true
       },
       {
-        "pair": "random_sub_alert -> serious_discussion",
+        "pair": "control_4: speech_setup -> rx across scene cut (scene at 72.4s)",
         "gap": "0.8s",
+        "relation": "unrelated",
+        "confidence": 0.0,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
+      },
+      {
+        "pair": "control_6: speaker_a -> speaker_b switch (within 1.0s)",
+        "gap": "1.0s",
+        "relation": "unrelated",
+        "confidence": 0.2,
+        "verdict": "REJECTED_CORRECTLY",
+        "matches_expected": true
+      },
+      {
+        "pair": "control_7: gameplay_event -> ordinary_speech (non-reaction)",
+        "gap": "1.0s",
         "relation": "unknown",
         "confidence": 0.4,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "afk_period -> comeback_greeting",
-        "gap": "8.0s",
-        "relation": "unrelated",
-        "confidence": 0.0,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "game_credits -> endscreen_chatter",
-        "gap": "3.0s",
-        "relation": "unrelated",
-        "confidence": 0.0,
-        "verdict": "REJECTED_CORRECTLY",
-        "matches_expected": true
-      },
-      {
-        "pair": "real_vod_setup_04 -> real_clutch_04 (5.0s gap)",
-        "gap": "5.0s",
-        "relation": "unrelated",
-        "confidence": 0.0,
         "verdict": "REJECTED_CORRECTLY",
         "matches_expected": true
       }

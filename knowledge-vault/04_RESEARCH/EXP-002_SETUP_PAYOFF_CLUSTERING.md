@@ -2,7 +2,7 @@
 id: RES-EXP-002R
 title: "EXP-002: Stage M3 Setup/Payoff Clustering & Context Windowing"
 status: experiment
-version: 1.1
+version: 1.2
 last_reviewed: 2026-10-09
 tags:
   - research
@@ -145,7 +145,7 @@ Tracing the real events through `CandidateRelationClassifier.classify_relation`:
 
 ## 6. Automated Causal & Negative-Control Validation
 
-All 8 causal and negative controls are automated executable assertions in `scripts/test_causal_controls.py`:
+All 8 causal and negative controls are automated executable assertions in `scripts/test_causal_controls.py` and run under pytest (`tests/unit/benchmark/test_exp_002_causal_controls.py`):
 
 | Control Test | Event A | Event B | Gap | Intervening Factor | Classifier Output | Clusters | Verdict |
 | :--- | :--- | :--- | :---: | :---: | :--- | :---: | :---: |
@@ -158,7 +158,7 @@ All 8 causal and negative controls are automated executable assertions in `scrip
 | **Control 7: Non-Reaction Speech**| Gameplay action | Ordinary speech | $1.0\text{s}$ | Non-reaction type | `UNKNOWN` (conf: 0.40) | 2 | **REJECTED (Pass)** |
 | **Control 8: Positive Setup/Payoff**| Speech setup | Face reaction | $1.0\text{s}$ | Same scene, within $2.0\text{s}$ | `SETUP_TO_PAYOFF` (conf: 0.92) | 1 | **MERGED (Pass)** |
 
-All 8 assertions pass deterministically on every test run.
+All 8 assertions pass deterministically on every test run. If any negative control merges, the assertion raises an `AssertionError`.
 
 ---
 
@@ -269,6 +269,10 @@ A discrepancy was previously identified between raw source intervals ($41.5\text
 - EXP-002 container sum: $8.0\text{s} + 40.0\text{s} = \mathbf{48.0s}$.
 - Both figures are valid under their respective scopes: **$47.0\text{s}$ active source content** vs **$48.0\text{s}$ rendered container length**.
 
+### Persisted EditPlan Duration in Database (`test.db`)
+- Baseline EditPlans: Case 5 ($7.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$47.0\text{s}$**.
+- EXP-002 EditPlans: Case 5 unified clip $[1.0, 9.0]$ ($8.0\text{s}$) + Case Real 4 ($40.0\text{s}$) = **$48.0\text{s}$** (retaining the $1.0\text{s}$ conversational pause between setup and payoff).
+
 ---
 
 ## 12. Micro Metrics Table (Duration-Weighted)
@@ -283,7 +287,23 @@ A discrepancy was previously identified between raw source intervals ($41.5\text
 
 ---
 
-## 13. Extrapolated 1-Hour Long-Form Projection vs Observed Metrics
+## 13. Downstream M4 Story Graph & M5 EditPlan Inspection
+
+Derived strictly from the SQLAlchemy ORM models in `test.db`:
+
+- **Stage M4 (Story Graph):**
+  - **StoryNodes:** Baseline = 4 nodes ($2 + 2$); EXP-002 = 3 nodes ($1 + 2$, since Case 5 is unified into a single candidate).
+  - **Setup-to-Payoff Edges:** 0 edges in both variants (in EXP-002, setup and payoff are unified upstream in M3, so no inter-candidate narrative edge is created).
+  - **Narrative Threads:** 0 threads in `narrative_threads` $\to$ Thread Completeness is **`NOT APPLICABLE`**.
+- **Stage M5 (EditPlan Selection):**
+  - **Selected Clips:** Baseline = 4 clips ($2 + 2$); EXP-002 = 3 clips ($1 + 2$).
+  - **Selected Duration:** $47.0\text{s} \to 48.0\text{s}$ ($+1.0\text{s}$ preserving the $1.0\text{s}$ pause in Case 5).
+  - **Budget Pressure Ratio:** $0.392 \to 0.400$ ($47.0\text{s} / 120\text{s} \to 48.0\text{s} / 120\text{s}$).
+  - **Redundancy Exclusions:** $0$ across both variants ($\text{candidates} - \text{clips} = 0$).
+
+---
+
+## 14. Extrapolated 1-Hour Long-Form Projection vs Observed Metrics
 
 To clearly distinguish observed results from long-form estimates:
 - **Observed Holdout Content:** Evaluated over $192.0\text{s}$ of media across $N=2$ cases.
@@ -295,15 +315,6 @@ To clearly distinguish observed results from long-form estimates:
 | **Candidate Duration / hr** | $800.0\text{s}$ | $800.0\text{s}$ | *Extrapolated 1-Hour Projection* |
 | **Mean Candidate Duration** | $20.00\text{s}$ | $20.00\text{s}$ | *Extrapolated 1-Hour Projection* |
 | **P95 Candidate Duration** | $24.50\text{s}$ | $24.50\text{s}$ | *Extrapolated 1-Hour Projection* |
-
----
-
-## 14. Performance & Complexity
-
-- **Wall-Time Execution:** $< 1.0\text{ms}$ per candidate generation run.
-- **External Semantic LLM Calls:** **0** (purely deterministic local Python logic).
-- **Vector Database Dependencies:** **0**.
-- **Evaluations:** Pairwise candidate relation classifications with fast bounding-box pruning.
 
 ---
 

@@ -1,0 +1,33 @@
+{
+  "case_id": "case-test-005",
+  "name": "Held-Out Setup/Payoff Test Pair 5",
+  "source_duration": 12.0,
+  "human_edit_duration": 8.0,
+  "blocks": [
+    {
+      "source_start": 1.0,
+      "source_end": 4.0,
+      "edit_start": 0.0,
+      "edit_end": 3.0,
+      "label": "speech_setup"
+    },
+    {
+      "source_start": 5.0,
+      "source_end": 9.0,
+      "edit_start": 3.0,
+      "edit_end": 7.0,
+      "label": "face_reaction_payoff"
+    }
+  ],
+  "effects": [
+    {
+      "type": "zoom_face",
+      "source_start": 5.5,
+      "source_end": 7.5
+    }
+  ],
+  "metadata": {
+    "split": "TEST",
+    "description": "Untouched discriminative test case for EXP-002 setup/payoff clustering."
+  }
+}
