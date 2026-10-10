@@ -54,3 +54,32 @@ def test_timeline_compiler_basic():
     assert e2.source_end == 35.0
     assert e2.output_start == 10.0
     assert e2.output_end == 15.0
+
+
+def test_timeline_compiler_rejects_clip_exceeding_source_duration():
+    compiler = TimelineCompiler()
+    # Clip ends at 35.75s, exceeding source_duration 35.007s
+    clips = [
+        EditClipContract(
+            id=uuid.uuid4(), plan_id=uuid.uuid4(),
+            source_start=28.0, source_end=35.75,
+            output_start=0.0, output_end=7.75,
+            selection_reason="Clutch payoff", priority=ClipPriority.high
+        )
+    ]
+    with pytest.raises(ValueError, match="exceeds source duration"):
+        compiler.compile("proj1", "job1", clips, [], source_duration=35.007)
+
+
+def test_timeline_compiler_rejects_negative_source_start():
+    compiler = TimelineCompiler()
+    clips = [
+        EditClipContract(
+            id=uuid.uuid4(), plan_id=uuid.uuid4(),
+            source_start=-2.0, source_end=5.0,
+            output_start=0.0, output_end=7.0,
+            selection_reason="Invalid start", priority=ClipPriority.high
+        )
+    ]
+    with pytest.raises(ValueError, match="negative source_start"):
+        compiler.compile("proj1", "job1", clips, [], source_duration=10.0)

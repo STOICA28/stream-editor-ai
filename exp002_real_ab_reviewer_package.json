@@ -1,0 +1,271 @@
+{
+  "title": "EXP-002 Blinded Human Editorial Evaluation Package",
+  "instructions": "Review each pair of rendered videos (Video A and Video B) side-by-side. Inspect narrative progression, comedic timing, conversational continuity, and cut abruptness. Submit your ratings in the evaluation_questionnaire fields without unblinding the key.",
+  "total_cases": 4,
+  "cases": [
+    {
+      "case_id": "real-eval-001",
+      "title": "Gameplay Clutch Trigger to Streamer Reaction",
+      "editorial_scenario": "Preserves continuous payoff of a high-stakes clutch round without cutting mid-reaction.",
+      "video_A": {
+        "file_name": "real-eval-001_video_A.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-001_video_A.mp4",
+        "duration_seconds": 16.0,
+        "clip_count": 1
+      },
+      "video_B": {
+        "file_name": "real-eval-001_video_B.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-001_video_B.mp4",
+        "duration_seconds": 16.0,
+        "clip_count": 2
+      },
+      "evaluation_questionnaire": {
+        "narrative_clarity": {
+          "question": "Which edit preserves clearer narrative context and setup-to-reaction progression?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pacing_naturalness": {
+          "question": "Which edit feels more natural in pacing and rhythm?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pause_utility": {
+          "question": "Does the intermediate pause (if retained) provide useful reaction anticipation/comedic timing, or unnecessary dead air?",
+          "options": [
+            "Useful anticipation / comedic timing",
+            "Unnecessary dead air",
+            "Neither video contains noticeable pauses"
+          ],
+          "selected": null
+        },
+        "cut_abruptness": {
+          "question": "Which edit has less abrupt or jarring cuts?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Both equally smooth",
+            "Both equally jarring"
+          ],
+          "selected": null
+        },
+        "publish_preference": {
+          "question": "If publishing this video to a primary YouTube channel, which cut would you choose?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Either is acceptable"
+          ],
+          "selected": null
+        },
+        "reviewer_notes": ""
+      }
+    },
+    {
+      "case_id": "real-eval-002",
+      "title": "Conversational Setup with Breath Pause to Punchline",
+      "editorial_scenario": "Bridges short conversational pause between sentence clauses to maintain speaker flow.",
+      "video_A": {
+        "file_name": "real-eval-002_video_A.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-002_video_A.mp4",
+        "duration_seconds": 7.5,
+        "clip_count": 1
+      },
+      "video_B": {
+        "file_name": "real-eval-002_video_B.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-002_video_B.mp4",
+        "duration_seconds": 7.0,
+        "clip_count": 2
+      },
+      "evaluation_questionnaire": {
+        "narrative_clarity": {
+          "question": "Which edit preserves clearer narrative context and setup-to-reaction progression?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pacing_naturalness": {
+          "question": "Which edit feels more natural in pacing and rhythm?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pause_utility": {
+          "question": "Does the intermediate pause (if retained) provide useful reaction anticipation/comedic timing, or unnecessary dead air?",
+          "options": [
+            "Useful anticipation / comedic timing",
+            "Unnecessary dead air",
+            "Neither video contains noticeable pauses"
+          ],
+          "selected": null
+        },
+        "cut_abruptness": {
+          "question": "Which edit has less abrupt or jarring cuts?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Both equally smooth",
+            "Both equally jarring"
+          ],
+          "selected": null
+        },
+        "publish_preference": {
+          "question": "If publishing this video to a primary YouTube channel, which cut would you choose?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Either is acceptable"
+          ],
+          "selected": null
+        },
+        "reviewer_notes": ""
+      }
+    },
+    {
+      "case_id": "real-eval-003",
+      "title": "Comedic Setup to Punchline in 5-Hour VOD",
+      "editorial_scenario": "Preserves comedic timing between joke premise and reaction punchline.",
+      "video_A": {
+        "file_name": "real-eval-003_video_A.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-003_video_A.mp4",
+        "duration_seconds": 16.0,
+        "clip_count": 2
+      },
+      "video_B": {
+        "file_name": "real-eval-003_video_B.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-003_video_B.mp4",
+        "duration_seconds": 17.6,
+        "clip_count": 1
+      },
+      "evaluation_questionnaire": {
+        "narrative_clarity": {
+          "question": "Which edit preserves clearer narrative context and setup-to-reaction progression?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pacing_naturalness": {
+          "question": "Which edit feels more natural in pacing and rhythm?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pause_utility": {
+          "question": "Does the intermediate pause (if retained) provide useful reaction anticipation/comedic timing, or unnecessary dead air?",
+          "options": [
+            "Useful anticipation / comedic timing",
+            "Unnecessary dead air",
+            "Neither video contains noticeable pauses"
+          ],
+          "selected": null
+        },
+        "cut_abruptness": {
+          "question": "Which edit has less abrupt or jarring cuts?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Both equally smooth",
+            "Both equally jarring"
+          ],
+          "selected": null
+        },
+        "publish_preference": {
+          "question": "If publishing this video to a primary YouTube channel, which cut would you choose?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Either is acceptable"
+          ],
+          "selected": null
+        },
+        "reviewer_notes": ""
+      }
+    },
+    {
+      "case_id": "real-eval-004",
+      "title": "Unrelated Streamer Moments Across Scene Cut (Negative Control)",
+      "editorial_scenario": "Negative control asserting that visual scene transitions prevent incorrect cross-scene merging.",
+      "video_A": {
+        "file_name": "real-eval-004_video_A.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-004_video_A.mp4",
+        "duration_seconds": 16.0,
+        "clip_count": 2
+      },
+      "video_B": {
+        "file_name": "real-eval-004_video_B.mp4",
+        "relative_path": "data/renders/ab_eval/real-eval-004_video_B.mp4",
+        "duration_seconds": 16.0,
+        "clip_count": 2
+      },
+      "evaluation_questionnaire": {
+        "narrative_clarity": {
+          "question": "Which edit preserves clearer narrative context and setup-to-reaction progression?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pacing_naturalness": {
+          "question": "Which edit feels more natural in pacing and rhythm?",
+          "options": [
+            "Video A",
+            "Video B",
+            "No noticeable difference"
+          ],
+          "selected": null
+        },
+        "pause_utility": {
+          "question": "Does the intermediate pause (if retained) provide useful reaction anticipation/comedic timing, or unnecessary dead air?",
+          "options": [
+            "Useful anticipation / comedic timing",
+            "Unnecessary dead air",
+            "Neither video contains noticeable pauses"
+          ],
+          "selected": null
+        },
+        "cut_abruptness": {
+          "question": "Which edit has less abrupt or jarring cuts?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Both equally smooth",
+            "Both equally jarring"
+          ],
+          "selected": null
+        },
+        "publish_preference": {
+          "question": "If publishing this video to a primary YouTube channel, which cut would you choose?",
+          "options": [
+            "Video A",
+            "Video B",
+            "Either is acceptable"
+          ],
+          "selected": null
+        },
+        "reviewer_notes": ""
+      }
+    }
+  ]
+}

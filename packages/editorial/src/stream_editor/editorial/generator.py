@@ -51,15 +51,26 @@ def _compute_m2_signature(
     source_asset_id: str,
     db: Any,
 ) -> tuple[str, str]:
-    """Compute (m2_signature, asset_fingerprint) from upstream M2 artifacts."""
+    """
+    Compute (m2_signature, asset_fingerprint) strictly from upstream M1/M2 artifacts.
+
+    Strict architectural boundary:
+    Post-M5 downstream stages (such as M7 visual analysis or M8 effect planning) MUST NOT influence M3 signatures.
+    """
     from stream_editor.api.models.project import (
+        AudioEvent,
         MediaAsset,
+        Scene as DBScene,
         TimelineEvent as DBTimelineEvent,
         TranscriptRun,
-        VisualAnalysisRun,
     )
 
     asset_fp = source_asset_id
+    t_sig = "no_transcript"
+    events_hash = "no_events"
+    scenes_hash = "no_scenes"
+    audio_hash = "no_audio"
+
     if hasattr(db, "query"):
         try:
             asset = db.query(MediaAsset).filter(MediaAsset.id == source_asset_id).first()
@@ -85,32 +96,55 @@ def _compute_m2_signature(
                 .all()
             )
             events_summary = [
-                (str(e.id), e.event_type, round(float(e.start_time or 0.0), 3), round(float(e.end_time or 0.0), 3), round(float(e.confidence or 0.0), 3))
+                (
+                    str(e.id),
+                    str(e.event_type),
+                    round(float(e.start_time or 0.0), 3),
+                    round(float(e.end_time or 0.0), 3),
+                    round(float(e.confidence or 0.0), 3),
+                    str(getattr(e, "producer", "") or ""),
+                    str(getattr(e, "producer_version", "") or ""),
+                )
                 for e in events
             ]
             events_hash = hashlib.sha256(json.dumps(events_summary).encode()).hexdigest()
 
-            visual_run = (
-                db.query(VisualAnalysisRun)
-                .filter(VisualAnalysisRun.source_asset_id == source_asset_id)
-                .order_by(VisualAnalysisRun.created_at.desc())
-                .first()
+            scenes = (
+                db.query(DBScene)
+                .filter(DBScene.source_asset_id == source_asset_id)
+                .order_by(DBScene.start_time)
+                .all()
             )
-            v_sig = str(visual_run.derivation_signature or visual_run.id) if visual_run else "no_visual"
+            scenes_summary = [
+                (round(float(s.start_time or 0.0), 3), round(float(s.end_time or 0.0), 3))
+                for s in scenes
+            ]
+            scenes_hash = hashlib.sha256(json.dumps(scenes_summary).encode()).hexdigest()
+
+            audio_events = (
+                db.query(AudioEvent)
+                .filter(AudioEvent.source_asset_id == source_asset_id)
+                .order_by(AudioEvent.start_time)
+                .all()
+            )
+            audio_summary = [
+                (str(ae.event_type), round(float(ae.start_time or 0.0), 3), round(float(ae.end_time or 0.0), 3))
+                for ae in audio_events
+            ]
+            audio_hash = hashlib.sha256(json.dumps(audio_summary).encode()).hexdigest()
+
         except Exception:
             t_sig = "no_transcript"
             events_hash = "no_events"
-            v_sig = "no_visual"
-    else:
-        t_sig = "no_transcript"
-        events_hash = "no_events"
-        v_sig = "no_visual"
+            scenes_hash = "no_scenes"
+            audio_hash = "no_audio"
 
     m2_payload = {
         "asset_fingerprint": asset_fp,
         "transcript_sig": t_sig,
         "events_hash": events_hash,
-        "visual_sig": v_sig,
+        "scenes_hash": scenes_hash,
+        "audio_hash": audio_hash,
     }
     m2_sig = hashlib.sha256(json.dumps(m2_payload, sort_keys=True).encode()).hexdigest()
     return m2_sig, asset_fp

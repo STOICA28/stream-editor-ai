@@ -14,6 +14,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-10-10] (EXP-002 Promotion Blockers Resolved & Blinded Media Packaging)
+### Changed
+- **Stage M3 Upstream Cache Dependency Direction:**
+  - Removed downstream Stage M7 `VisualAnalysisRun` from M3 signature calculation in `_compute_m2_signature`.
+  - M3 signatures now strictly depend on upstream M1/M2 entities (`MediaAsset`, `TranscriptRun`, `TimelineEvents`, `Scene`, `AudioEvent`).
+- **Boundary Validation & Anti-Duplication Enforcement:**
+  - Enhanced `EditPlanValidator` to validate clip intervals against source bounds (`source_end <= original_duration`) and reject overlapping sequential source intervals (`curr.source_start < prev.source_end - 0.001`, timeline duplication).
+  - Updated `TimelineCompiler` to enforce `source_duration` constraints and reject intervals exceeding source duration.
+- **Windows Atomic Promotion:**
+  - Updated `RenderingEngine` to use `os.replace` instead of `Path.rename` for cross-platform atomic promotion of `.partial` render files.
+
+### Added
+- **Audiovisual A/B Media Rendering & Verification:**
+  - Rendered 8 genuine playable `.mp4` comparison videos for 4 audited evaluation cases using `RenderingEngine` and validated with `MediaValidator`.
+  - Audited and corrected source-relative temporal coordinates for `real-eval-001` and `real-eval-002`.
+- **Decoupled Blinded Review Packaging:**
+  - Created `exp002_real_ab_reviewer_package.json` with randomized labels (A/B), neutral IDs, and zero fabricated/simulated votes across 5 editorial dimensions.
+  - Created `exp002_real_ab_evaluation_key.json` containing ground truth mappings, run signatures, and explicit disclosure of shared master VOD provenance between Recordings 1 and 3.
+- **PostgreSQL Integration Suite:**
+  - Added `tests/integration/test_exp_002_postgres.py` validating schema creation, idempotency, and rollback handling.
+- **Governance Review Documentation:**
+  - Updated `EXP-002_PROMOTION_REVIEW.md`, `PROP-M3-SETUP-PAYOFF-CLUSTERING.md`, and `PROJECT_STATUS.md` confirming status as `EXP-002 PROMOTION CONDITIONAL — HUMAN EDITORIAL REVIEW PENDING`.
+
+
 ## [2026-10-09] (EXP-002 Verification)
 ### Added
 - **EXP-002 Setup/Payoff Clustering & Context Windowing (M13 Evaluation):**

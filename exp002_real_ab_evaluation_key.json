@@ -1,0 +1,188 @@
+{
+  "title": "EXP-002 Restricted Evaluation Key & Provenance Audit",
+  "frozen_configuration_hash": "32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70",
+  "randomization_seed": 42,
+  "provenance_notes": "LIMITATION RECORD: Recording 1 (real_clutch_reaction.mp4) and Recording 3 (source_5hr.mp4) derive from the same master 5-hour livestream VOD (AV1/Opus, 60fps). They share identical encoder configurations and are not independent broadcasts.",
+  "cases": [
+    {
+      "case_id": "real-eval-001",
+      "name": "Gameplay Clutch Trigger to Streamer Reaction",
+      "source_file": "tests/fixtures/real_clutch_reaction.mp4",
+      "source_fingerprint_sha256": "49d5a1558555adc288a69a831edbd2ad9f916e429aa13488cf02fee2eeac7c28",
+      "actual_source_duration": 35.007031,
+      "relation_tested": "EVENT_TO_REACTION (gap=1.2s <= 2.0s)",
+      "truth_mapping": {
+        "video_A": "EXP-002",
+        "video_B": "M13-P1 Baseline"
+      },
+      "metrics": {
+        "baseline": {
+          "clips": 2,
+          "intervals": [
+            [
+              11.5,
+              19.5
+            ],
+            [
+              20.1,
+              28.1
+            ]
+          ],
+          "duration_seconds": 16.0,
+          "cut_density_cpm": 7.5,
+          "narrative_fragmentation": 1.0,
+          "runtime_ms": 0.14
+        },
+        "exp002": {
+          "clips": 1,
+          "intervals": [
+            [
+              12.0,
+              28.0
+            ]
+          ],
+          "duration_seconds": 16.0,
+          "cut_density_cpm": 3.75,
+          "narrative_fragmentation": 0.0,
+          "runtime_ms": 0.168
+        }
+      }
+    },
+    {
+      "case_id": "real-eval-002",
+      "name": "Conversational Setup with Breath Pause to Punchline",
+      "source_file": "tests/fixtures/source_0.mp4",
+      "source_fingerprint_sha256": "c46179a3e96d1e13218ef22486e8626e35735b41f9df3771c0735a7fff989523",
+      "actual_source_duration": 10.0,
+      "relation_tested": "SPEECH_CONTINUITY (gap=1.3s <= 1.5s)",
+      "truth_mapping": {
+        "video_A": "EXP-002",
+        "video_B": "M13-P1 Baseline"
+      },
+      "metrics": {
+        "baseline": {
+          "clips": 2,
+          "intervals": [
+            [
+              0.75,
+              4.25
+            ],
+            [
+              5.15,
+              8.65
+            ]
+          ],
+          "duration_seconds": 7.0,
+          "cut_density_cpm": 17.14,
+          "narrative_fragmentation": 1.0,
+          "runtime_ms": 0.158
+        },
+        "exp002": {
+          "clips": 1,
+          "intervals": [
+            [
+              1.0,
+              8.5
+            ]
+          ],
+          "duration_seconds": 7.5,
+          "cut_density_cpm": 8.0,
+          "narrative_fragmentation": 0.0,
+          "runtime_ms": 0.151
+        }
+      }
+    },
+    {
+      "case_id": "real-eval-003",
+      "name": "Comedic Setup to Punchline in 5-Hour VOD",
+      "source_file": "data/projects/real-5h-65655576/source/source_5hr.mp4",
+      "source_fingerprint_sha256": "99e00ebfd81016769add13f4f08575e89b3bd35ed1f619c6eb52cd00f3f470ad",
+      "actual_source_duration": 18000.427,
+      "relation_tested": "SETUP_TO_PAYOFF (gap=1.6s <= 2.0s)",
+      "truth_mapping": {
+        "video_A": "M13-P1 Baseline",
+        "video_B": "EXP-002"
+      },
+      "metrics": {
+        "baseline": {
+          "clips": 2,
+          "intervals": [
+            [
+              1200.0,
+              1208.0
+            ],
+            [
+              1209.6,
+              1217.6
+            ]
+          ],
+          "duration_seconds": 16.0,
+          "cut_density_cpm": 7.5,
+          "narrative_fragmentation": 1.0,
+          "runtime_ms": 0.168
+        },
+        "exp002": {
+          "clips": 1,
+          "intervals": [
+            [
+              1200.0,
+              1217.6
+            ]
+          ],
+          "duration_seconds": 17.6,
+          "cut_density_cpm": 3.41,
+          "narrative_fragmentation": 0.0,
+          "runtime_ms": 0.152
+        }
+      }
+    },
+    {
+      "case_id": "real-eval-004",
+      "name": "Unrelated Streamer Moments Across Scene Cut (Negative Control)",
+      "source_file": "data/projects/real-5h-65655576/source/source_5hr.mp4",
+      "source_fingerprint_sha256": "99e00ebfd81016769add13f4f08575e89b3bd35ed1f619c6eb52cd00f3f470ad",
+      "actual_source_duration": 18000.427,
+      "relation_tested": "SCENE_BOUNDARY_HARD_STOP (gap=2.0s <= 4.0s across scene cut)",
+      "truth_mapping": {
+        "video_A": "EXP-002",
+        "video_B": "M13-P1 Baseline"
+      },
+      "metrics": {
+        "baseline": {
+          "clips": 2,
+          "intervals": [
+            [
+              15050.0,
+              15058.0
+            ],
+            [
+              15060.0,
+              15068.0
+            ]
+          ],
+          "duration_seconds": 16.0,
+          "cut_density_cpm": 7.5,
+          "narrative_fragmentation": 1.0,
+          "runtime_ms": 0.074
+        },
+        "exp002": {
+          "clips": 2,
+          "intervals": [
+            [
+              15050.0,
+              15058.0
+            ],
+            [
+              15060.0,
+              15068.0
+            ]
+          ],
+          "duration_seconds": 16.0,
+          "cut_density_cpm": 7.5,
+          "narrative_fragmentation": 1.0,
+          "runtime_ms": 0.053
+        }
+      }
+    }
+  ]
+}

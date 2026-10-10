@@ -15,12 +15,22 @@ class TimelineCompiler:
         project_id: str,
         render_job_id: str,
         clips: List[EditClipContract],
-        effects: List[EffectInstructionSchema]
+        effects: List[EffectInstructionSchema],
+        source_duration: Optional[float] = None,
     ) -> CompiledTimeline:
         """
         Compiles an EditPlan and EffectPlan into a deterministic CompiledTimeline.
         Uses integer microseconds internally to avoid floating point drift across hundreds of cuts.
+        Validates that clips strictly respect source_duration boundaries if supplied.
         """
+        if source_duration is not None:
+            for clip in clips:
+                if clip.source_start < 0.0:
+                    raise ValueError(f"Clip {clip.id} has negative source_start: {clip.source_start}")
+                if clip.source_end > source_duration + 0.001:
+                    raise ValueError(
+                        f"Clip {clip.id} source_end ({clip.source_end}) exceeds source duration ({source_duration})"
+                    )
         
         # Sort clips by their output_start if present, or just chronologically if they are ordered
         # M5 produces chronological clips. Let's assume they are already sorted by source_start

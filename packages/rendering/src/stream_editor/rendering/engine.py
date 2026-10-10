@@ -101,7 +101,7 @@ class RenderingEngine:
             raise RuntimeError(f"Validation failed for segment {segment.segment_index}: {msg}")
             
         # Atomic promotion
-        partial_seg_path.rename(final_seg_path)
+        os.replace(partial_seg_path, final_seg_path)
         return final_seg_path
 
     async def render(
@@ -175,7 +175,7 @@ class RenderingEngine:
             raise RuntimeError(f"Final output validation failed: {msg}")
             
         # 4. Atomic promotion
-        partial_output.rename(final_output)
+        os.replace(partial_output, final_output)
         
         # 5. Write manifest
         manifest = RenderManifest(

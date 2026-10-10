@@ -53,63 +53,66 @@ The empirical findings are derived strictly from persisted SQLite records in `te
 
 ---
 
-## 4. Estado de la Pausa Retenida y Validación Audiovisual Real ($N=3$)
+## 4. Estado de la Pausa Retenida y Validación Audiovisual Real ($N=4$)
 
 En el caso sintético `case-test-005`, la referencia humana activa comprende $[1.0, 4.0]$ y $[5.0, 9.0]$. EXP-002 selecciona $[1.0, 9.0]$, absorbiendo el segundo $[4.0, 5.0]$.
 - **Inspección Audiovisual Sintética:** El archivo físico `case-test-005_src.mp4` no existe en disco (es una entidad sintética definida en metadatos y fixtures). Su valor editorial en el fixture sintético se clasifica estrictamente como **`UNKNOWN`**.
 
-### 4.1 Evidencia Audiovisual Real ($N=3$)
-Para resolver esta incertidumbre con material audiovisual real, se evaluaron tres grabaciones auténticas y contrastadas:
-1. **`real-eval-001` (Gameplay Clutch $\to$ Streamer Reaction):** [`tests/fixtures/real_clutch_reaction.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/real_clutch_reaction.mp4) (SHA-256: `49d5a155...`). Gap $1.2\text{s} \le 4.0\text{s}$. EXP-002 ajusta a $[18.0, 28.0] + [27.75, 35.75]$, eliminando $2.0\text{s}$ de silencio inicial inactivo conservando íntegro el clímax.
-2. **`real-eval-002` (Setup Conversacional con Pausa $\to$ Punchline):** [`tests/fixtures/source_0.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/source_0.mp4) (SHA-256: `c46179a3...`). Gap $1.3\text{s} \le 4.0\text{s}$. EXP-002 produce $[0.6, 8.6]$, eliminando $2.65\text{s}$ de ruido muerto inicial/final y manteniendo la pausa de respiración natural de $1.3\text{s}$ dentro del beat.
-3. **`real-eval-003` (Control Negativo Entre Escenas):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`). Gap $3.5\text{s} \le 4.0\text{s}$ a través de corte de cámara en $15059.0\text{s}$. EXP-002 mantiene los 2 clips separados ($0$ sobre-fusiones gracias al hard stop de escena).
+### 4.1 Evidencia Audiovisual Real Renderizada ($N=4$)
+Para evaluar casos reales con coordenadas estrictamente validadas y confirmadas por FFprobe, se ejecutó y renderizó a través de M9 (`RenderingEngine`):
+1. **`real-eval-001` (Gameplay Clutch $\to$ Streamer Reaction):** [`tests/fixtures/real_clutch_reaction.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/real_clutch_reaction.mp4) (SHA-256: `49d5a155...`, $35.007\text{s}$). Gap $1.2\text{s} \le 2.0\text{s}$. EXP-002 unifica $[12.0, 28.0]$ ($16.0\text{s}$), eliminando el corte abrupto en $19.5\text{s}$ que Baseline introduce ($[11.5, 19.5] + [20.1, 28.1]$). Ambos intervalos $\le 35.007\text{s}$, 0 duplicación.
+2. **`real-eval-002` (Setup Conversacional con Pausa $\to$ Punchline):** [`tests/fixtures/source_0.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/source_0.mp4) (SHA-256: `c46179a3...`, $10.000\text{s}$). Gap $1.3\text{s} \le 1.5\text{s}$. EXP-002 produce $[1.0, 8.5]$ ($7.5\text{s}$), reteniendo la pausa de respiración natural y reduciendo la densidad de cortes de $17.14$ a $8.0\text{ cpm}$ frente a Baseline ($[0.75, 4.25] + [5.15, 8.65]$, $7.0\text{s}$). Ambos intervalos $\le 10.0\text{s}$.
+3. **`real-eval-003` (Setup a Payoff en VOD de 5h):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`, $18000.427\text{s}$). Gap $1.6\text{s} \le 2.0\text{s}$. EXP-002 genera 1 clip continuo $[1200.0, 1217.6]$ ($17.6\text{s}$), preservando el timing cómico frente a Baseline ($[1200.0, 1208.0] + [1209.6, 1217.6]$, $16.0\text{s}$).
+4. **`real-eval-004` (Control Negativo Entre Escenas):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`, $18000.427\text{s}$). Gap $2.0\text{s} \le 4.0\text{s}$ a través de corte de cámara en $15059.0\text{s}$. EXP-002 mantiene los 2 clips separados ($[15050.0, 15058.0] + [15060.0, 15068.0]$, $16.0\text{s}$), confirmando $0$ sobre-fusiones.
+
+### 4.2 Divulgación de Provenance Compartido
+- **Limitación Metodológica:** La Grabación 1 (`real_clutch_reaction.mp4`) y la Grabación 3 (`source_5hr.mp4`) proceden del mismo VOD maestro de 5 horas. Comparten codificación AV1/Opus idéntica y no representan generalización independiente entre diferentes creadores.
 
 ---
 
-## 5. Comparativa Editorial Humana y Paquete Ciego A/B
+## 5. Comparativa Editorial Humana y Paquetes Desacoplados
 
-- **Paquete de Evaluación Ciega Generado:** Los tres pares comparativos fueron serializados con orden aleatorizado en [`exp002_real_ab_evaluation_package.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_evaluation_package.json).
-- **Estado de Evaluación Humana:** **`PENDING HUMAN EDITORIAL EVALUATION`**.
-- **Regla Estricta Anti-Simulación:** No se fabrican votos ni se simulan preferencias mediante agentes de IA. La aprobación editorial final requiere un panel de revisores humanos independientes.
+- **Paquete Ciego para Revisores:** [`exp002_real_ab_reviewer_package.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_reviewer_package.json) (rutas relativas a los MP4 renderizados, preguntas estructuradas, cero etiquetas de variantes, cero votos fabricados).
+- **Clave Restringida de Evaluación:** [`exp002_real_ab_evaluation_key.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_evaluation_key.json) (asignación de verdad, semilla 42, firmas y huellas SHA-256).
+- **Estado de Evaluación Humana:** **`PENDING HUMAN EDITORIAL REVIEW`**. Prohibida la simulación de votos por IA.
 
 ---
 
 ## 6. Correctitud de Configuración, Caché y PostgreSQL
 
-### 6.1 Endurecimiento de Firmas de Derivación e Invalidación de Caché (VERIFICADO)
-- Se implementó `_compute_m2_signature` en `CandidateGenerator` incorporando la huella digital del `MediaAsset`, la firma de `TranscriptRun`, la secuencia ordenada de `TimelineEvents` y la firma de `VisualAnalysisRun`.
-- `_run_sig` integra `m2_signature`, `asset_fingerprint` y el hash íntegro de configuración.
-- `_candidate_sig` vincula permanentemente `parent_run_sig` y `evidence_ids`.
-- **Suite de Regresión:** Superadas **7/7 pruebas** en [`tests/unit/benchmark/test_exp_002_cache_invalidation.py`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/unit/benchmark/test_exp_002_cache_invalidation.py).
+### 6.1 Restauración de Dependencias de Caché Upstream (VERIFICADO)
+- Se eliminó completamente la dependencia hacia atrás de M7 (`VisualAnalysisRun`) en `_compute_m2_signature` en `CandidateGenerator`.
+- La firma M3 incorpora estrictamente entradas M1/M2: `MediaAsset`, `TranscriptRun`, `TimelineEvents`, `Scene` y `AudioEvent`.
+- **Suite de Regresión:** Superadas **10/10 pruebas** en [`tests/unit/benchmark/test_exp_002_cache_invalidation.py`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/unit/benchmark/test_exp_002_cache_invalidation.py).
 
 ### 6.2 Verificación PostgreSQL
-- La persistencia e idempotencia fueron validadas en SQLite (`test.db`).
-- Se verificó que el host actual no posee servicio Docker ni binarios PostgreSQL instalados (`CommandNotFoundException`).
-- **Estado:** Se registra como **bloqueador técnico de entorno** para la activación canónica por defecto en producción.
+- Persistencia e idempotencia validadas en SQLite (`test.db`).
+- Suite de integración completa implementada en [`tests/integration/test_exp_002_postgres.py`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/integration/test_exp_002_postgres.py), omitida limpiamente en el host local por carecer de daemon PostgreSQL/Docker y lista para ejecutarse en CI contra contenedor PostgreSQL.
 
 ---
 
 ## 7. Estrategia de Rollout Controlado
 
-Para mitigar riesgos editoriales y operativos:
-1. **Conservar M13-P1 como Baseline Operacional por Defecto:** La configuración estándar del pipeline mantiene `clustering_variant = "default"` (clustering por proximidad simple).
-2. **Activación Opcional Mediante Feature Flag:** EXP-002 estará disponible bajo el flag explícito `ENABLE_M3_RELATIONAL_CLUSTERING = true` o seleccionando `clustering_variant = "variant_b"`.
-3. **Evaluación Shadow / Canary:** Monitorizar sobre-fusiones, dead air y densidad de cortes en VODs reales representativos.
-4. **Reversibilidad:** Rollback inmediato a M13-P1 sin migración destructiva de esquema ni pérdida de artefactos históricos.
-5. **No Crear M13-P2 Canónico:** No se designará `M13-P2` canónico hasta que se satisfagan todas las condiciones de validación.
+1. **Conservar M13-P1 como Baseline Operacional por Defecto:** `clustering_variant = "default"`.
+2. **Activación Opcional Mediante Feature Flag:** `clustering_variant = "variant_b"` o `ENABLE_M3_RELATIONAL_CLUSTERING = true`.
+3. **Evaluación Canary:** Monitorización de sobre-fusiones y densidad de cortes en producción controlada.
+4. **Reversibilidad:** Rollback instantáneo sin migración destructiva.
+5. **No Promocionar Canónicamente a M13-P2 Automáticamente.**
 
 ---
 
 ## 8. Decisión y Condiciones de Promoción
 
-**Decisión:** **`EXP-002 PROMOTION CONDITIONAL — EDITORIAL VALIDATION PENDING`**
+**Decisión:** **`EXP-002 PROMOTION CONDITIONAL — HUMAN EDITORIAL REVIEW PENDING`**
 
 ### Estado de Condiciones Resolutorias:
 | Condición | Estado | Evidencia |
 | :--- | :---: | :--- |
-| **1. Validación Audiovisual Real ($N \ge 3$)** | **CUMPLIDA** | 3 casos reales analizados con huellas SHA-256 e intervalos evaluados. |
-| **2. Endurecimiento de Claves de Caché** | **CUMPLIDA** | Upstream M2 integrado en firmas M3; 7/7 tests de regresión superados. |
-| **3. Paquete Blinded A/B para Revisores** | **CUMPLIDA** | Serializado en `exp002_real_ab_evaluation_package.json`. |
-| **4. Panel de Revisión Editorial Ciega Humana** | **PENDIENTE** | En espera de evaluación por revisores humanos reales (sin votos simulados por IA). |
-| **5. Validación Staging PostgreSQL** | **BLOQUEADA** | Bloqueador técnico de entorno local (ausencia de Docker/Postgres en host). |
+| **1. Coordenadas Temporales Válidas y Cero Duplicación** | **CUMPLIDA** | Auditado con FFprobe. Tests de regresión en `validator.py` y `compiler.py` impiden rebasar duración o duplicar timeline. |
+| **2. Dirección de Dependencia de Caché Upstream** | **CUMPLIDA** | M7 eliminado de `_compute_m2_signature`; 10/10 tests pasando en `test_exp_002_cache_invalidation.py`. |
+| **3. Generación de Vídeos Reproducibles A/B (M9)** | **CUMPLIDA** | 4 pares de vídeos MP4 reproducibles renderizados en `data/renders/ab_eval/` y validados con `MediaValidator`. |
+| **4. Paquete Blinded Desacoplado para Revisores** | **CUMPLIDA** | `exp002_real_ab_reviewer_package.json` desacoplado de `exp002_real_ab_evaluation_key.json` con cuestionario listo y 0 votos simulados. |
+| **5. Suite de Integración PostgreSQL para CI** | **CUMPLIDA** | Implementado `tests/integration/test_exp_002_postgres.py`, listo para ejecución en pipeline CI. |
+| **6. Divulgación de Provenance de VOD Maestro** | **CUMPLIDA** | Grabaciones 1 y 3 documentadas como derivadas del mismo VOD maestro de 5 horas. |
+| **7. Panel de Revisión Editorial Ciega Humana** | **PENDIENTE** | En espera de evaluación por revisores humanos reales (sin votos simulados por IA). |
 

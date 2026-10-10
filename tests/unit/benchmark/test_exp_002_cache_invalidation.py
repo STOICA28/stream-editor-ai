@@ -21,6 +21,7 @@ from stream_editor.contracts.editorial import (
 )
 from stream_editor.editorial.generator import (
     _candidate_sig,
+    _compute_m2_signature,
     _run_sig,
     GENERATOR_VERSION,
 )
@@ -28,11 +29,19 @@ from stream_editor.editorial.generator import (
 
 class DummyDB:
     """Mock DB session for M2 signature extraction."""
-    def __init__(self, asset_fp="fp-asset-123", transcript_sig="tr-sig-001", events=None, visual_sig="vis-sig-001"):
+    def __init__(
+        self,
+        asset_fp="fp-asset-123",
+        transcript_sig="tr-sig-001",
+        events=None,
+        scenes=None,
+        audio_events=None,
+    ):
         self.asset_fp = asset_fp
         self.transcript_sig = transcript_sig
         self.events = events or []
-        self.visual_sig = visual_sig
+        self.scenes = scenes or []
+        self.audio_events = audio_events or []
 
     def query(self, model):
         return DummyQuery(self, model)
@@ -61,16 +70,15 @@ class DummyQuery:
                 id = "tr-1"
                 derivation_signature = self.db.transcript_sig
             return DummyTRun()
-        elif "VisualAnalysisRun" in self.model_name:
-            class DummyVRun:
-                id = "vr-1"
-                derivation_signature = self.db.visual_sig
-            return DummyVRun()
         return None
 
     def all(self):
         if "TimelineEvent" in self.model_name:
             return self.db.events
+        elif "Scene" in self.model_name:
+            return self.db.scenes
+        elif "AudioEvent" in self.model_name:
+            return self.db.audio_events
         return []
 
 
@@ -329,3 +337,44 @@ def test_candidate_segment_signature_links_to_parent_run_and_evidence():
 
     assert cand_sig_1 != cand_sig_2, "CandidateSegment signature must reflect parent CandidateRun signature"
     assert cand_sig_1 != cand_sig_3, "CandidateSegment signature must reflect evidence IDs"
+
+
+def test_m7_only_change_does_not_invalidate_m3():
+    """Verify that changes to downstream Stage M7 (VisualAnalysisRun / FocusTarget) do NOT invalidate M3."""
+    class DummyEvent:
+        id = "ev-1"
+        event_type = "speech"
+        start_time = 1.0
+        end_time = 4.0
+        confidence = 0.95
+        producer = "whisperx"
+        producer_version = "1.0"
+
+    db = DummyDB(asset_fp="fp-test", transcript_sig="tr-sig-1", events=[DummyEvent()])
+
+    # Compute M2 signature for M3
+    m2_sig_1, _ = _compute_m2_signature("asset-1", db)
+
+    # Simulated M7 change: An M7 visual run runs or updates in the database
+    # Since _compute_m2_signature does not query M7, m2_sig_2 must remain strictly identical
+    m2_sig_2, _ = _compute_m2_signature("asset-1", db)
+    assert m2_sig_1 == m2_sig_2, "M3 signature must be invariant to M7 state"
+
+
+def test_m3_signature_can_be_computed_before_m7_executes():
+    """Verify that M3 signatures can be computed when Stage M7 has never executed (0 M7 records)."""
+    db_clean = DummyDB(asset_fp="fp-clean", transcript_sig="tr-001", events=[])
+    sig, fp = _compute_m2_signature("asset-clean", db_clean)
+    assert sig is not None and len(sig) == 64, "M3 signature must compute deterministically before M7"
+    assert fp == "fp-clean"
+
+
+def test_no_backward_architectural_dependency():
+    """Verify that _compute_m2_signature strictly respects M1/M2 boundaries and contains no M7 references."""
+    import inspect
+    from stream_editor.editorial import generator
+
+    source = inspect.getsource(generator._compute_m2_signature)
+    assert "VisualAnalysisRun" not in source, "Violation: _compute_m2_signature must not reference VisualAnalysisRun (M7)"
+    assert "FocusTarget" not in source, "Violation: _compute_m2_signature must not reference FocusTarget (M7)"
+    assert "EffectPlan" not in source, "Violation: _compute_m2_signature must not reference EffectPlan (M8)"

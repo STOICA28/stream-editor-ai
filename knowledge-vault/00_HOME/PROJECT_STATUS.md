@@ -65,9 +65,11 @@ tags:
   - Immutably frozen configuration hash: `32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70`.
   - Governance Verdict: **EXP-002 VERIFIED — READY FOR PROMOTION REVIEW**.
 - [x] Quality Gates: 85 Pytests passed, Mypy clean (155 source files), Next.js web build and lint clean, check_vault.py clean.
-- **In Progress:** EXP-002 Formal Promotion Review
-- **Blocked:** Do NOT begin EXP-003 until EXP-002 is canonically promoted through governance.
-- **Known bugs:** None
-- **Technical debt:** None
-- **Last successful test run:** 2026-10-09 (EXP-002 Full Pass)
+- **In Progress:** EXP-002 Blinded Human Editorial Review (`EXP-002 PROMOTION CONDITIONAL — HUMAN EDITORIAL REVIEW PENDING`).
+- **Blocked:** Do NOT begin EXP-003 until EXP-002 completes human review and is canonically promoted through governance.
+- **Baseline:** M13-P1 remains production default. EXP-002 remains flag-gated.
+- **Known bugs:** None.
+- **Technical debt:** None.
+- **Last successful test run:** 2026-10-10 (101 unit/integration tests passed, 3 Postgres tests skipped pending CI, Mypy clean, check_vault clean).
+
 
