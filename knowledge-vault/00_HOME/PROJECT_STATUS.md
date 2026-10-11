@@ -64,12 +64,19 @@ tags:
     - 0.0s dead air, 0.0s AI-only overselection, 0 false merges.
   - Immutably frozen configuration hash: `32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70`.
   - Governance Verdict: **EXP-002 VERIFIED — READY FOR PROMOTION REVIEW**.
-- [x] Quality Gates: 85 Pytests passed, Mypy clean (155 source files), Next.js web build and lint clean, check_vault.py clean.
-- **In Progress:** EXP-002 Blinded Human Editorial Review (`EXP-002 PROMOTION CONDITIONAL — HUMAN EDITORIAL REVIEW PENDING`).
+- [x] **EXP-002 Genuine Media Evaluation Reset & Provenance Audit (2026-10-11):**
+  - Completed exhaustive cryptographic & visual provenance audit across all repository media ([`REAL_MEDIA_PROVENANCE_AUDIT.md`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/REAL_MEDIA_PROVENANCE_AUDIT.md)).
+  - Formally invalidated synthetic oracle diagnostic fixture `source_0.mp4` (red ball & green box `"FACE"`) and all historical editorial claims derived from it.
+  - Identified master authentic footage: `source_short.mp4` (SHA-256: `e92c2134...`, 10m uncut 1080p60 continuous livestream).
+  - Built genuine M3 evaluation suite ($N=4$) featuring unedited source context clips ($30\text{s}–45\text{s}$), subsecond delta explanations, and blinded randomized A/B outputs (`eval-real-001` through `eval-real-004`).
+  - Rendered complete end-to-end multi-clip editorial demonstration (`streameditor_e2e_real_edit.mp4`, $43.79\text{s}$) with 4 narrative beats and Stage M8 facecam reaction zoom.
+  - Deployed standalone interactive local evaluation web application (`exp002_ab_review_app.html`) with embedded HTML5 video players and single-click JSON feedback export (zero manual JSON parsing).
+  - Maintained governance invariants: frozen config `32d3ee01c6727abfa23781e2cfe2bc5cf570e40c7420af096c1ab33bac0edf70` untouched, production baseline `M13-P1` default, zero simulated AI votes.
+- **In Progress:** EXP-002 Genuine Blinded Human Editorial Review (`EXP-002 PROMOTION CONDITIONAL — HUMAN EDITORIAL REVIEW PENDING`).
 - **Blocked:** Do NOT begin EXP-003 until EXP-002 completes human review and is canonically promoted through governance.
 - **Baseline:** M13-P1 remains production default. EXP-002 remains flag-gated.
 - **Known bugs:** None.
 - **Technical debt:** None.
-- **Last successful test run:** 2026-10-10 (101 unit/integration tests passed, 3 Postgres tests skipped pending CI, Mypy clean, check_vault clean).
+- **Last successful test run:** 2026-10-11 (101 unit/integration tests passed, 3 Postgres tests skipped pending CI, Mypy clean, check_vault clean).
 
 

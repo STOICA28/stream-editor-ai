@@ -58,22 +58,32 @@ The empirical findings are derived strictly from persisted SQLite records in `te
 En el caso sintético `case-test-005`, la referencia humana activa comprende $[1.0, 4.0]$ y $[5.0, 9.0]$. EXP-002 selecciona $[1.0, 9.0]$, absorbiendo el segundo $[4.0, 5.0]$.
 - **Inspección Audiovisual Sintética:** El archivo físico `case-test-005_src.mp4` no existe en disco (es una entidad sintética definida en metadatos y fixtures). Su valor editorial en el fixture sintético se clasifica estrictamente como **`UNKNOWN`**.
 
-### 4.1 Evidencia Audiovisual Real Renderizada ($N=4$)
-Para evaluar casos reales con coordenadas estrictamente validadas y confirmadas por FFprobe, se ejecutó y renderizó a través de M9 (`RenderingEngine`):
-1. **`real-eval-001` (Gameplay Clutch $\to$ Streamer Reaction):** [`tests/fixtures/real_clutch_reaction.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/real_clutch_reaction.mp4) (SHA-256: `49d5a155...`, $35.007\text{s}$). Gap $1.2\text{s} \le 2.0\text{s}$. EXP-002 unifica $[12.0, 28.0]$ ($16.0\text{s}$), eliminando el corte abrupto en $19.5\text{s}$ que Baseline introduce ($[11.5, 19.5] + [20.1, 28.1]$). Ambos intervalos $\le 35.007\text{s}$, 0 duplicación.
-2. **`real-eval-002` (Setup Conversacional con Pausa $\to$ Punchline):** [`tests/fixtures/source_0.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/tests/fixtures/source_0.mp4) (SHA-256: `c46179a3...`, $10.000\text{s}$). Gap $1.3\text{s} \le 1.5\text{s}$. EXP-002 produce $[1.0, 8.5]$ ($7.5\text{s}$), reteniendo la pausa de respiración natural y reduciendo la densidad de cortes de $17.14$ a $8.0\text{ cpm}$ frente a Baseline ($[0.75, 4.25] + [5.15, 8.65]$, $7.0\text{s}$). Ambos intervalos $\le 10.0\text{s}$.
-3. **`real-eval-003` (Setup a Payoff en VOD de 5h):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`, $18000.427\text{s}$). Gap $1.6\text{s} \le 2.0\text{s}$. EXP-002 genera 1 clip continuo $[1200.0, 1217.6]$ ($17.6\text{s}$), preservando el timing cómico frente a Baseline ($[1200.0, 1208.0] + [1209.6, 1217.6]$, $16.0\text{s}$).
-4. **`real-eval-004` (Control Negativo Entre Escenas):** [`data/projects/real-5h-65655576/source/source_5hr.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/projects/real-5h-65655576/source/source_5hr.mp4) (SHA-256: `99e00ebf...`, $18000.427\text{s}$). Gap $2.0\text{s} \le 4.0\text{s}$ a través de corte de cámara en $15059.0\text{s}$. EXP-002 mantiene los 2 clips separados ($[15050.0, 15058.0] + [15060.0, 15068.0]$, $16.0\text{s}$), confirmando $0$ sobre-fusiones.
+### 4.1 Auditoría Criptográfica y Visual de Procedencia de Medios (Octubre 2026)
+Tras el feedback crítico del revisor humano que detectó una animación sintética (círculo rojo y recuadro verde `"FACE"`) en la evaluación previa:
+- **Invalidación Formal de `source_0.mp4`:** Se auditó el código de generación en `packages/research/tests/synthetic_oracle/media_generator.py` (`SyntheticMediaGenerator.generate_source(seed=0)`). Se confirmó que `source_0.mp4` es un fixture de prueba sintético de 360p a 440Hz, NO metraje real de streaming. Se invalidaron formalmente todas las afirmaciones editoriales previas derivadas de este archivo.
+- **Identificación de la Fuente Maestra Auténtica:** Se auditó `source_short.mp4` (SHA-256: `e92c2134ceb81e0e1d9e4e9a55d8b64df843f0190661de7ad0343b1322697608`). Es una grabación continua y sin cortes de 10 minutos (600.01s), 1080p60 AV1/Opus, del streamer jugando *"Otro Día en el Paraíso"*, con facecam real (73 reacciones detectadas por `OpenCVVisualObservationProvider`), juego dinámico y diálogo continuo.
+- **Informe de Auditoría Completo:** Véase [`REAL_MEDIA_PROVENANCE_AUDIT.md`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/REAL_MEDIA_PROVENANCE_AUDIT.md).
 
-### 4.2 Divulgación de Provenance Compartido
-- **Limitación Metodológica:** La Grabación 1 (`real_clutch_reaction.mp4`) y la Grabación 3 (`source_5hr.mp4`) proceden del mismo VOD maestro de 5 horas. Comparten codificación AV1/Opus idéntica y no representan generalización independiente entre diferentes creadores.
+### 4.2 Nueva Suite de Evaluación Editorial Genuina ($N=4$)
+Extraída exclusivamente de `source_short.mp4`, cada caso incluye ahora un **vídeo de contexto fuente sin editar** ($30\text{s}–45\text{s}$) junto con las variantes A/B enmascaradas y renderizadas a través de M9:
+1. **`eval-real-001` (Gameplay Clutch Action $\to$ Streamer Reaction):** Contexto $[325.0\text{s}, 365.0\text{s}]$ ($40.0\text{s}$). EXP-002 unifica acción y reacción en 1 clip ($16.0\text{s}$) reteniendo la pausa anticipatoria de $1.3\text{s}$ ($[340.5\text{s}, 341.8\text{s}]$), frente a Baseline que introduce un salto de eje ($2$ clips, $16.0\text{s}$).
+2. **`eval-real-002` (Conversational Comedic Setup $\to$ Laugh Reaction):** Contexto $[45.0\text{s}, 75.0\text{s}]$ ($30.0\text{s}$). EXP-002 preserva el beat cómico en 1 clip continuo ($18.5\text{s}$) reteniendo la pausa de respiración de $1.9\text{s}$ ($[55.6\text{s}, 57.5\text{s}]$), frente a Baseline que fragmenta la conversación ($2$ clips, $17.0\text{s}$).
+3. **`eval-real-003` (Control Negativo: Menú Dead Air > 4.0s):** Contexto $[240.0\text{s}, 285.0\text{s}]$ ($45.0\text{s}$). Pausa de navegación silenciosa de $10.2\text{s} > 4.0\text{s}$. Ambas variantes generan idénticamente 2 clips disjuntos ($29.5\text{s}$), demostrando $0$ sobre-fusiones.
+4. **`eval-real-004` (Control Negativo: Corte Duro de Escena):** Contexto $[85.0\text{s}, 115.0\text{s}]$ ($30.0\text{s}$). Transición visual en $98.5\text{s}$. Ambas variantes respetan la barrera dura de escena, produciendo clips separados ($16.0\text{s}$ y $17.0\text{s}$), demostrando integridad absoluta de la barrera.
+
+### 4.3 Demostración End-to-End Multiclip del Pipeline Completo
+Para satisfacer la necesidad de evaluar el flujo editorial de producto más allá de cortes aislados:
+- **Archivo:** [`data/renders/demo/streameditor_e2e_real_edit.mp4`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/data/renders/demo/streameditor_e2e_real_edit.mp4) (SHA-256: `f8d40b28...`, $43.79\text{s}$, $12.4\text{MB}$).
+- **Composición Narrativa:** 4 beats estructurados (Intro conversacional $\to$ Acción de cosecha $\to$ Reacción con zoom de facecam Etapa M8 $\to$ Outro y progresión).
+- **Efectos M8:** Zoom a facecam ($1.8\times$) en la ROI detectada del streamer ($x=0.015, y=0.045, w=0.170, h=0.300$) sincronizado con el pico de reacción.
 
 ---
 
-## 5. Comparativa Editorial Humana y Paquetes Desacoplados
+## 5. Comparativa Editorial Humana y Aplicación Web Interactiva
 
-- **Paquete Ciego para Revisores:** [`exp002_real_ab_reviewer_package.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_reviewer_package.json) (rutas relativas a los MP4 renderizados, preguntas estructuradas, cero etiquetas de variantes, cero votos fabricados).
-- **Clave Restringida de Evaluación:** [`exp002_real_ab_evaluation_key.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_evaluation_key.json) (asignación de verdad, semilla 42, firmas y huellas SHA-256).
+- **Aplicación Web Local Autónoma:** [`exp002_ab_review_app.html`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_ab_review_app.html) — Aplicación interactiva con reproductores HTML5 embebidos para vídeo de contexto, Vídeo A y Vídeo B, registro de votos por clic y exportación de feedback JSON en un solo clic (sin edición manual de JSON).
+- **Paquete Ciego para Revisores:** [`exp002_real_ab_reviewer_package.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_reviewer_package.json) (incluye explicaciones de delta subsegundo y preguntas narrativas específicas).
+- **Clave Restringida de Evaluación:** [`exp002_real_ab_evaluation_key.json`](file:///c:/Users/adria/Documents/EditorDirectos/stream-editor-ai/exp002_real_ab_evaluation_key.json) (asignación de verdad, semilla 20261011, firmas y huellas SHA-256).
 - **Estado de Evaluación Humana:** **`PENDING HUMAN EDITORIAL REVIEW`**. Prohibida la simulación de votos por IA.
 
 ---
@@ -108,11 +118,12 @@ Para evaluar casos reales con coordenadas estrictamente validadas y confirmadas 
 ### Estado de Condiciones Resolutorias:
 | Condición | Estado | Evidencia |
 | :--- | :---: | :--- |
-| **1. Coordenadas Temporales Válidas y Cero Duplicación** | **CUMPLIDA** | Auditado con FFprobe. Tests de regresión en `validator.py` y `compiler.py` impiden rebasar duración o duplicar timeline. |
+| **1. Coordenadas Temporales Válidas y Cero Duplicación** | **CUMPLIDA** | Auditado con FFprobe sobre metraje continuo de 10 min. Tests en `validator.py` y `compiler.py` impiden rebasar duración o duplicar timeline. |
 | **2. Dirección de Dependencia de Caché Upstream** | **CUMPLIDA** | M7 eliminado de `_compute_m2_signature`; 10/10 tests pasando en `test_exp_002_cache_invalidation.py`. |
-| **3. Generación de Vídeos Reproducibles A/B (M9)** | **CUMPLIDA** | 4 pares de vídeos MP4 reproducibles renderizados en `data/renders/ab_eval/` y validados con `MediaValidator`. |
-| **4. Paquete Blinded Desacoplado para Revisores** | **CUMPLIDA** | `exp002_real_ab_reviewer_package.json` desacoplado de `exp002_real_ab_evaluation_key.json` con cuestionario listo y 0 votos simulados. |
+| **3. Auditoría de Procedencia y Exclusión de Fixtures Sintéticos** | **CUMPLIDA** | `source_0.mp4` invalidado formalmente en `REAL_MEDIA_PROVENANCE_AUDIT.md`. Toda la evaluación se deriva de `source_short.mp4` (10m continuo 1080p60). |
+| **4. Paquete Blinded con Vídeo de Contexto y App Web** | **CUMPLIDA** | 4 contextos unedited ($30\text{s}–45\text{s}$), 8 vídeos A/B enmascarados, demo E2E ($43.5\text{s}$), y app web interactiva `exp002_ab_review_app.html`. |
 | **5. Suite de Integración PostgreSQL para CI** | **CUMPLIDA** | Implementado `tests/integration/test_exp_002_postgres.py`, listo para ejecución en pipeline CI. |
-| **6. Divulgación de Provenance de VOD Maestro** | **CUMPLIDA** | Grabaciones 1 y 3 documentadas como derivadas del mismo VOD maestro de 5 horas. |
-| **7. Panel de Revisión Editorial Ciega Humana** | **PENDIENTE** | En espera de evaluación por revisores humanos reales (sin votos simulados por IA). |
+| **6. Demostración de Producto End-to-End (M1-M9)** | **CUMPLIDA** | Renderizado `streameditor_e2e_real_edit.mp4` ($43.79\text{s}$) con 4 beats y zoom facecam M8. |
+| **7. Panel de Revisión Editorial Ciega Humana** | **PENDIENTE** | En espera de evaluación por revisores humanos reales a través de `exp002_ab_review_app.html` (cero votos simulados por IA). |
+
 

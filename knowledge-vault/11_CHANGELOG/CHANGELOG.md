@@ -14,6 +14,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-10-11] (EXP-002 Genuine Media Evaluation Reset & Provenance Audit)
+### Added
+- **Cryptographic & Visual Provenance Audit (`REAL_MEDIA_PROVENANCE_AUDIT.md`):**
+  - Audited all media assets across the repository with SHA-256 hashes, exact container and stream durations, codecs, visual frame descriptions, and provenance history.
+  - Formally identified and invalidated synthetic oracle diagnostic fixture `source_0.mp4` (red ball & green box `"FACE"` on black canvas generated in M10.2). Invalidated all historical editorial claims derived from it.
+  - Confirmed authentic master footage: `source_short.mp4` (SHA-256: `e92c2134...`), uncut 10-minute continuous 1080p60 livestream broadcast of the streamer playing *"Otro Día en el Paraíso"*.
+- **Genuine M3 Evaluation Suite (`eval-real-001` through `eval-real-004`):**
+  - Generated 4 genuine cases from `source_short.mp4` with unedited source context videos ($30\text{s}–45\text{s}$) alongside blinded randomized A/B comparison clips.
+  - Added explicit subsecond delta explanations and targeted narrative questions for each case.
+- **Complete End-to-End Pipeline Demonstration (`streameditor_e2e_real_edit.mp4`):**
+  - Executed full M1-M9 pipeline on authentic livestream footage to render a $43.79\text{s}$ multi-clip editorial video comprising 4 narrative beats (Intro $\to$ Action $\to$ Reaction $\to$ Outro) with Stage M8 facecam reaction zoom.
+- **Interactive Local HTML Review Application (`exp002_ab_review_app.html`):**
+  - Built standalone interactive web app with embedded HTML5 video players for context and A/B variants, preference buttons, comment fields, and single-click JSON feedback export (zero manual JSON parsing for human reviewers).
+- **Decoupled Blinded Package & Evaluation Key:**
+  - Updated `exp002_real_ab_reviewer_package.json` and `exp002_real_ab_evaluation_key.json` with new genuine media fingerprints, video paths, and randomized seed mappings.
+
 ## [2026-10-10] (EXP-002 Promotion Blockers Resolved & Blinded Media Packaging)
 ### Changed
 - **Stage M3 Upstream Cache Dependency Direction:**
