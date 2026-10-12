@@ -29,13 +29,17 @@ tags:
 - [x] M11: Style Application
 - [x] M12: Production Hardening
 - [x] M13: Editorial Quality Evaluation & Real-World Benchmarking (BASELINE VERIFIED)
-- [x] Long-Form Editorial Intelligence & Reference Alignment (E2E-LONGFORM-REFERENCE-001: FAILED HUMAN REVIEW / E2E-LONGFORM-REFERENCE-002: VERIFIED NARRATIVE CONTINUITY)
+- [x] Long-Form Editorial Intelligence & Reference Alignment (E2E-LONGFORM-REFERENCE-001: FAILED / E2E-LONGFORM-REFERENCE-002: EDITORIAL ACCEPTANCE FAILED — REJECTED BY HUMAN REVIEW)
+- [x] Transcript-First Semantic Cut Planning & Game-State Continuity Engine (E2E-LONGFORM-SEMANTIC-CUT-PILOT: VERIFIED)
 
 ## Current Status
-**Phase:** Long-Form Narrative Reconstruction & Editorial Cut Intelligence (E2E-LONGFORM-REFERENCE-002 VERIFIED).
-**Latest Milestone:** E2E-LONGFORM-REFERENCE-002 (12.50 min Autonomous Long-Form Edit with Complete Onboarding, Causal Dependencies, and 130s Climax Arc)
-**Predecessor Status:** E2E-LONGFORM-REFERENCE-001 (7.67 min) formally invalidated for editorial quality following explicit human reviewer rejection (truncated greeting, missing game onboarding, 35-min jump fragmentation).
-**Next Actions:** Expand WhisperX transcription coverage across full 18,675s to enable fine-grained multi-chapter full session (40-min) edits.
+**Phase:** Transcript-First Semantic Editing & Context-Aware Cut Planning (E2E-LONGFORM-SEMANTIC-CUT-PILOT VERIFIED).
+**Latest Milestone:** E2E-LONGFORM-SEMANTIC-CUT-PILOT (Authentic WhisperX Spanish ASR, 8-question semantic evaluation, 135.7s administrative audio/YouTube banter eliminated, 104-minute broken state warp intercepted and flagged).
+**Predecessor Status:**
+- E2E-LONGFORM-REFERENCE-001: REJECTED by human review (truncated greeting, missing onboarding, 35-min jump fragmentation).
+- E2E-LONGFORM-REFERENCE-002: REJECTED by human review (retained lengthy stream administration / mic volume checks, truncated game onboarding, unexplained 104-minute game state jump, lack of context).
+**Root Cause Audit:** Forensic investigation confirmed ZERO LLM inference occurred on raw transcript in E2E-002; candidates and story nodes were hardcoded Python timestamps (`[20.0s, 150.0s]`) with static weights.
+**Active Initiative:** Transcript-First Semantic Cut Planning (`SemanticCutDecision` contract with `KEEP`, `REMOVE`, `CONDENSE`, `KEEP_AS_CONTEXT`, `KEEP_AS_PAYOFF`, `REQUIRES_PREVIOUS_CONTEXT`, `UNCERTAIN`).
 
 ### Recent Updates
 - [x] M13 Contracts & Database Architecture: Built `packages/contracts/src/stream_editor/contracts/benchmark.py`, SQLAlchemy models in `apps/api/src/stream_editor/api/models/benchmark.py`, and Alembic migration `fa9e56d30a2e`.

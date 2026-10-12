@@ -145,7 +145,26 @@ class AntigravityClient:
                 self.telemetry["failures"] += 1
                 raise AIInvalidStructuredOutput("Could not parse JSON from CLI output")
 
-            structured_output = data.get("structured_output", data)
+            structured_output = data.get("structured_output")
+            if structured_output is None:
+                response_str = data.get("response", "")
+                # Try to extract JSON from response string
+                if response_str:
+                    try:
+                        # Strip markdown fences if present
+                        cleaned = response_str.strip()
+                        if cleaned.startswith("```json"):
+                            cleaned = cleaned[7:]
+                        elif cleaned.startswith("```"):
+                            cleaned = cleaned[3:]
+                        if cleaned.endswith("```"):
+                            cleaned = cleaned[:-3]
+                        structured_output = json.loads(cleaned.strip())
+                    except Exception:
+                        structured_output = data
+                else:
+                    structured_output = data
+
             try:
                 parsed = schema_model.model_validate(structured_output)
                 self._cache[cache_key] = parsed

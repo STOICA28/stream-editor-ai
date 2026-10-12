@@ -649,6 +649,65 @@ class NarrativeAnalysisProvider(Protocol):
         ...
 
 
+
+# ---------------------------------------------------------------------------
+# Semantic Cut Decision Contracts (Transcript-First Editorial Intelligence)
+# ---------------------------------------------------------------------------
+
+class SemanticDecisionType(str, Enum):
+    """
+    Granular editorial actions determined by LLM semantic reasoning over transcripts
+    and gameplay progression. Supersedes naive duration thresholds and static anchors.
+    """
+    KEEP = "KEEP"                                    # Crucial narrative, premise, or entertaining highlight
+    REMOVE = "REMOVE"                                # Unnecessary stream admin, audio test, redundant banter, dead air
+    CONDENSE = "CONDENSE"                            # Action/dialogue is relevant but drawn out; trim to essentials
+    KEEP_AS_CONTEXT = "KEEP_AS_CONTEXT"              # Required setup, rule explanation, or character motivation
+    KEEP_AS_PAYOFF = "KEEP_AS_PAYOFF"                # Culmination or reaction that completes an earlier setup
+    REQUIRES_PREVIOUS_CONTEXT = "REQUIRES_PREVIOUS_CONTEXT"  # Needs prior scene grounding to be intelligible
+    UNCERTAIN = "UNCERTAIN"                          # Ambiguous moment requiring human review or secondary analysis
+
+
+class SemanticCutDecision(BaseModel):
+    """
+    Individual editorial decision for a discrete temporal segment, backed by transcript
+    evidence, reasoning, narrative importance, and game state continuity context.
+    """
+    id: str
+    source_start: float
+    source_end: float
+    duration: float
+    transcript_excerpt: str
+    decision: SemanticDecisionType
+    reason: str
+    narrative_importance: float = Field(ge=0.0, le=1.0)
+    category: str = Field(
+        default="general",
+        description="Category: stream_administration, premise_setup, gameplay_intro, gameplay_progression, repetitive_loop, banter, reaction"
+    )
+    required_context: str | None = None
+    game_state_before: str | None = None
+    game_state_after: str | None = None
+    omitted_events: str | None = None
+
+
+class SemanticRegionCutPlan(BaseModel):
+    """
+    Complete textual cut plan for a diagnostic or production region, audited for
+    continuity, state transitions, and retention metrics before rendering.
+    """
+    region_id: str
+    region_title: str
+    source_range_start: float
+    source_range_end: float
+    total_source_seconds: float
+    total_retained_seconds: float
+    retention_ratio: float
+    decisions: list[SemanticCutDecision] = Field(default_factory=list)
+    continuity_audit: dict[str, Any] = Field(default_factory=dict)
+    editorial_summary: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Backward-compat aliases for M3 code that imported old stub names
 # ---------------------------------------------------------------------------

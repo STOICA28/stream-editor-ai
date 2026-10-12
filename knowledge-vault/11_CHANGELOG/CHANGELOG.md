@@ -14,6 +14,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-10-12] (Transcript-First Semantic Editing & Context-Aware Cut Planning — E2E-PILOT)
+### Changed
+- **Invalidated E2E-002 Editorial Claim:** Formally recorded that `E2E-LONGFORM-REFERENCE-002` failed human editorial acceptance. Human reviewer identified lengthy unimportant stream administration (mic/OBS/volume testing, YouTube upload talk), truncated gameplay onboarding, unexplained 104-minute game-state jumps, and lack of context.
+- **Root Cause Forensic Audit:** Demonstrated that E2E-002 executed zero LLM inference on the raw transcript during planning; candidate moments were hardcoded Python timestamps (`[20.0s, 150.0s]`) with pre-baked scores. Heuristics blindly protected administrative chatter while cutting the actual video introduction at `0.0s`.
+### Added
+- **Semantic Cut Decision Contracts (`packages/contracts/src/stream_editor/contracts/editorial.py`):**
+  - Added `SemanticDecisionType` (`KEEP`, `REMOVE`, `CONDENSE`, `KEEP_AS_CONTEXT`, `KEEP_AS_PAYOFF`, `REQUIRES_PREVIOUS_CONTEXT`, `UNCERTAIN`).
+  - Added `SemanticCutDecision` and `SemanticRegionCutPlan`.
+- **Authentic WhisperX Transcription:**
+  - Extracted and transcribed authentic Spanish audio from `source.wav` across 5 diagnostic slices covering Regions A, B, and C using `faster-whisper`.
+- **Game-State Continuity Engine (GSCE) & Diagnostic Reports:**
+  - `SEMANTIC_EDITORIAL_PIPELINE_AUDIT.md`: Forensic audit of E2E-002 heuristic bypass and stream admin retention.
+  - `TRANSCRIPT_CUT_DECISION_PILOT.md`: Comprehensive textual cut plans for Regions A, B, and C with evidence tables and human editor comparison.
+  - `NARRATIVE_TRANSITION_FAILURE_ANALYSIS.md`: Deep analysis of the 104-minute jump ($5525\text{s} \to 11810\text{s}$), state disparity matrix, and transition bridging rules.
+- **Pilot Renders & Validation:**
+  - Rendered neutral-cut video demonstrations for Regions A, B, and C with 10ms audio edge crossfades, validated by `MediaValidator`.
+
 ## [2026-10-12] (Long-Form Narrative Reconstruction & Editorial Cut Intelligence — E2E-002)
 ### Changed
 - **Invalidated E2E-001 Editorial Claim:** Formally recorded that `E2E-LONGFORM-REFERENCE-001` failed human editorial acceptance due to truncated greeting onset, omitted game onboarding, and extreme 35-minute transition jump fragmentation. Disclosed that the demonstration utilized a hardcoded candidate list (`candidate_clips = [...]`).
