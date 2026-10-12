@@ -15,7 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -335,6 +335,24 @@ class EdgeRelationType(str, Enum):
     contrasts_with = "contrasts_with"
     same_thread = "same_thread"
 
+    # Semantic narrative continuity & game-state dependencies
+    requires_context = "requires_context"
+    introduces_objective = "introduces_objective"
+    establishes_game_state = "establishes_game_state"
+    changes_game_state = "changes_game_state"
+    resolves_objective = "resolves_objective"
+    explains_reaction = "explains_reaction"
+    safe_to_skip = "safe_to_skip"
+
+    # Uppercase aliases for compatibility with diverse prompt schemas
+    REQUIRES_CONTEXT = "requires_context"
+    INTRODUCES_OBJECTIVE = "introduces_objective"
+    ESTABLISHES_GAME_STATE = "establishes_game_state"
+    CHANGES_GAME_STATE = "changes_game_state"
+    RESOLVES_OBJECTIVE = "resolves_objective"
+    EXPLAINS_REACTION = "explains_reaction"
+    SAFE_TO_SKIP = "safe_to_skip"
+
 
 # Relations that require source to come AFTER target (source is temporally later)
 TEMPORALLY_DIRECTED_RELATIONS: frozenset[EdgeRelationType] = frozenset({
@@ -344,6 +362,9 @@ TEMPORALLY_DIRECTED_RELATIONS: frozenset[EdgeRelationType] = frozenset({
     EdgeRelationType.consequence_of,
     EdgeRelationType.answers,
     EdgeRelationType.depends_on,
+    EdgeRelationType.requires_context,
+    EdgeRelationType.resolves_objective,
+    EdgeRelationType.explains_reaction,
 })
 
 # Relations that should generally not form cycles
@@ -353,6 +374,9 @@ ACYCLIC_RELATIONS: frozenset[EdgeRelationType] = frozenset({
     EdgeRelationType.caused_by,
     EdgeRelationType.consequence_of,
     EdgeRelationType.answers,
+    EdgeRelationType.requires_context,
+    EdgeRelationType.introduces_objective,
+    EdgeRelationType.resolves_objective,
 })
 
 
@@ -367,6 +391,61 @@ class DependencyStrength(str, Enum):
     critical = "critical"
     helpful = "helpful"
     optional = "optional"
+
+
+class NarrativeLevel(str, Enum):
+    """Hierarchical narrative abstraction levels for long-form editorial planning."""
+    SESSION = "session"      # Complete stream macro context (5h+)
+    EPISODE = "episode"      # Self-contained chapter, quest, or gameplay run (3 - 15 min)
+    MOMENT = "moment"        # Granular candidate beat (setup/action/reaction/payoff, 5 - 60s)
+
+
+class EnforcementAction(str, Enum):
+    """Enforcement policy when a required narrative dependency is evaluated."""
+    INCLUDE_SETUP_OR_DROP = "INCLUDE_SETUP_OR_DROP"  # Pull prerequisite or discard dependent
+    PREFER_SETUP = "PREFER_SETUP"                    # Pull prerequisite if budget allows
+    OPTIONAL = "OPTIONAL"                            # Informational dependency only
+
+
+class GameStateSnapshot(BaseModel):
+    """Captures gameplay state at a given timestamp to ensure narrative onboarding continuity."""
+    timestamp: float
+    phase: str  # e.g., "greeting", "menu_setup", "gameplay_active", "raid_climax", "outro"
+    active_objective: str | None = None
+    location: str | None = None
+    state_attributes: dict[str, Any] = Field(default_factory=dict)
+
+
+class NarrativeDependency(BaseModel):
+    """Explicit dependency link between a candidate/clip and its prerequisite setup."""
+    source_id: str
+    prerequisite_id: str
+    relation_type: EdgeRelationType
+    strength: DependencyStrength = DependencyStrength.critical
+    enforcement: EnforcementAction = EnforcementAction.INCLUDE_SETUP_OR_DROP
+    reason: str = ""
+
+
+class NarrativeEpisodeContract(BaseModel):
+    """
+    Episode-level narrative unit grouping related moments into a self-contained story beat.
+    Bridges the gap between the 5-hour session and 10-second micro-clips.
+    """
+    id: str
+    project_id: str
+    title: str
+    episode_type: str = "gameplay"  # "onboarding", "quest", "raid", "social", "outro"
+    start_time: float
+    end_time: float
+    summary: str = ""
+    objective: str | None = None
+    is_essential: bool = False
+    candidate_ids: list[str] = Field(default_factory=list)
+    key_moment_ids: list[str] = Field(default_factory=list)
+
+    @property
+    def duration(self) -> float:
+        return max(0.0, self.end_time - self.start_time)
 
 
 class ContextRequirement(BaseModel):

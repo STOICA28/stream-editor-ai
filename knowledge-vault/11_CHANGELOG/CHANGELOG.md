@@ -14,6 +14,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2026-10-12] (Long-Form Narrative Reconstruction & Editorial Cut Intelligence — E2E-002)
+### Changed
+- **Invalidated E2E-001 Editorial Claim:** Formally recorded that `E2E-LONGFORM-REFERENCE-001` failed human editorial acceptance due to truncated greeting onset, omitted game onboarding, and extreme 35-minute transition jump fragmentation. Disclosed that the demonstration utilized a hardcoded candidate list (`candidate_clips = [...]`).
+### Added
+- **Hierarchical Narrative Contracts (`packages/contracts/src/stream_editor/contracts/editorial.py`):**
+  - Added `NarrativeLevel` (`SESSION`, `EPISODE`, `MOMENT`).
+  - Added semantic edge types to `EdgeRelationType`: `requires_context`, `introduces_objective`, `establishes_game_state`, `changes_game_state`, `resolves_objective`, `explains_reaction`, and `safe_to_skip`.
+  - Added `NarrativeEpisodeContract`, `GameStateSnapshot`, `NarrativeDependency`, and `EnforcementAction`.
+- **Narrative Dependency Resolver (`packages/editorial/src/stream_editor/editorial/planning/resolver.py`):**
+  - Implemented `NarrativeDependencyResolver.resolve_dependencies()` to traverse narrative edges, automatically pull prerequisite setups when payoffs/action beats are selected, propagate essential priority, and drop unsupported beats.
+  - Implemented `NarrativeDependencyResolver.link_episode_continuity()` to bridge tight intra-episode sub-beats ($\le 8.0\text{s}$), eliminating micro-jumpcuts within the same scene.
+- **Planner Integration:**
+  - Integrated `NarrativeAnchorDetector` and `NarrativeDependencyResolver` into `MockGlobalEditorialPlanner` and `AntigravityGlobalEditorialPlanner`.
+- **E2E-LONGFORM-REFERENCE-002 Benchmark (`scripts/run_e2e_longform_reference_002_benchmark.py`):**
+  - Built autonomous pipeline generator on 5.19h master livestream (`source.mp4`).
+  - Achieved 100% payoff setup retention rate (4/4 setups preserved).
+  - Preserved exact greeting onset at 20.0s (unclipped speech) and game premise onboarding ([56.0s – 150.0s]).
+  - Bridged the Chapter 16 climax into an unbroken 130.0s raid arc (Alarm + Combat + Victory).
+  - Rendered a complete 750.0s (12.50-minute) demonstration MP4 with neutral cuts and verified playability via `MediaValidator`.
+- **Forensic & Architectural Documentation:**
+  - `E2E_LONGFORM_002_ROOT_CAUSE_REPORT.md` (Forensic transition jump audit and invalidation disclosure).
+  - `HUMAN_REFERENCE_CUT_DECISION_AUDIT.md` (Ground truth human edit category allocation and 2,438s reconciliation).
+  - `NARRATIVE_CONTINUITY_DESIGN.md` (Hierarchical 3-level narrative model and dependency architecture).
+  - `E2E_LONGFORM_REFERENCE_002_REPORT.md` (Benchmark results and comparison matrix).
+
 ## [2026-10-12] (Long-Form Editorial Intelligence & Human Reference Alignment)
 ### Added
 - **Long-Form Selection Root-Cause Audit (`LONGFORM_EDITING_ROOT_CAUSE_AUDIT.md`):**

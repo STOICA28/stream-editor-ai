@@ -16,6 +16,8 @@ from stream_editor.models.antigravity_client import AntigravityClient, AIProvide
 
 from .interfaces import GlobalEditorialPlanner
 from .optimizer import DeterministicDurationOptimizer
+from .anchors import NarrativeAnchorDetector
+from .resolver import NarrativeDependencyResolver
 
 
 logger = logging.getLogger(__name__)
@@ -152,7 +154,20 @@ class AntigravityGlobalEditorialPlanner(GlobalEditorialPlanner):
             selected_clips.append(clip)
             
         selected_clips.sort(key=lambda c: c.source_start)
-        final_clips = DeterministicDurationOptimizer.optimize(selected_clips, config)
+
+        # 1. Tag essential narrative anchors (stream greeting, game launch, etc.)
+        tagged_clips = NarrativeAnchorDetector.tag_anchor_clips(selected_clips)
+
+        # 2. Resolve narrative and causal dependencies
+        resolved_clips = NarrativeDependencyResolver.resolve_dependencies(
+            tagged_clips, candidates, graph, config
+        )
+
+        # 3. Link sub-episode continuity
+        bridged_clips = NarrativeDependencyResolver.link_episode_continuity(resolved_clips)
+
+        # 4. Use optimizer to enforce duration and pack output times
+        final_clips = DeterministicDurationOptimizer.optimize(bridged_clips, config)
         
         original_dur = sum(c.duration for c in candidates) if candidates else 0.0
         selected_dur = sum(c.output_duration for c in final_clips)

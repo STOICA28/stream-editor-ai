@@ -8,12 +8,14 @@ from stream_editor.contracts.editorial import StoryGraphContract
 
 from .interfaces import GlobalEditorialPlanner
 from .optimizer import DeterministicDurationOptimizer
+from .anchors import NarrativeAnchorDetector
+from .resolver import NarrativeDependencyResolver
 
 
 class MockGlobalEditorialPlanner(GlobalEditorialPlanner):
     """
-    Mock implementation that builds an EditPlan by greedily selecting the best scoring
-    candidates until the target duration is reached.
+    Mock implementation that builds an EditPlan by selecting candidates,
+    tagging narrative anchors, resolving causal dependencies, and optimizing duration.
     """
     
     def generate_plan(
@@ -41,8 +43,8 @@ class MockGlobalEditorialPlanner(GlobalEditorialPlanner):
             clip = EditClipContract(
                 id=uuid.uuid4(),
                 plan_id=uuid.UUID(run_id),
-                source_start=cand.start_time,
-                source_end=cand.end_time,
+                source_start=cand.start_time or 0.0,
+                source_end=cand.end_time or cand.duration,
                 output_start=0.0, # Will be repacked by optimizer
                 output_end=cand.duration,
                 candidate_id=str(cand.id),
@@ -54,9 +56,20 @@ class MockGlobalEditorialPlanner(GlobalEditorialPlanner):
             
         # Repack to make them chronological in source
         selected_clips.sort(key=lambda c: c.source_start)
+
+        # 1. Tag essential narrative anchors (stream greeting, game launch, etc.)
+        tagged_clips = NarrativeAnchorDetector.tag_anchor_clips(selected_clips)
+
+        # 2. Resolve narrative and causal dependencies
+        resolved_clips = NarrativeDependencyResolver.resolve_dependencies(
+            tagged_clips, candidates, graph, config
+        )
+
+        # 3. Link sub-episode continuity
+        bridged_clips = NarrativeDependencyResolver.link_episode_continuity(resolved_clips)
         
-        # Use optimizer to enforce duration and pack output times
-        final_clips = DeterministicDurationOptimizer.optimize(selected_clips, config)
+        # 4. Use optimizer to enforce duration and pack output times
+        final_clips = DeterministicDurationOptimizer.optimize(bridged_clips, config)
         
         original_dur = sum(c.duration for c in candidates) if candidates else 0.0
         selected_dur = sum(c.output_duration for c in final_clips)

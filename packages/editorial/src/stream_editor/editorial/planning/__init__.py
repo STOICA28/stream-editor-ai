@@ -3,6 +3,7 @@ from .mock import MockGlobalEditorialPlanner
 from .antigravity import AntigravityGlobalEditorialPlanner
 from .optimizer import DeterministicDurationOptimizer
 from .anchors import NarrativeAnchorDetector
+from .resolver import NarrativeDependencyResolver
 
 __all__ = [
     "GlobalEditorialPlanner",
@@ -10,4 +11,5 @@ __all__ = [
     "AntigravityGlobalEditorialPlanner",
     "DeterministicDurationOptimizer",
     "NarrativeAnchorDetector",
+    "NarrativeDependencyResolver",
 ]

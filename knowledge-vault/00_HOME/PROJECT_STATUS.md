@@ -29,12 +29,13 @@ tags:
 - [x] M11: Style Application
 - [x] M12: Production Hardening
 - [x] M13: Editorial Quality Evaluation & Real-World Benchmarking (BASELINE VERIFIED)
-- [x] Long-Form Editorial Intelligence & Reference Alignment (E2E-LONGFORM-REFERENCE-001 PASSED)
+- [x] Long-Form Editorial Intelligence & Reference Alignment (E2E-LONGFORM-REFERENCE-001: FAILED HUMAN REVIEW / E2E-LONGFORM-REFERENCE-002: VERIFIED NARRATIVE CONTINUITY)
 
 ## Current Status
-**Phase:** Long-Form Editorial Intelligence & Human Reference Alignment (VERIFIED).
-**Latest Milestone:** E2E-LONGFORM-REFERENCE-001 (7.67 min Long-Form Demonstration Rendered from 5.19h Master Stream)
-**Next Actions:** Evaluate cross-streamer generalization and dynamic pacing montages.
+**Phase:** Long-Form Narrative Reconstruction & Editorial Cut Intelligence (E2E-LONGFORM-REFERENCE-002 VERIFIED).
+**Latest Milestone:** E2E-LONGFORM-REFERENCE-002 (12.50 min Autonomous Long-Form Edit with Complete Onboarding, Causal Dependencies, and 130s Climax Arc)
+**Predecessor Status:** E2E-LONGFORM-REFERENCE-001 (7.67 min) formally invalidated for editorial quality following explicit human reviewer rejection (truncated greeting, missing game onboarding, 35-min jump fragmentation).
+**Next Actions:** Expand WhisperX transcription coverage across full 18,675s to enable fine-grained multi-chapter full session (40-min) edits.
 
 ### Recent Updates
 - [x] M13 Contracts & Database Architecture: Built `packages/contracts/src/stream_editor/contracts/benchmark.py`, SQLAlchemy models in `apps/api/src/stream_editor/api/models/benchmark.py`, and Alembic migration `fa9e56d30a2e`.
