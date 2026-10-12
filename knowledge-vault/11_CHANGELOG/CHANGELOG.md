@@ -14,7 +14,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [2026-10-11] (EXP-002 Genuine Media Evaluation Reset & Provenance Audit)
+## [2026-10-12] (Long-Form Editorial Intelligence & Human Reference Alignment)
+### Added
+- **Long-Form Selection Root-Cause Audit (`LONGFORM_EDITING_ROOT_CAUSE_AUDIT.md`):**
+  - Traced the forensic root cause of the previous 43.5s output (`streameditor_e2e_real_edit.mp4`), establishing that it originated from a manual developer demonstration script using a 10-minute slice (`source_short.mp4`), rather than the full 5.19-hour stream (`source.mp4`).
+  - Documented that M5 duration pruning prioritized dropping `ClipPriority.context_only` first, which stripped opening greetings and setups.
+- **Human Reference Alignment Report (`HUMAN_REFERENCE_ALIGNMENT_REPORT.md`):**
+  - Analyzed the master 5.19-hour stream (`source.mp4`, 18675.2s) and 40.6-minute human reference (`edited.mp4`, 2438.4s) using M10 EditDNA.
+  - Constructed the **Human Edit Decision Map** (`cache/human_edit_decision_map.json`), revealing an 86.7% retention density in Chapter 0 (greeting & game onboarding), 70.48% conversational content, 20.45% reaction peaks, and 49.26% removed repetition.
+- **Long-Form Editorial Improvement Plan (`LONGFORM_EDITORIAL_IMPROVEMENT_PLAN.md`):**
+  - Introduced explicit editing presets: `SHORT_HIGHLIGHT` (60–180s), `LONG_FORM_SUMMARY` (600–1200s), and `FULL_EDITED_SESSION` (1800–2700s).
+  - Designed `NarrativeAnchorDetector` to protect opening greeting and game launch anchors from duration pruning.
+- **Narrative Anchor Protection Architecture:**
+  - Implemented `packages/editorial/src/stream_editor/editorial/planning/anchors.py` tagging `STREAM_GREETING`, `GAME_START`, and `OUTRO`.
+  - Updated `packages/contracts/src/stream_editor/contracts/edit_plan.py` with `EditingGoal`, `preserve_narrative_anchors`, and anchor fields.
+  - Updated `packages/editorial/src/stream_editor/editorial/planning/optimizer.py` to give narrative anchors strict immunity against duration pruning.
+- **E2E-LONGFORM-REFERENCE-001 Benchmark & Demonstration (`E2E_LONGFORM_REFERENCE_001_REPORT.md`):**
+  - Executed benchmark harness (`scripts/run_e2e_longform_reference_benchmark.py`).
+  - Rendered a complete 460.0-second (7.67-minute) demonstration MP4 (`final.mp4`, 153.9 MB) across the 5.19-hour stream with neutral cuts (zero VFX masking).
+  - Verified playability and PTS alignment via `MediaValidator` (verdict: `Valid`).
+  - Achieved 73.91% direct intersection with the human reference edit while preserving opening social greeting and game start.
 ### Added
 - **Cryptographic & Visual Provenance Audit (`REAL_MEDIA_PROVENANCE_AUDIT.md`):**
   - Audited all media assets across the repository with SHA-256 hashes, exact container and stream durations, codecs, visual frame descriptions, and provenance history.

@@ -47,8 +47,15 @@ class DeterministicDurationOptimizer:
             # Iteratively remove the lowest confidence clip of this priority
             # until we are under budget, or run out of clips of this priority.
             while total_dur > max_duration:
-                # Find all clips of this priority that are NOT locked
-                candidates = [c for c in current_clips if c.priority == priority_to_prune and not c.locked]
+                # Find all clips of this priority that are NOT locked, NOT essential,
+                # and NOT protected narrative anchors (if preserve_narrative_anchors is enabled).
+                candidates = [
+                    c for c in current_clips
+                    if c.priority == priority_to_prune
+                    and not c.locked
+                    and c.priority != ClipPriority.essential
+                    and not (config.preserve_narrative_anchors and c.is_narrative_anchor)
+                ]
                 if not candidates:
                     break # No more clips of this priority to prune
                     
